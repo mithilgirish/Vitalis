@@ -1,98 +1,110 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { BellRing } from 'lucide-react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useMission } from '@/context/MissionContext';
+import { NavigationMap } from '@/components/NavigationMap';
+import { BiologicalViabilityCard } from '@/components/BiologicalViabilityCard';
+import { IncomingDispatchModal } from '@/components/IncomingDispatchModal';
+import { ExcursionBanner } from '@/components/ExcursionBanner';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function MissionScreen() {
+  const { status, acceptMission, excursionFlag, colors, isDark } = useMission();
+  const [showSimulatedPushModal, setShowSimulatedPushModal] = useState(false);
+
+  const isModalVisible = status === 'pending_dispatch' || showSimulatedPushModal;
+
+  const handleAccept = () => {
+    acceptMission();
+    setShowSimulatedPushModal(false);
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      {/* Critical Excursion Banner Alert if triggered */}
+      {excursionFlag && (
+        <View style={styles.alertBannerWrapper}>
+          <ExcursionBanner />
+        </View>
+      )}
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+      {/* TOP 60% OF VIEWPORT: Live Navigation Map */}
+      <View style={styles.mapSection}>
+        <NavigationMap />
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        {/* Floating Quick Simulator Toolbar */}
+        <View style={styles.floatingToolbar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Simulate Incoming Web Dispatch"
+            onPress={() => setShowSimulatedPushModal(true)}
+            style={[
+              styles.demoPushPill,
+              {
+                backgroundColor: colors.bgCard,
+                borderColor: colors.border,
+              },
+            ]}>
+            <BellRing size={11} color={colors.cobaltBlue} />
+            <Text style={[styles.demoPushText, { color: colors.textPrimary }]}>
+              TEST INCOMING PUSH DISPATCH
+            </Text>
+          </Pressable>
+        </View>
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+      {/* BOTTOM 40% OF VIEWPORT: Biological Viability & Mission Card */}
+      <View style={styles.bottomSheetSection}>
+        <BiologicalViabilityCard />
+      </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {/* Incoming Dispatch Modal (Push State) */}
+      <IncomingDispatchModal
+        visible={isModalVisible}
+        onAccept={handleAccept}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  alertBannerWrapper: {
+    paddingHorizontal: 12,
+    zIndex: 20,
+  },
+  mapSection: {
+    flex: 6, // 60% of viewport
+    position: 'relative',
+  },
+  floatingToolbar: {
+    position: 'absolute',
+    bottom: 46,
+    left: 12,
+    zIndex: 10,
+  },
+  demoPushPill: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  demoPushText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  bottomSheetSection: {
+    flex: 4, // 40% of viewport
   },
 });
