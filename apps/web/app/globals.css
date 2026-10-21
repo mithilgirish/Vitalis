@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -144,4 +145,76 @@ body {
 .animate-dash-flow {
   stroke-dasharray: 6 6;
   animation: dash-flow 1.5s linear infinite;
+}
+
+/* ========================================================================= */
+/* Leaflet Custom Minimalist Styling (Apple Cupertino / Google Material 3)   */
+/* ========================================================================= */
+.leaflet-container {
+  font-family: var(--font-sans) !important;
+  background-color: var(--background) !important;
+  outline: none;
+}
+
+.leaflet-control-zoom {
+  display: none !important;
+}
+
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  font-family: var(--font-mono) !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 9999px !important;
+  padding: 2px 8px !important;
+  margin: 8px !important;
+  color: #64748b !important;
+}
+
+.dark .leaflet-control-attribution {
+  background: rgba(18, 20, 26, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #94a3b8 !important;
+}
+
+.dark .leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Animated Flow for In-Transit Polylines */
+@keyframes leaflet-dash-flow {
+  from {
+    stroke-dashoffset: 48;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.leaflet-route-dash {
+  stroke-dasharray: 8 8;
+  animation: leaflet-dash-flow 1.2s linear infinite;
 }
