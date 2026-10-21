@@ -44,7 +44,7 @@ export function ChennaiCommandMap() {
   } = useVitalis();
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'emergency' | 'stockout' | 'surplus'>('all');
-  const [tileProvider, setTileProvider] = useState<'carto' | 'osm' | 'satellite'>('carto');
+  const [tileProvider, setTileProvider] = useState<'osm' | 'hot' | 'satellite'>('osm');
   const [showCorridors, setShowCorridors] = useState<boolean>(true);
   const [mapZoom, setMapZoom] = useState<number>(12);
 
@@ -136,36 +136,39 @@ export function ChennaiCommandMap() {
           <span>Green Corridors</span>
         </button>
 
-        {/* OpenStreetMap Layer Provider Dropdown Pill */}
+        {/* OpenStreetMap Layer Provider Dropdown Pill - 100% Free, Zero API Key */}
         <div className="p-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl flex items-center gap-1 shadow-sm">
           <Layers className="w-3.5 h-3.5 ml-2 text-slate-400" />
           <button
-            onClick={() => setTileProvider('carto')}
-            className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer ${
-              tileProvider === 'carto'
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            OSM Minimal
-          </button>
-          <button
             onClick={() => setTileProvider('osm')}
-            className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+            className={`px-3 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer ${
               tileProvider === 'osm'
                 ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
+            title="Standard OpenStreetMap (100% Free, Zero API Key)"
           >
             OSM Standard
           </button>
           <button
+            onClick={() => setTileProvider('hot')}
+            className={`px-3 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+              tileProvider === 'hot'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="Humanitarian OpenStreetMap for Medical Logistics (100% Free, Zero API Key)"
+          >
+            Humanitarian
+          </button>
+          <button
             onClick={() => setTileProvider('satellite')}
-            className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+            className={`px-3 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer ${
               tileProvider === 'satellite'
                 ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
+            title="High-Resolution Satellite Imagery"
           >
             Satellite
           </button>

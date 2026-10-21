@@ -13,7 +13,7 @@ interface ChennaiLeafletMapProps {
   onSelectCourier: (c: TransitTelemetry | null) => void;
   theme: 'light' | 'dark';
   activeFilter: 'all' | 'emergency' | 'stockout' | 'surplus';
-  tileProvider: 'carto' | 'osm' | 'satellite';
+  tileProvider: 'osm' | 'hot' | 'satellite';
   showCorridors: boolean;
   mapZoom: number;
 }
@@ -109,27 +109,29 @@ export default function ChennaiLeafletMap({
 
     let tileUrl = '';
     let attribution = '';
+    let subdomains: string | string[] = 'abc';
 
-    if (tileProvider === 'osm') {
-      tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-      attribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors';
+    if (tileProvider === 'hot') {
+      // Humanitarian OpenStreetMap (Emergency & Medical Logistics - 100% Free, No API key)
+      tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+      attribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a>';
+      subdomains = ['a', 'b', 'c'];
     } else if (tileProvider === 'satellite') {
+      // ESRI World Imagery (Satellite Hybrid - 100% Free, No API key)
       tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
       attribution = 'Tiles &copy; Esri &mdash; OpenStreetMap contributors';
+      subdomains = 'abc';
     } else {
-      // CartoDB Minimalist OSM (Voyager for Light, Dark Matter for Dark)
-      if (isDark) {
-        tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-      } else {
-        tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      }
-      attribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>';
+      // OpenStreetMap Standard (Official OSM - 100% Free, No API key)
+      tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      attribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors';
+      subdomains = 'abc';
     }
 
     const newTileLayer = L.tileLayer(tileUrl, {
       attribution,
       maxZoom: 19,
-      subdomains: 'abcd',
+      subdomains,
     }).addTo(map);
 
     tileLayerRef.current = newTileLayer;
@@ -416,10 +418,12 @@ export default function ChennaiLeafletMap({
     }
   }, [mapZoom]);
 
+  const isDarkOsm = isDark && tileProvider !== 'satellite';
+
   return (
     <div
       ref={mapContainerRef}
-      className="w-full h-full"
+      className={`w-full h-full ${isDarkOsm ? 'osm-dark-filter' : ''}`}
       style={{ minHeight: '620px' }}
     />
   );

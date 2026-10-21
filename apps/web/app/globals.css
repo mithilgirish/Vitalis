@@ -218,3 +218,15 @@ body {
   stroke-dasharray: 8 8;
   animation: leaflet-dash-flow 1.2s linear infinite;
 }
+
+/* ========================================================================= */
+/* Sleek Apple-Style Dark Filter for OpenStreetMap (100% Free, Zero API Key) */
+/* ========================================================================= */
+.osm-dark-filter .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(185deg) brightness(82%) contrast(120%) saturate(35%);
+  transition: filter 0.3s ease;
+}
+
+.osm-dark-filter .leaflet-container {
+  background-color: #0B0D12 !important;
+}
