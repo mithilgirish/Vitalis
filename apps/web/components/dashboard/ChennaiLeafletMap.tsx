@@ -199,7 +199,7 @@ export default function ChennaiLeafletMap({
 
       let coreColor = '#3B82F6';
       let ringColor = 'rgba(59, 130, 246, 0.4)';
-      let badgeBg = isDark ? 'bg-[#181C26]/90 border-blue-500/30 text-blue-300' : 'bg-white/95 border-blue-200 text-blue-900';
+      let badgeBg = isDark ? 'bg-[#24262E]/90 border-blue-500/30 text-blue-300' : 'bg-white/95 border-blue-200 text-blue-900';
       let riskTagClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
 
       if (isEmergency) {
@@ -265,7 +265,7 @@ export default function ChennaiLeafletMap({
 
       // Rich Apple-style frosted popup card
       const popupContent = `
-        <div class="p-3.5 rounded-2xl border ${isDark ? 'bg-[#12141A]/95 text-white border-white/10' : 'bg-white/95 text-slate-900 border-black/10'} backdrop-blur-2xl shadow-xl w-64 select-none font-sans">
+        <div class="p-3.5 rounded-2xl border ${isDark ? 'bg-[#222329]/95 text-white border-white/10' : 'bg-white/95 text-slate-900 border-black/10'} backdrop-blur-2xl shadow-xl w-64 select-none font-sans">
           <div class="flex items-center justify-between pb-2 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}">
             <span class="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
               isEmergency ? 'bg-rose-500/20 text-rose-400' : isStockout ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
@@ -384,7 +384,7 @@ export default function ChennaiLeafletMap({
             isExcursion
               ? 'bg-rose-950/95 border-rose-500/50 text-white'
               : isDark
-              ? 'bg-[#121622]/95 border-blue-500/30 text-white'
+              ? 'bg-[#222329]/95 border-blue-500/30 text-white'
               : 'bg-white/95 border-blue-200 text-slate-900'
           }" style="font-family: system-ui, -apple-system, sans-serif;">
             <div class="flex flex-col">

@@ -7,7 +7,7 @@ export function AnalyticsSummaryCards() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* Summary Card 1: Regional Deficit Warning */}
-      <div className="p-4 rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-white dark:bg-[#1A202C] shadow-xs">
+      <div className="p-4 rounded-2xl border border-rose-200 dark:border-rose-500/30 bg-white dark:bg-[#222329] shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-rose-600 dark:text-rose-300 font-semibold flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
@@ -28,7 +28,7 @@ export function AnalyticsSummaryCards() {
       </div>
 
       {/* Summary Card 2: Proactive Rebalance Advisory */}
-      <div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-white dark:bg-[#1A202C] shadow-xs">
+      <div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-white dark:bg-[#222329] shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-blue-600 dark:text-blue-300 font-semibold flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-blue-500" />
@@ -49,7 +49,7 @@ export function AnalyticsSummaryCards() {
       </div>
 
       {/* Summary Card 3: Model Health & Accuracy */}
-      <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-[#1A202C] shadow-xs">
+      <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-[#222329] shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />

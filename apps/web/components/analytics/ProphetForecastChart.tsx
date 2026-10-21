@@ -111,7 +111,7 @@ export function ProphetForecastChart({
     : PROPHET_FORECAST_DATA;
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-[#2D3748] bg-white dark:bg-[#1A202C] p-5 space-y-4 shadow-xs">
+    <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#222329] p-5 space-y-4 shadow-xs">
       {/* Chart Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -175,7 +175,7 @@ export function ProphetForecastChart({
 
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke={isDark ? '#2D3748' : '#E2E8F0'}
+                stroke={isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}
                 opacity={0.8}
               />
 
@@ -184,13 +184,13 @@ export function ProphetForecastChart({
                 stroke={isDark ? '#64748B' : '#94A3B8'}
                 fontSize={10}
                 tickLine={false}
-                axisLine={{ stroke: isDark ? '#2D3748' : '#CBD5E1' }}
+                axisLine={{ stroke: isDark ? 'rgba(255, 255, 255, 0.08)' : '#CBD5E1' }}
               />
               <YAxis
                 stroke={isDark ? '#64748B' : '#94A3B8'}
                 fontSize={10}
                 tickLine={false}
-                axisLine={{ stroke: isDark ? '#2D3748' : '#CBD5E1' }}
+                axisLine={{ stroke: isDark ? 'rgba(255, 255, 255, 0.08)' : '#CBD5E1' }}
                 unit="u"
               />
 
@@ -220,7 +220,7 @@ export function ProphetForecastChart({
                 type="monotone"
                 dataKey="yhatLower"
                 stroke="transparent"
-                fill={isDark ? '#1A202C' : '#FFFFFF'}
+                fill={isDark ? '#222329' : '#FFFFFF'}
               />
 
               {/* Forecast Point Line */}

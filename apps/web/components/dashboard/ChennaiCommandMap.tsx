@@ -21,7 +21,7 @@ const ChennaiLeafletMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[620px] rounded-3xl flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0D12] border border-black/[0.06] dark:border-white/[0.08] animate-pulse">
+      <div className="w-full h-[620px] rounded-3xl flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#18191E] border border-black/[0.06] dark:border-white/[0.08] animate-pulse">
         <div className="p-3.5 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] mb-3">
           <VitalisLogo size="lg" showText={false} className="animate-pulse" />
         </div>
@@ -56,7 +56,7 @@ export function ChennaiCommandMap() {
   const handleResetZoom = () => setMapZoom(12);
 
   return (
-    <div className="relative w-full h-[620px] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] bg-[#F8FAFC] dark:bg-[#0B0D12] overflow-hidden select-none shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)] transition-colors">
+    <div className="relative w-full h-[620px] rounded-3xl border border-black/[0.06] dark:border-white/[0.08] bg-[#F8FAFC] dark:bg-[#18191E] overflow-hidden select-none shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)] transition-colors">
       {/* Interactive OpenStreetMap Leaflet Canvas */}
       <div className="w-full h-full relative z-0">
         <ChennaiLeafletMap
@@ -77,7 +77,7 @@ export function ChennaiCommandMap() {
       {/* Top Map Controls & Layer Filters - Apple Floating Pill Bar */}
       <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2 pointer-events-auto">
         {/* Node Filters Pill Group */}
-        <div className="p-1 rounded-full flex items-center gap-1 border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl shadow-sm">
+        <div className="p-1 rounded-full flex items-center gap-1 border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl shadow-sm">
           <button
             onClick={() => setActiveFilter('all')}
             className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer ${
@@ -129,7 +129,7 @@ export function ChennaiCommandMap() {
           className={`p-1 px-3 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.08] backdrop-blur-xl flex items-center gap-1.5 text-xs font-medium transition-all shadow-sm cursor-pointer ${
             showCorridors
               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold'
-              : 'bg-white/85 dark:bg-[#161820]/85 text-slate-500 dark:text-slate-400'
+              : 'bg-white/85 dark:bg-[#24262E]/85 text-slate-500 dark:text-slate-400'
           }`}
           title="Toggle Chennai Emergency Medical Green Corridors"
         >
@@ -138,7 +138,7 @@ export function ChennaiCommandMap() {
         </button>
 
         {/* OpenStreetMap Layer Provider Dropdown Pill - 100% Free, Zero API Key */}
-        <div className="p-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl flex items-center gap-1 shadow-sm">
+        <div className="p-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl flex items-center gap-1 shadow-sm">
           <Layers className="w-3.5 h-3.5 ml-2 text-slate-400" />
           <button
             onClick={() => setTileProvider('osm')}
@@ -178,7 +178,7 @@ export function ChennaiCommandMap() {
 
       {/* Map Zoom & Compass Controls (Top Right) - Floating Dock */}
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 pointer-events-auto">
-        <div className="p-1 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl flex flex-col items-center shadow-sm">
+        <div className="p-1 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl flex flex-col items-center shadow-sm">
           <button
             onClick={handleZoomIn}
             className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
@@ -205,14 +205,14 @@ export function ChennaiCommandMap() {
         </div>
 
         {/* Compass Indicator */}
-        <div className="p-2 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl flex flex-col items-center justify-center shadow-sm">
+        <div className="p-2 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl flex flex-col items-center justify-center shadow-sm">
           <Compass className="w-4 h-4 text-[#FF375F] dark:text-[#FF453A]" />
           <span className="text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400 mt-0.5">N</span>
         </div>
       </div>
 
       {/* Map Legend (Bottom Left) - Apple Frosted Panel */}
-      <div className="absolute bottom-4 left-4 z-20 p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl text-[11px] font-sans space-y-2 shadow-sm pointer-events-auto">
+      <div className="absolute bottom-4 left-4 z-20 p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl text-[11px] font-sans space-y-2 shadow-sm pointer-events-auto">
         <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">
           Node Status Legend
         </div>
@@ -242,7 +242,7 @@ export function ChennaiCommandMap() {
 
       {/* Selected Hospital Quick Inspector Modal (Slide-in card) */}
       {selectedHospital && (
-        <div className="absolute bottom-4 right-4 z-30 w-84 rounded-3xl border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#161820]/95 backdrop-blur-2xl p-4 shadow-[0_16px_48px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
+        <div className="absolute bottom-4 right-4 z-30 w-84 rounded-3xl border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#24262E]/95 backdrop-blur-2xl p-4 shadow-[0_16px_48px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-1.5">
@@ -308,7 +308,7 @@ export function ChennaiCommandMap() {
 
       {/* Vitalis Brand Watermark Pill (Bottom Right) */}
       <div className="absolute bottom-4 right-4 z-20 pointer-events-none hidden sm:block">
-        <div className="px-3 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl flex items-center gap-2 shadow-xs">
+        <div className="px-3 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl flex items-center gap-2 shadow-xs">
           <VitalisLogo size="sm" showText={false} />
           <span className="text-[10px] font-mono font-semibold tracking-wider text-slate-600 dark:text-slate-300">
             VITALIS MEDICAL GRID

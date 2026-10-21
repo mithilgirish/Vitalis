@@ -34,7 +34,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-[#12161F] text-slate-900 dark:text-slate-100 selection:bg-rose-500/20 selection:text-rose-600 dark:selection:text-rose-200">
+      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-[#18191E] text-slate-900 dark:text-slate-100 selection:bg-rose-500/20 selection:text-rose-600 dark:selection:text-rose-200">
         <VitalisProvider>
           {/* Global Conditional Emergency Banner for Cold-Chain Excursions */}
           <EmergencyBanner />
@@ -47,7 +47,7 @@ export default function RootLayout({
             {/* Main Content Area */}
             <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
               <Header />
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 dark:bg-[#12161F]">
+              <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 dark:bg-[#18191E]">
                 <div className="max-w-[1920px] mx-auto w-full">
                   {children}
                 </div>

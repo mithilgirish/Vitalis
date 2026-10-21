@@ -21,9 +21,9 @@ export function ReasoningTraceTerminal({ trace }: ReasoningTraceTerminalProps) {
   };
 
   return (
-    <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-[#0A0D14] overflow-hidden shadow-sm">
+    <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-[#18191E] overflow-hidden shadow-sm">
       {/* Terminal Title Bar */}
-      <div className="px-4 py-2.5 bg-slate-100 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <div className="px-4 py-2.5 bg-slate-100 dark:bg-[#222329] border-b border-slate-200 dark:border-white/[0.06] flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Mac-style Window Dots */}
           <div className="flex items-center gap-1.5">
@@ -32,7 +32,7 @@ export function ReasoningTraceTerminal({ trace }: ReasoningTraceTerminalProps) {
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
           </div>
 
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-300 dark:border-slate-800">
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-300 dark:border-white/[0.08]">
             <Terminal className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="text-xs font-mono font-medium text-slate-800 dark:text-slate-300">
               LangChain ReAct Agent Reasoning Trace
@@ -42,7 +42,7 @@ export function ReasoningTraceTerminal({ trace }: ReasoningTraceTerminalProps) {
 
         <div className="flex items-center gap-2">
           {/* Tabs */}
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] font-mono shadow-xs">
+          <div className="flex items-center gap-1 bg-white dark:bg-[#18191E] p-0.5 rounded-lg border border-slate-200 dark:border-white/[0.08] text-[11px] font-mono shadow-xs">
             <button
               onClick={() => setActiveTab('scratchpad')}
               className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${

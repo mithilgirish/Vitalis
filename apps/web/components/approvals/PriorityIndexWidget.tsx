@@ -52,7 +52,7 @@ export function PriorityIndexWidget({ candidate }: PriorityIndexWidgetProps) {
         </div>
 
         {/* Badge 2: Distance & Transit */}
-        <div className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#161820] shadow-2xs">
+        <div className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#222329] shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
               Distance & Transit
@@ -104,7 +104,7 @@ export function PriorityIndexWidget({ candidate }: PriorityIndexWidgetProps) {
         </div>
 
         {/* Badge 4: Medicare HVBP/HAC Quality Score */}
-        <div className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#161820] shadow-2xs">
+        <div className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#222329] shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
               HVBP / HAC Quality

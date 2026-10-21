@@ -40,7 +40,7 @@ export function PendingRequestsList({
   });
 
   return (
-    <div className="flex flex-col h-full rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#12141A]/80 backdrop-blur-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+    <div className="flex flex-col h-full rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#222329]/80 backdrop-blur-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
       {/* Header & Filter Controls - Apple Segmented Bar */}
       <div className="p-4 border-b border-black/[0.05] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02] space-y-3 shrink-0">
         <div className="flex items-center justify-between">
@@ -61,7 +61,7 @@ export function PendingRequestsList({
             onClick={() => setFilterTier('all')}
             className={`flex-1 py-1 text-[11px] font-medium rounded-full transition-all cursor-pointer text-center ${
               filterTier === 'all'
-                ? 'bg-white dark:bg-[#20242E] text-slate-900 dark:text-white font-semibold shadow-xs'
+                ? 'bg-white dark:bg-[#2C2D35] text-slate-900 dark:text-white font-semibold shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >

@@ -37,7 +37,7 @@ export function RejectReasonModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="relative w-full max-w-lg rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-[#1A202C] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-[#222329] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">

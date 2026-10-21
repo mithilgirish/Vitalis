@@ -8,7 +8,7 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       {/* Header Info Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200 dark:border-[#2D3748] bg-white dark:bg-[#1A202C] text-xs shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#222329] text-xs shadow-xs">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
             <Boxes className="w-5 h-5" />

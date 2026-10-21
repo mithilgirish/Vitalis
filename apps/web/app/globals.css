@@ -17,16 +17,42 @@
 }
 
 .dark {
-  --background: #0B0D12; /* Deep Obsidian dark mode canvas */
+  --background: #18191E; /* Apple Pro Charcoal Grey Canvas */
   --foreground: #F5F5F7;
-  --card-bg: #141721; /* Apple/Google elevated dark surface */
-  --card-border: rgba(255, 255, 255, 0.09);
-  --panel-bg: rgba(20, 23, 33, 0.75);
-  --panel-border: rgba(255, 255, 255, 0.09);
+  --card-bg: #222329; /* Elevated Charcoal Grey Surface */
+  --card-border: rgba(255, 255, 255, 0.08);
+  --panel-bg: rgba(34, 35, 42, 0.82); /* Translucent Charcoal Glass */
+  --panel-border: rgba(255, 255, 255, 0.08);
   --accent-blue: #2997FF;
   --accent-crimson: #FF453A;
   --accent-emerald: #30D158;
   --accent-amber: #FF9F0A;
+}
+
+/* Eliminate dark blue tint across all dark surfaces - Pure Charcoal Grey */
+.dark .bg-slate-950,
+.dark [class*="dark:bg-slate-950"] {
+  background-color: #18191E !important;
+}
+
+.dark .bg-slate-900,
+.dark [class*="dark:bg-slate-900"] {
+  background-color: #222329 !important;
+}
+
+.dark .bg-slate-800,
+.dark [class*="dark:bg-slate-800"] {
+  background-color: #2C2D35 !important;
+}
+
+.dark .border-slate-800,
+.dark [class*="dark:border-slate-800"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .border-slate-700,
+.dark [class*="dark:border-slate-700"] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 @theme inline {
@@ -78,11 +104,11 @@ body {
 }
 
 .dark .apple-glass {
-  background: rgba(20, 23, 33, 0.72);
+  background: rgba(34, 35, 42, 0.78);
   backdrop-filter: blur(24px) saturate(190%);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Apple Liquid Glass Material (macOS Sequoia & visionOS Specular Diffusion) */
@@ -101,13 +127,13 @@ body {
 .dark .apple-liquid-glass {
   background: linear-gradient(
     180deg,
-    rgba(16, 19, 28, 0.78) 0%,
-    rgba(11, 13, 20, 0.84) 100%
+    rgba(34, 35, 42, 0.85) 0%,
+    rgba(24, 25, 30, 0.90) 100%
   );
   backdrop-filter: blur(32px) saturate(210%);
   -webkit-backdrop-filter: blur(32px) saturate(210%);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset -1px 0 0 0 rgba(255, 255, 255, 0.03), 6px 0 36px -4px rgba(0, 0, 0, 0.45);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset -1px 0 0 0 rgba(255, 255, 255, 0.03), 6px 0 36px -4px rgba(0, 0, 0, 0.35);
 }
 
 .apple-glass-pill {
@@ -135,9 +161,9 @@ body {
 }
 
 .dark .apple-card {
-  background: #141721;
+  background: #222329;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 4px 20px -2px rgba(0, 0, 0, 0.25);
 }
 
 /* Apple Smooth Pill Button */
@@ -269,5 +295,5 @@ body {
 }
 
 .osm-dark-filter .leaflet-container {
-  background-color: #0B0D12 !important;
+  background-color: #18191E !important;
 }

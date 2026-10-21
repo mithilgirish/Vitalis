@@ -40,7 +40,7 @@ export function XGBoostHeatmap() {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-[#2D3748] bg-white dark:bg-[#1A202C] p-5 space-y-4 shadow-xs">
+    <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#222329] p-5 space-y-4 shadow-xs">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>

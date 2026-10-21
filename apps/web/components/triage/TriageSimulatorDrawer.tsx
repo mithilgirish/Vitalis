@@ -229,10 +229,10 @@ export function TriageSimulatorDrawer() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm flex justify-end">
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#1A202C] border-l border-slate-200 dark:border-[#2D3748] shadow-2xl flex flex-col h-full overflow-hidden animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 dark:bg-[#18191E]/75 backdrop-blur-sm flex justify-end">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#222329] border-l border-slate-200 dark:border-white/[0.08] shadow-2xl flex flex-col h-full overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Drawer Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-white/[0.06] bg-slate-50 dark:bg-[#18191E] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <VitalisLogo size="md" showText={false} />
             <div>
@@ -370,7 +370,7 @@ export function TriageSimulatorDrawer() {
               </div>
 
               {/* Formatted JSON Box */}
-              <pre className="p-3 rounded-xl bg-slate-900 dark:bg-[#070B12] border border-slate-800 font-mono text-[11px] text-emerald-400 overflow-x-auto leading-relaxed shadow-inner">
+              <pre className="p-3 rounded-xl bg-slate-900 dark:bg-[#18191E] border border-slate-800 dark:border-white/[0.08] font-mono text-[11px] text-emerald-400 overflow-x-auto leading-relaxed shadow-inner">
 {JSON.stringify(extractionResult.extracted, null, 2)}
               </pre>
 

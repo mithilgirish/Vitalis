@@ -22,8 +22,8 @@ export function CourierDetailModal() {
   const isExcursion = selectedCourier.excursionFlag;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 dark:border-[#2D3748] bg-white dark:bg-[#1A202C] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 dark:bg-[#18191E]/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#222329] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Modal Header */}
         <div className="flex items-start justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">

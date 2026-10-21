@@ -28,7 +28,7 @@ export function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#161820]/95 backdrop-blur-2xl p-6 shadow-[0_24px_64px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg rounded-3xl border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#222329]/95 backdrop-blur-2xl p-6 shadow-[0_24px_64px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
           <div className="flex items-center gap-3">
