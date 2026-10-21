@@ -1,8 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import { Hospital, TransitTelemetry } from '../../lib/types';
+import {
+  getRoadSnappedRoute,
+  getRoadSnappedRouteSync,
+  splitRouteByCourier,
+} from '../../lib/services/routingService';
 
 interface ChennaiLeafletMapProps {
   hospitals: Hospital[];
@@ -66,9 +71,13 @@ export default function ChennaiLeafletMap({
   const routesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const corridorsLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
+  // Runtime road routes cache for dynamically fetched routes
+  const [roadRoutes, setRoadRoutes] = useState<Record<string, [number, number][]>>({});
+  const isFirstRender = useRef(true);
+
   const isDark = theme === 'dark';
 
-  // 1. Initialize Map on Mount
+  // 1. Initialize Leaflet Map on Mount
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -169,7 +178,8 @@ export default function ChennaiLeafletMap({
   // 4. Render Regional Hospital Markers
   useEffect(() => {
     const layerGroup = markersLayerGroupRef.current;
-    if (!layerGroup) return;
+    const map = mapInstanceRef.current;
+    if (!layerGroup || !map) return;
 
     layerGroup.clearLayers();
 
@@ -247,9 +257,10 @@ export default function ChennaiLeafletMap({
 
       const marker = L.marker([hospital.lat, hospital.lng], { icon: customIcon });
 
-      // Click handler
+      // Click handler with smooth Apple pan/fly
       marker.on('click', () => {
         onSelectHospital(hospital);
+        map.flyTo([hospital.lat, hospital.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
       });
 
       // Rich Apple-style frosted popup card
@@ -306,53 +317,47 @@ export default function ChennaiLeafletMap({
     });
   }, [hospitals, activeFilter, selectedHospital, isDark, onSelectHospital]);
 
-  // 5. Render Active Cold-Chain Courier Vehicles & Dispatch Paths
+  // 5. Asynchronously Pre-resolve Any Missing Road Routes
   useEffect(() => {
-    const layerGroup = routesLayerGroupRef.current;
-    const map = mapInstanceRef.current;
-    if (!layerGroup || !map) return;
+    let isCancelled = false;
 
-    layerGroup.clearLayers();
-
-    telemetry.forEach((courier) => {
-      const isExcursion = courier.excursionFlag;
-      const isSelected = selectedCourier?.transferId === courier.transferId;
-
-      // Extract coordinates from origin hospital and destination hospital
-      const originHospital = hospitals.find((h) => h.id === courier.originFacilityId);
-      const destHospital = hospitals.find((h) => h.id === courier.destinationFacilityId);
-
-      const courierPos: [number, number] = [
-        courier.currentCoordinates.lat,
-        courier.currentCoordinates.lng,
-      ];
-
-      // Draw route trajectory
-      if (originHospital && destHospital) {
-        const waypoints: [number, number][] = [
-          [originHospital.lat, originHospital.lng],
-          courierPos,
-          [destHospital.lat, destHospital.lng],
-        ];
-
-        // Background luminous shadow for route
-        L.polyline(waypoints, {
-          color: isExcursion ? '#EF4444' : '#0A84FF',
-          weight: 6,
-          opacity: isDark ? 0.25 : 0.15,
-          lineCap: 'round',
-        }).addTo(layerGroup);
-
-        // Animated dashed flow polyline
-        L.polyline(waypoints, {
-          color: isExcursion ? '#FF375F' : '#0071E3',
-          weight: 2.5,
-          className: 'leaflet-route-dash',
-          lineCap: 'round',
-        }).addTo(layerGroup);
+    telemetry.forEach(async (courier) => {
+      const key = `${courier.originFacilityId}_${courier.destinationFacilityId}`;
+      if (roadRoutes[key] || getRoadSnappedRouteSync(courier.originFacilityId, courier.destinationFacilityId)) {
+        return;
       }
 
-      // Courier DivIcon marker
+      const originHospital = hospitals.find((h) => h.id === courier.originFacilityId);
+      const destHospital = hospitals.find((h) => h.id === courier.destinationFacilityId);
+      if (!originHospital || !destHospital) return;
+
+      const pts = await getRoadSnappedRoute(
+        courier.originFacilityId,
+        courier.destinationFacilityId,
+        [originHospital.lat, originHospital.lng],
+        [destHospital.lat, destHospital.lng]
+      );
+
+      if (!isCancelled && pts && pts.length > 0) {
+        setRoadRoutes((prev) => ({ ...prev, [key]: pts }));
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [telemetry, hospitals, roadRoutes]);
+
+  // Helper to render the courier vehicle DivIcon marker
+  const renderCourierMarker = useCallback(
+    (
+      courier: TransitTelemetry,
+      courierPos: [number, number],
+      isExcursion: boolean,
+      isSelected: boolean,
+      layerGroup: L.LayerGroup,
+      map: L.Map
+    ) => {
       const courierHtml = `
         <div class="relative group cursor-pointer" style="transform: translate(-14px, -14px);">
           <!-- Radar Ping -->
@@ -403,13 +408,138 @@ export default function ChennaiLeafletMap({
 
       courierMarker.on('click', () => {
         onSelectCourier(courier);
+        map.flyTo(courierPos, Math.max(map.getZoom(), 13), { duration: 0.6 });
       });
 
       courierMarker.addTo(layerGroup);
-    });
-  }, [telemetry, hospitals, selectedCourier, isDark, onSelectCourier]);
+    },
+    [isDark, onSelectCourier]
+  );
 
-  // 6. Handle zoom changes from parent
+  // 6. Render Active Cold-Chain Courier Vehicles & Turn-by-Turn Road Polylines
+  useEffect(() => {
+    const layerGroup = routesLayerGroupRef.current;
+    const map = mapInstanceRef.current;
+    if (!layerGroup || !map) return;
+
+    layerGroup.clearLayers();
+
+    telemetry.forEach((courier) => {
+      const isExcursion = courier.excursionFlag;
+      const isSelected = selectedCourier?.transferId === courier.transferId;
+
+      const originHospital = hospitals.find((h) => h.id === courier.originFacilityId);
+      const destHospital = hospitals.find((h) => h.id === courier.destinationFacilityId);
+
+      const courierPos: [number, number] = [
+        courier.currentCoordinates.lat,
+        courier.currentCoordinates.lng,
+      ];
+
+      const routeKey = `${courier.originFacilityId}_${courier.destinationFacilityId}`;
+      const fullRoute =
+        roadRoutes[routeKey] ||
+        getRoadSnappedRouteSync(courier.originFacilityId, courier.destinationFacilityId);
+
+      if (originHospital && destHospital && fullRoute && fullRoute.length >= 2) {
+        // Split road-snapped polyline into traversed vs upcoming segments
+        const { snappedCourierPos, completedPath, remainingPath } = splitRouteByCourier(
+          fullRoute,
+          courierPos
+        );
+
+        // A. Highlight halo for selected courier route
+        if (isSelected) {
+          L.polyline(fullRoute, {
+            color: isExcursion ? '#FF375F' : '#38BDF8',
+            weight: 10,
+            opacity: isDark ? 0.38 : 0.28,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(layerGroup);
+        }
+
+        // B. Traversed Road Segment (Origin Hospital -> Courier Location)
+        if (completedPath.length >= 2) {
+          // Luminous background shadow
+          L.polyline(completedPath, {
+            color: isExcursion ? '#EF4444' : '#0A84FF',
+            weight: isSelected ? 6.5 : 5,
+            opacity: isDark ? 0.35 : 0.22,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(layerGroup);
+
+          // Solid core path along actual Chennai road network
+          L.polyline(completedPath, {
+            color: isExcursion ? '#FF375F' : '#0071E3',
+            weight: isSelected ? 3.5 : 2.8,
+            opacity: 0.9,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(layerGroup);
+        }
+
+        // C. Remaining Road Segment (Courier Location -> Destination Hospital)
+        if (remainingPath.length >= 2) {
+          // Soft guidance glow
+          L.polyline(remainingPath, {
+            color: isExcursion ? '#FF453A' : '#5AC8FA',
+            weight: isSelected ? 6 : 4.5,
+            opacity: isDark ? 0.25 : 0.16,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(layerGroup);
+
+          // Animated flowing dash along actual Chennai turn-by-turn road network
+          L.polyline(remainingPath, {
+            color: isExcursion ? '#FF375F' : '#0071E3',
+            weight: isSelected ? 3.2 : 2.5,
+            dashArray: '8, 8',
+            className: 'leaflet-route-dash',
+            lineCap: 'round',
+            lineJoin: 'round',
+          }).addTo(layerGroup);
+        }
+
+        // Render vehicle marker pinned directly on the snapped road point
+        renderCourierMarker(courier, snappedCourierPos, isExcursion, isSelected, layerGroup, map);
+      } else if (originHospital && destHospital) {
+        // Fallback before road network completes loading
+        const fallbackWaypoints: [number, number][] = [
+          [originHospital.lat, originHospital.lng],
+          courierPos,
+          [destHospital.lat, destHospital.lng],
+        ];
+
+        L.polyline(fallbackWaypoints, {
+          color: isExcursion ? '#FF375F' : '#0071E3',
+          weight: 2.5,
+          className: 'leaflet-route-dash',
+          lineCap: 'round',
+        }).addTo(layerGroup);
+
+        renderCourierMarker(courier, courierPos, isExcursion, isSelected, layerGroup, map);
+      }
+    });
+  }, [telemetry, hospitals, selectedCourier, isDark, roadRoutes, renderCourierMarker]);
+
+  // 7. Pan to selected courier when changed by user (smooth Apple camera tracking)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const map = mapInstanceRef.current;
+    if (!map || !selectedCourier) return;
+
+    map.panTo([selectedCourier.currentCoordinates.lat, selectedCourier.currentCoordinates.lng], {
+      animate: true,
+      duration: 0.6,
+    });
+  }, [selectedCourier]);
+
+  // 8. Handle zoom changes from parent pill controls
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
