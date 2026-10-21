@@ -52,7 +52,7 @@ Vitalis transforms this reactive, fragmented approach into a seamlessly coordina
 
 ```text
 vitalis/
-├── webAndMobile/
+├── apps/
 │   ├── web/                              # Next.js Command Center
 │   └── mobile/                           # React Native Courier App (Expo)
 ├── backend/                              # FastAPI & LangChain Ecosystem

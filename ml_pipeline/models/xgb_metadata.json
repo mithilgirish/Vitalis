@@ -1,0 +1,13 @@
+{
+  "features": [
+    "remaining_inventory",
+    "yhat_3d",
+    "hac_score",
+    "trauma_level",
+    "burn_rate_7d"
+  ],
+  "pr_auc": 0.9999999938338422,
+  "recall": 0.9996390994142306,
+  "guardrail_threshold": 0.4,
+  "trained_at": "2026-10-21T01:22:22.664854"
+}

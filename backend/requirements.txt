@@ -1,0 +1,26 @@
+# Vitalis Backend Service Dependencies
+# FastAPI, Pydantic, and ASGI
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+python-dotenv>=1.0.1
+
+# LangChain ReAct Multi-Tool Agent
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-openai>=0.2.0
+
+# Database & PostGIS / PostgreSQL
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.35
+
+# ML Inference & Spatial Geometry Calculations
+xgboost>=2.1.0
+scikit-learn>=1.5.0
+numpy>=1.26.0
+pandas>=2.2.0
+
+# HTTP & Utilities
+httpx>=0.27.0
+requests>=2.32.0
