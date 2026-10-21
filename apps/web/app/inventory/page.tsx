@@ -15,10 +15,10 @@ export default function InventoryPage() {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Metropolitan Biological Inventory & Cold Storage Mesh
+              Regional Hospital Blood & Organ Reserves
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Synchronized IoT telemetry across all Chennai hospital blood banks and organ preservation chambers.
+              Live inventory across all Chennai hospital blood banks and organ preservation units.
             </p>
           </div>
         </div>
@@ -26,11 +26,11 @@ export default function InventoryPage() {
         <div className="flex items-center gap-2 font-mono text-[11px]">
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-medium">
             <Clock className="w-3.5 h-3.5 text-amber-500" />
-            Amber: Expiring &lt; 24h
+            Expiring &lt; 24h
           </span>
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30 font-medium">
             <Thermometer className="w-3.5 h-3.5 text-rose-500" />
-            Red: Thermal Limit Drift
+            Temp Exceeds Limit
           </span>
         </div>
       </div>

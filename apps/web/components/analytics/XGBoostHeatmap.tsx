@@ -47,14 +47,14 @@ export function XGBoostHeatmap() {
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-500" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              XGBoost 72-Hour Stockout Probability Risk Matrix
+              Hospital Blood Shortage Risk Matrix (72 Hours)
             </h3>
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-medium">
-              Guardrail: ≥ 40% Flagged
+              Critical Shortage: ≥ 40% Risk
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Trained on 100k+ clinical episodes. Click any facility-blood group cell to inspect local SHAP explainability weights.
+            Real-time shortage risk by hospital and blood group. Click any cell to inspect clinical demand drivers.
           </p>
         </div>
 
@@ -141,7 +141,7 @@ export function XGBoostHeatmap() {
         </table>
       </div>
 
-      {/* SHAP Feature Contribution Inspector Box */}
+      {/* Clinical Shortage Risk Breakdown */}
       {selectedCell && (
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 animate-in fade-in duration-200 shadow-xs">
           <div className="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -149,10 +149,10 @@ export function XGBoostHeatmap() {
               <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <div>
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                  SHAP Explainability Tree Inspector — {selectedCell.facilityName} ({selectedCell.bloodGroup})
+                  Clinical Shortage Risk Breakdown — {selectedCell.facilityName} ({selectedCell.bloodGroup})
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Current Stock: {selectedCell.currentStock} units • Baseline Demand: {selectedCell.baselineDemand} units / 72h
+                  Current Stock: {selectedCell.currentStock} units • Expected Patient Demand: {selectedCell.baselineDemand} units / 72h
                 </p>
               </div>
             </div>
@@ -165,15 +165,15 @@ export function XGBoostHeatmap() {
                     : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
                 }`}
               >
-                72h Depletion Probability: {(selectedCell.riskProbability * 100).toFixed(1)}%
+                72h Shortage Risk: {(selectedCell.riskProbability * 100).toFixed(0)}%
               </span>
             </div>
           </div>
 
-          {/* SHAP Value Impact Bars */}
+          {/* Primary Demand Drivers */}
           <div className="mt-3 space-y-2">
             <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400 block font-semibold">
-              Feature Weight Contributions to Depletion Risk:
+              Primary Depletion & Demand Drivers:
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {selectedCell.shapValues.map((sv, idx) => {

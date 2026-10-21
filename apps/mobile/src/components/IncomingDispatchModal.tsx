@@ -8,7 +8,6 @@ import {
   Activity,
   AlertTriangle,
 } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { SlideToConfirm } from './SlideToConfirm';
 import { useMission } from '@/context/MissionContext';
 import { VitalisLogo } from './VitalisLogo';
@@ -32,44 +31,48 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
       <View
         style={[
           styles.backdrop,
-          { backgroundColor: isDark ? 'rgba(10, 12, 16, 0.88)' : 'rgba(15, 23, 42, 0.65)' },
+          { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(15, 23, 42, 0.65)' },
         ]}>
         <View
           style={[
             styles.modalCard,
             {
-              backgroundColor: colors.bgCard,
-              borderColor: colors.esiCrimson,
+              backgroundColor: isDark ? 'rgba(28, 29, 35, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
             },
           ]}>
           {/* Header Siren Bar */}
           <View style={[styles.urgentBanner, { backgroundColor: colors.esiCrimson }]}>
-            <ShieldAlert size={18} color="#FFFFFF" strokeWidth={2.5} />
+            <ShieldAlert size={16} color="#FFFFFF" strokeWidth={2.4} />
             <Text style={styles.urgentBannerText}>{urgencyLabel}</Text>
           </View>
 
-          {/* Modal Header Title */}
+          {/* Modal Content */}
           <View style={styles.content}>
             <View style={styles.titleRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <VitalisLogo size="md" showText={false} />
                 <View>
                   <Text style={[styles.calloutText, { color: colors.textMuted }]}>
-                    DISPATCH COMMAND ASSIGNMENT
+                    DISPATCH ASSIGNMENT
                   </Text>
                   <Text style={[styles.mainTitle, { color: colors.textPrimary }]}>
-                    EMERGENCY BLOOD TRANSFER
+                    Emergency Blood Transfer
                   </Text>
                 </View>
               </View>
               <View
                 style={[
                   styles.pulseRadioBadge,
-                  { backgroundColor: colors.esiCrimsonBg },
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(255, 69, 58, 0.16)'
+                      : 'rgba(255, 69, 58, 0.10)',
+                  },
                 ]}>
-                <Activity size={13} color={colors.esiCrimson} />
+                <Activity size={12} color={colors.esiCrimson} strokeWidth={2.4} />
                 <Text style={[styles.pulseRadioText, { color: colors.esiCrimson }]}>
-                  LIVE DISPATCH
+                  LIVE
                 </Text>
               </View>
             </View>
@@ -79,8 +82,8 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
               style={[
                 styles.cargoBox,
                 {
-                  backgroundColor: colors.bgCardElevated,
-                  borderColor: isDark ? 'rgba(225, 29, 72, 0.35)' : 'rgba(225, 29, 72, 0.25)',
+                  backgroundColor: isDark ? 'rgba(20, 21, 25, 0.65)' : 'rgba(242, 242, 247, 0.75)',
+                  borderColor: isDark ? 'rgba(255, 69, 58, 0.28)' : 'rgba(255, 69, 58, 0.20)',
                 },
               ]}>
               <View
@@ -88,15 +91,15 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
                   styles.cargoIconWrapper,
                   { backgroundColor: colors.esiCrimson },
                 ]}>
-                <Package size={22} color="#FFFFFF" />
+                <Package size={20} color="#FFFFFF" strokeWidth={2.2} />
               </View>
               <View style={styles.cargoDetails}>
                 <Text style={[styles.cargoLabel, { color: colors.esiCrimson }]}>
-                  CRITICAL BIOLOGICAL PAYLOAD
+                  CRITICAL PAYLOAD
                 </Text>
                 <Text style={[styles.cargoTitle, { color: colors.textPrimary }]}>{cargo}</Text>
                 <Text style={[styles.cargoSub, { color: colors.textSecondary }]}>
-                  Cold Envelope: 1.0°C – 6.0°C • Anti-Coagulated PRBC
+                  Envelope: 1.0°C – 6.0°C • Anti-Coagulated PRBC
                 </Text>
               </View>
             </View>
@@ -106,8 +109,8 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
               style={[
                 styles.routeBox,
                 {
-                  backgroundColor: colors.bgCardElevated,
-                  borderColor: colors.border,
+                  backgroundColor: isDark ? 'rgba(20, 21, 25, 0.65)' : 'rgba(242, 242, 247, 0.75)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                 },
               ]}>
               {/* Origin */}
@@ -116,7 +119,16 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
                   <View
                     style={[styles.nodeDotOrigin, { backgroundColor: colors.cobaltBlue }]}
                   />
-                  <View style={[styles.nodeLine, { backgroundColor: colors.border }]} />
+                  <View
+                    style={[
+                      styles.nodeLine,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.12)'
+                          : 'rgba(0, 0, 0, 0.10)',
+                      },
+                    ]}
+                  />
                 </View>
                 <View style={styles.nodeTextContainer}>
                   <Text style={[styles.nodeLabel, { color: colors.cobaltBlue }]}>
@@ -158,16 +170,18 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
                 style={[
                   styles.metricCard,
                   {
-                    backgroundColor: colors.bgCardElevated,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(20, 21, 25, 0.65)'
+                      : 'rgba(242, 242, 247, 0.75)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                <Clock size={15} color={colors.cobaltBlue} />
+                <Clock size={14} color={colors.cobaltBlue} strokeWidth={2.4} />
                 <Text style={[styles.metricVal, { color: colors.textPrimary }]}>
                   {etaMinutes} MINS
                 </Text>
                 <Text style={[styles.metricLabel, { color: colors.textMuted }]}>
-                  TRANSIT WINDOW
+                  EST. TRANSIT
                 </Text>
               </View>
 
@@ -175,16 +189,18 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
                 style={[
                   styles.metricCard,
                   {
-                    backgroundColor: colors.bgCardElevated,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(20, 21, 25, 0.65)'
+                      : 'rgba(242, 242, 247, 0.75)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                <MapPin size={15} color={colors.emeraldSafe} />
+                <MapPin size={14} color={colors.emeraldSafe} strokeWidth={2.4} />
                 <Text style={[styles.metricVal, { color: colors.textPrimary }]}>
                   {distanceKm} KM
                 </Text>
                 <Text style={[styles.metricLabel, { color: colors.textMuted }]}>
-                  ROUTE LENGTH
+                  DISTANCE
                 </Text>
               </View>
 
@@ -192,28 +208,30 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
                 style={[
                   styles.metricCard,
                   {
-                    backgroundColor: colors.bgCardElevated,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(20, 21, 25, 0.65)'
+                      : 'rgba(242, 242, 247, 0.75)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                <AlertTriangle size={15} color={colors.amberWarning} />
+                <AlertTriangle size={14} color={colors.amberWarning} strokeWidth={2.4} />
                 <Text style={[styles.metricVal, { color: colors.amberWarning }]}>
                   45 MINS
                 </Text>
                 <Text style={[styles.metricLabel, { color: colors.textMuted }]}>
-                  VIABILITY LIMIT
+                  VIABILITY
                 </Text>
               </View>
             </View>
 
-            {/* SLIDE TO ACCEPT MISSION (56px+ Touch Target) */}
+            {/* SLIDE TO ACCEPT MISSION */}
             <View style={styles.sliderWrapper}>
               <SlideToConfirm
                 label="SLIDE TO ACCEPT MISSION"
                 confirmedLabel="MISSION ACCEPTED • INITIALIZING GPS"
                 onConfirm={onAccept}
                 color={colors.esiCrimson}
-                height={60}
+                height={58}
               />
             </View>
           </View>
@@ -233,32 +251,32 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 480,
-    borderRadius: ERGONOMICS.radiusXl,
-    borderWidth: 1.5,
+    borderRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 14,
   },
   urgentBanner: {
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 7,
   },
   urgentBannerText: {
     color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 12,
-    letterSpacing: 1.2,
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.8,
   },
   content: {
-    padding: 18,
-    gap: 14,
+    padding: 16,
+    gap: 12,
   },
   titleRow: {
     flexDirection: 'row',
@@ -266,40 +284,40 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   calloutText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    fontSize: 8.5,
+    fontWeight: '700',
+    letterSpacing: 0.6,
   },
   mainTitle: {
-    fontSize: 16.5,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
     marginTop: 2,
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   pulseRadioBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 3.5,
+    paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: ERGONOMICS.radiusSm,
+    borderRadius: 999,
     gap: 4,
   },
   pulseRadioText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '800',
   },
   cargoBox: {
-    borderRadius: ERGONOMICS.radiusMd,
-    borderWidth: 1,
-    padding: 12,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 11,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   cargoIconWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -307,89 +325,89 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cargoLabel: {
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   cargoTitle: {
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: 13.5,
+    fontWeight: '800',
     marginTop: 1,
   },
   cargoSub: {
-    fontSize: 10,
+    fontSize: 9.5,
     marginTop: 1,
   },
   routeBox: {
-    borderRadius: ERGONOMICS.radiusMd,
-    borderWidth: 1,
-    padding: 12,
-    gap: 10,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 11,
+    gap: 8,
   },
   routeRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 9,
   },
   nodeIndicator: {
     alignItems: 'center',
-    width: 12,
+    width: 10,
     paddingTop: 3,
   },
   nodeDotOrigin: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   nodeLine: {
     width: 1.5,
-    height: 26,
-    marginVertical: 3,
+    height: 22,
+    marginVertical: 2,
   },
   nodeDotDest: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   nodeTextContainer: {
     flex: 1,
   },
   nodeLabel: {
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   nodeValue: {
-    fontSize: 12.5,
-    fontWeight: '800',
+    fontSize: 11.5,
+    fontWeight: '700',
     marginTop: 1,
   },
   nodeAddress: {
-    fontSize: 9.5,
+    fontSize: 9,
     marginTop: 1,
   },
   metricsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   metricCard: {
     flex: 1,
-    borderRadius: ERGONOMICS.radiusSm,
-    borderWidth: 1,
-    padding: 8,
+    borderRadius: 13,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 7,
     alignItems: 'center',
-    gap: 3,
+    gap: 2.5,
   },
   metricVal: {
     fontFamily: 'monospace',
-    fontWeight: '900',
-    fontSize: 12,
+    fontWeight: '800',
+    fontSize: 11,
   },
   metricLabel: {
-    fontSize: 8,
-    fontWeight: '800',
+    fontSize: 7.5,
+    fontWeight: '700',
   },
   sliderWrapper: {
-    marginTop: 4,
+    marginTop: 2,
   },
 });

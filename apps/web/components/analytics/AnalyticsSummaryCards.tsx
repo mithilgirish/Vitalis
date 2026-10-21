@@ -32,7 +32,7 @@ export function AnalyticsSummaryCards() {
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-blue-600 dark:text-blue-300 font-semibold flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-blue-500" />
-            Autonomous Rebalance Route
+            Recommended Supply Redistribution
           </span>
           <span className="text-[10px] font-mono text-blue-700 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded-md border border-blue-500/30 font-medium">
             Optimal
@@ -48,23 +48,23 @@ export function AnalyticsSummaryCards() {
         </div>
       </div>
 
-      {/* Summary Card 3: Model Health & Accuracy */}
+      {/* Summary Card 3: Clinical Forecast Reliability */}
       <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-[#222329] shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            Ensemble Model Precision
+            Clinical Forecast Reliability
           </span>
           <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-md border border-emerald-500/30 font-medium">
-            AUROC 0.942
+            94.2% Reliability
           </span>
         </div>
         <div className="mt-2.5">
           <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100">
-            Prophet + XGBoost v2.4
+            High Confidence
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Continuous cross-validation against Tamil Nadu Transfusion Registry. Zero false-negative stockout predictions in last 30 days.
+            Calibrated on regional clinical demand & trauma registry data to predict stockouts 72h ahead.
           </p>
         </div>
       </div>

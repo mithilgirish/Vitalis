@@ -2,421 +2,373 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
+  QrCode,
+  Building2,
   Clock,
   Thermometer,
-  QrCode,
-  CheckCircle2,
+  ShieldCheck,
   ChevronRight,
-  Truck,
-  Building2,
-  AlertOctagon,
 } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 
-export const BiologicalViabilityCard: React.FC = () => {
+interface BiologicalViabilityCardProps {
+  onSimulateDispatch?: () => void;
+}
+
+export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = ({
+  onSimulateDispatch,
+}) => {
   const router = useRouter();
   const {
     etaSeconds,
     viabilityLimitSeconds,
-    origin,
     destination,
+    cargo,
     temperature,
     excursionFlag,
     step3,
+    distanceKm,
     colors,
+    isDark,
   } = useMission();
 
-  const formatTime = (totalSeconds: number) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes
-      .toString()
-      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
+  const etaMinutes = Math.max(1, Math.round(etaSeconds / 60));
+  const viabilityHours = Math.floor(viabilityLimitSeconds / 3600);
+  const viabilityMins = Math.floor((viabilityLimitSeconds % 3600) / 60);
 
-  const etaFormatted = formatTime(etaSeconds);
-  const viabilityFormatted = formatTime(viabilityLimitSeconds);
-  const isViabilityCritical = viabilityLimitSeconds < 15 * 60;
+  // Calculate estimated arrival clock time (e.g., 14:43)
+  const now = new Date();
+  const arrivalTime = new Date(now.getTime() + etaSeconds * 1000);
+  const arrivalFormatted = arrivalTime.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
   return (
     <View
       style={[
-        styles.card,
+        styles.sheet,
         {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.border,
+          backgroundColor: isDark ? 'rgba(24, 25, 30, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+          borderTopColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
         },
       ]}>
-      {/* Top Handle bar */}
-      <View style={[styles.handleBar, { backgroundColor: colors.borderActive }]} />
-
-      {/* Viability Countdown Monospace Header */}
+      {/* Apple Drag Handle Pill */}
       <View
         style={[
-          styles.viabilityRow,
+          styles.dragHandle,
           {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: colors.border,
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)',
           },
-        ]}>
-        <View style={styles.timerGroup}>
-          <View style={styles.timerHeader}>
-            <Clock size={14} color={colors.cobaltBlue} />
-            <Text style={[styles.timerTitle, { color: colors.cobaltBlue }]}>TRANSIT ETA</Text>
+        ]}
+      />
+
+      {/* TOP ROW: Apple Maps Hero ETA & Live Cold Chain Status */}
+      <View style={styles.heroRow}>
+        <View style={styles.etaGroup}>
+          <View style={styles.etaNumberRow}>
+            <Text style={[styles.etaValue, { color: colors.cobaltBlue }]}>{etaMinutes}</Text>
+            <Text style={[styles.etaUnit, { color: colors.cobaltBlue }]}>min</Text>
           </View>
-          <Text style={[styles.timerMonospace, { color: colors.textPrimary }]}>
-            {etaFormatted}
+          <Text style={[styles.etaSub, { color: colors.textSecondary }]}>
+            {distanceKm.toFixed(1)} km • {arrivalFormatted} arrival
           </Text>
         </View>
 
-        <View style={[styles.timerDivider, { backgroundColor: colors.border }]} />
-
-        <View style={styles.timerGroup}>
-          <View style={styles.timerHeader}>
-            <AlertOctagon
-              size={14}
-              color={isViabilityCritical ? colors.redAlarm : colors.amberWarning}
-            />
-            <Text
-              style={[
-                styles.timerTitle,
-                { color: isViabilityCritical ? colors.redAlarm : colors.amberWarning },
-              ]}>
-              VIABILITY LIMIT
-            </Text>
-          </View>
-          <Text
-            style={[
-              styles.timerMonospace,
-              { color: isViabilityCritical ? colors.redAlarm : colors.amberWarning },
-            ]}>
-            {viabilityFormatted}
-          </Text>
-        </View>
-      </View>
-
-      {/* Route Stepper: Pickup Facility -> In Transit -> Destination Handoff */}
-      <View
-        style={[
-          styles.stepperContainer,
-          {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: colors.border,
-          },
-        ]}>
-        {/* Step 1: Pickup Facility */}
-        <View style={styles.stepItem}>
-          <View
-            style={[
-              styles.stepIconBubble,
-              { backgroundColor: colors.emeraldSafe },
-            ]}>
-            <CheckCircle2 size={15} color="#FFFFFF" strokeWidth={3} />
-          </View>
-          <View style={styles.stepContent}>
-            <Text style={[styles.stepHeading, { color: colors.emeraldSafe }]}>PICKUP</Text>
-            <Text style={[styles.stepSub, { color: colors.textSecondary }]} numberOfLines={1}>
-              {origin}
-            </Text>
-            <Text style={[styles.stepTime, { color: colors.textMuted }]}>14:35 IST • Sealed</Text>
-          </View>
-        </View>
-
-        {/* Connector Line 1 */}
-        <View style={[styles.connectorLine, { backgroundColor: colors.cobaltBlue }]} />
-
-        {/* Step 2: In Transit */}
-        <View style={styles.stepItem}>
-          <View
-            style={[
-              styles.stepIconBubble,
-              { backgroundColor: colors.cobaltBlue },
-            ]}>
-            <Truck size={15} color="#FFFFFF" />
-          </View>
-          <View style={styles.stepContent}>
-            <View style={styles.activeStepTag}>
-              <Text style={[styles.stepHeading, { color: colors.cobaltBlue }]}>EN ROUTE</Text>
-              <View style={[styles.activePulseDot, { backgroundColor: colors.cobaltBlue }]} />
-            </View>
-            <Text style={[styles.stepSub, { color: colors.textSecondary }]}>Anna Salai Rd</Text>
-            <Text style={[styles.stepTime, { color: colors.textMuted }]}>68 km/h • GPS Sync</Text>
-          </View>
-        </View>
-
-        {/* Connector Line 2 */}
-        <View
-          style={[
-            styles.connectorLine,
-            { backgroundColor: step3.completed ? colors.emeraldSafe : colors.border },
-          ]}
-        />
-
-        {/* Step 3: Destination Handoff */}
-        <View style={styles.stepItem}>
-          <View
-            style={[
-              styles.stepIconBubble,
-              {
-                backgroundColor: step3.completed ? colors.emeraldSafe : colors.bgSurface,
-                borderColor: colors.border,
-                borderWidth: step3.completed ? 0 : 1,
-              },
-            ]}>
-            {step3.completed ? (
-              <CheckCircle2 size={15} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <Building2 size={15} color={colors.textMuted} />
-            )}
-          </View>
-          <View style={styles.stepContent}>
-            <Text
-              style={[
-                styles.stepHeading,
-                { color: step3.completed ? colors.emeraldSafe : colors.textMuted },
-              ]}>
-              HANDOFF
-            </Text>
-            <Text style={[styles.stepSub, { color: colors.textSecondary }]} numberOfLines={1}>
-              {destination}
-            </Text>
-            <Text style={[styles.stepTime, { color: colors.textMuted }]}>
-              {step3.completed ? 'Delivered' : 'Awaiting Scan'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* QUICK-ACTION BUTTONS (Minimum 56px height) */}
-      <View style={styles.actionsRow}>
-        {/* Button 1: Cold-Chain Telemetry */}
+        {/* Cold-Chain Status Pill */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open Cold-Chain Telemetry"
           onPress={() => router.push('/telemetry')}
           style={({ pressed }) => [
-            styles.actionButton,
-            {
-              backgroundColor: colors.bgCardElevated,
-              borderColor: excursionFlag ? colors.redAlarm : colors.border,
-            },
-            excursionFlag && { backgroundColor: colors.redAlarmBg },
-            pressed && styles.actionButtonPressed,
+            styles.tempStatusPill,
+            excursionFlag
+              ? {
+                  backgroundColor: colors.redAlarm,
+                  borderColor: colors.redAlarm,
+                }
+              : {
+                  backgroundColor: isDark
+                    ? 'rgba(52, 199, 89, 0.14)'
+                    : 'rgba(52, 199, 89, 0.10)',
+                  borderColor: isDark
+                    ? 'rgba(52, 199, 89, 0.32)'
+                    : 'rgba(52, 199, 89, 0.22)',
+                },
+            pressed && { opacity: 0.8 },
           ]}>
-          <View
-            style={[
-              styles.actionIconContainer,
-              {
-                backgroundColor: excursionFlag ? colors.redAlarmBg : colors.emeraldSafeBg,
-              },
-            ]}>
-            <Thermometer
-              size={20}
-              color={excursionFlag ? colors.redAlarm : colors.emeraldSafe}
-            />
-          </View>
-          <View style={styles.actionDetails}>
-            <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>COLD-CHAIN</Text>
+          <Thermometer
+            size={14}
+            color={excursionFlag ? '#FFFFFF' : colors.emeraldSafe}
+            strokeWidth={2.4}
+          />
+          <View>
             <Text
               style={[
-                styles.actionStatus,
-                { color: excursionFlag ? colors.redAlarm : colors.emeraldSafe },
+                styles.tempStatusText,
+                { color: excursionFlag ? '#FFFFFF' : colors.emeraldSafe },
               ]}>
-              {excursionFlag ? 'ALARM: 7.4°C' : `${temperature.toFixed(1)}°C SAFE`}
+              {temperature.toFixed(1)}°C {excursionFlag ? 'ALARM' : 'SAFE'}
+            </Text>
+            <Text
+              style={[
+                styles.tempEnvelopeSub,
+                { color: excursionFlag ? 'rgba(255,255,255,0.85)' : colors.textMuted },
+              ]}>
+              1.0°C – 6.0°C Target
             </Text>
           </View>
-          <ChevronRight size={17} color={colors.textMuted} />
-        </Pressable>
-
-        {/* Button 2: Scan Chain-of-Custody */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open Chain of Custody Scanner"
-          onPress={() => router.push('/scanner')}
-          style={({ pressed }) => [
-            styles.actionButton,
-            {
-              backgroundColor: colors.bgCardElevated,
-              borderColor: colors.cobaltBlue,
-            },
-            pressed && styles.actionButtonPressed,
-          ]}>
-          <View
-            style={[
-              styles.actionIconContainer,
-              { backgroundColor: colors.cobaltBlueBg },
-            ]}>
-            <QrCode size={20} color={colors.cobaltBlue} />
-          </View>
-          <View style={styles.actionDetails}>
-            <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>CUSTODY SCAN</Text>
-            <Text style={[styles.actionStatusScanner, { color: colors.cobaltBlue }]}>
-              {step3.completed ? 'COMPLETED ✓' : 'STEP 3: RECIPIENT'}
-            </Text>
-          </View>
-          <ChevronRight size={17} color={colors.textMuted} />
         </Pressable>
       </View>
+
+      {/* CLINICAL DESTINATION & PAYLOAD CARD */}
+      <View
+        style={[
+          styles.clinicalCard,
+          {
+            backgroundColor: isDark ? 'rgba(32, 33, 40, 0.75)' : 'rgba(242, 242, 247, 0.85)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          },
+        ]}>
+        {/* Hospital Destination */}
+        <View style={styles.destinationRow}>
+          <View style={[styles.destIconWrapper, { backgroundColor: colors.cobaltBlueBg }]}>
+            <Building2 size={16} color={colors.cobaltBlue} strokeWidth={2.2} />
+          </View>
+          <View style={styles.destTexts}>
+            <Text style={[styles.destHospital, { color: colors.textPrimary }]} numberOfLines={1}>
+              {destination}
+            </Text>
+            <Text style={[styles.destSub, { color: colors.textSecondary }]}>
+              Emergency Trauma Bay 2 • Priority Intake
+            </Text>
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View
+          style={[
+            styles.cardDivider,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
+          ]}
+        />
+
+        {/* Payload & Viability Info */}
+        <View style={styles.payloadRow}>
+          <View style={styles.payloadItem}>
+            <ShieldCheck size={13} color={colors.emeraldSafe} strokeWidth={2.4} />
+            <Text style={[styles.payloadText, { color: colors.textPrimary }]}>
+              {cargo}
+            </Text>
+          </View>
+
+          <View style={styles.viabilityItem}>
+            <Clock size={13} color={colors.amberWarning} strokeWidth={2.2} />
+            <Text style={[styles.viabilityText, { color: colors.textSecondary }]}>
+              Viability: <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{viabilityHours}h {viabilityMins}m</Text>
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* PRIMARY HEALTHCARE ACTION BUTTON */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Proceed to Custody Verification"
+        onPress={() => router.push('/scanner')}
+        style={({ pressed }) => [
+          styles.primaryCtaButton,
+          {
+            backgroundColor: step3.completed ? colors.emeraldSafe : colors.cobaltBlue,
+          },
+          pressed && styles.primaryCtaPressed,
+        ]}>
+        <QrCode size={19} color="#FFFFFF" strokeWidth={2.4} />
+        <Text style={styles.primaryCtaText}>
+          {step3.completed
+            ? 'Custody Transfer Complete ✓'
+            : 'Arrive & Scan Recipient Badge'}
+        </Text>
+        <ChevronRight size={17} color="#FFFFFF" strokeWidth={2.4} />
+      </Pressable>
+
+      {/* Discreet Demo Push Trigger */}
+      {onSimulateDispatch && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Test Incoming Dispatch Alert"
+          onPress={onSimulateDispatch}
+          style={({ pressed }) => [
+            styles.demoTrigger,
+            pressed && { opacity: 0.6 },
+          ]}>
+          <Text style={[styles.demoTriggerText, { color: colors.textMuted }]}>
+            Simulate Incoming Push Dispatch
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+  sheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
     gap: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 10,
   },
-  handleBar: {
+  dragHandle: {
     width: 36,
-    height: 5,
-    borderRadius: 2.5,
+    height: 4.5,
+    borderRadius: 999,
     alignSelf: 'center',
-    marginBottom: 4,
-    opacity: 0.6,
+    marginBottom: 2,
   },
-  viabilityRow: {
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  timerGroup: {
-    alignItems: 'center',
-    gap: 3,
-  },
-  timerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  timerTitle: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  timerMonospace: {
-    fontFamily: 'monospace',
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  timerDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 34,
-  },
-  stepperContainer: {
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+  heroRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  stepItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 5,
-  },
-  stepIconBubble: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  stepContent: {
-    alignItems: 'center',
+  etaGroup: {
+    gap: 1,
   },
-  stepHeading: {
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  activeStepTag: {
+  etaNumberRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: 4,
   },
-  activePulseDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+  etaValue: {
+    fontSize: 34,
+    fontWeight: '800',
+    letterSpacing: -1,
+    lineHeight: 38,
   },
-  stepSub: {
-    fontSize: 8.5,
+  etaUnit: {
+    fontSize: 18,
     fontWeight: '600',
+    letterSpacing: -0.5,
+  },
+  etaSub: {
+    fontSize: 12,
+    fontWeight: '500',
     marginTop: 1,
-    textAlign: 'center',
   },
-  stepTime: {
-    fontSize: 7.5,
-    fontFamily: 'monospace',
-    marginTop: 1,
-  },
-  connectorLine: {
-    width: 22,
-    height: 1.5,
-    marginTop: 13,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  actionButton: {
-    flex: 1,
-    height: ERGONOMICS.minTouchTarget, // Minimum 56px touch target
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: StyleSheet.hairlineWidth,
+  tempStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+  },
+  tempStatusText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+  },
+  tempEnvelopeSub: {
+    fontSize: 8.5,
+    fontWeight: '500',
+  },
+  clinicalCard: {
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    gap: 8,
+  },
+  destinationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
   },
-  actionButtonPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  actionIconContainer: {
-    width: 36,
-    height: 36,
+  destIconWrapper: {
+    width: 32,
+    height: 32,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionDetails: {
+  destTexts: {
     flex: 1,
   },
-  actionTitle: {
+  destHospital: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  destSub: {
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+  cardDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
+  },
+  payloadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  payloadItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  payloadText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  viabilityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  viabilityText: {
+    fontSize: 10.5,
+  },
+  primaryCtaButton: {
+    height: 52,
+    borderRadius: 999, // Apple floating pill button
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    gap: 8,
+    shadowColor: '#0A84FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  primaryCtaPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
+  },
+  primaryCtaText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  demoTrigger: {
+    alignSelf: 'center',
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  demoTriggerText: {
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  actionStatus: {
-    fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  actionStatusScanner: {
-    fontSize: 9,
-    fontFamily: 'monospace',
-    fontWeight: '800',
-    marginTop: 2,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
 });

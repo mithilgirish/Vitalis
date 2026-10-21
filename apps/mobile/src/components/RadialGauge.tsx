@@ -3,8 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, {
   Path,
   Circle,
-  Line,
-  G,
   Defs,
   LinearGradient,
   Stop,
@@ -19,14 +17,13 @@ export const RadialGauge: React.FC = () => {
     safeEnvelopeMin,
     safeEnvelopeMax,
     cargoType,
-    bleDeviceId,
-    bleRssi,
     colors,
     isDark,
   } = useMission();
 
-  const size = 250;
-  const strokeWidth = 14;
+  // Compact Apple Health Ring dimensions
+  const size = 116;
+  const strokeWidth = 10;
   const radius = (size - strokeWidth) / 2;
   const center = size / 2;
 
@@ -37,8 +34,8 @@ export const RadialGauge: React.FC = () => {
   const clampTemp = Math.min(Math.max(temperature, rangeMin), rangeMax);
   const tempRatio = (clampTemp - rangeMin) / totalRange;
 
-  const startAngle = -220; // in degrees
-  const sweepAngle = 260; // in degrees
+  const startAngle = -210; // in degrees
+  const sweepAngle = 240; // in degrees
   const currentAngle = startAngle + tempRatio * sweepAngle;
 
   const polarToCartesian = (cx: number, cy: number, r: number, angleInDegrees: number) => {
@@ -56,7 +53,7 @@ export const RadialGauge: React.FC = () => {
     return ['M', pStart.x, pStart.y, 'A', r, r, 0, largeArcFlag, 0, pEnd.x, pEnd.y].join(' ');
   };
 
-  // Safe envelope angles
+  // Safe envelope arc segment
   const safeStartRatio = Math.max(0, (safeEnvelopeMin - rangeMin) / totalRange);
   const safeEndRatio = Math.min(1, (safeEnvelopeMax - rangeMin) / totalRange);
   const safeStartAngle = startAngle + safeStartRatio * sweepAngle;
@@ -65,22 +62,84 @@ export const RadialGauge: React.FC = () => {
   const bgArc = describeArc(center, center, radius, startAngle, startAngle + sweepAngle);
   const safeArc = describeArc(center, center, radius, safeStartAngle, safeEndAngle);
   const activeArc = describeArc(center, center, radius, startAngle, Math.max(startAngle + 0.1, currentAngle));
-  const needleCoords = polarToCartesian(center, center, radius - 2, currentAngle);
+  const needleCoords = polarToCartesian(center, center, radius, currentAngle);
 
   return (
-    <View style={styles.container}>
-      {/* SVG Radial Gauge Visualizer */}
-      <View style={styles.gaugeWrapper}>
+    <View style={styles.cardContainer}>
+      {/* LEFT COLUMN: Apple Health Vitals Readout */}
+      <View style={styles.leftCol}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+          CURRENT CORE TEMPERATURE
+        </Text>
+
+        <View style={styles.tempNumberRow}>
+          <Text
+            style={[
+              styles.tempNumber,
+              { color: excursionFlag ? colors.redAlarm : colors.textPrimary },
+            ]}>
+            {temperature.toFixed(1)}
+          </Text>
+          <Text style={[styles.tempUnit, { color: colors.textSecondary }]}>°C</Text>
+        </View>
+
+        {/* Clinical Status Pill */}
+        <View
+          style={[
+            styles.statusPill,
+            excursionFlag
+              ? {
+                  backgroundColor: isDark
+                    ? 'rgba(255, 69, 58, 0.18)'
+                    : 'rgba(255, 69, 58, 0.12)',
+                  borderColor: colors.redAlarm,
+                }
+              : {
+                  backgroundColor: isDark
+                    ? 'rgba(52, 199, 89, 0.14)'
+                    : 'rgba(52, 199, 89, 0.10)',
+                  borderColor: isDark
+                    ? 'rgba(52, 199, 89, 0.32)'
+                    : 'rgba(52, 199, 89, 0.22)',
+                },
+          ]}>
+          {excursionFlag ? (
+            <AlertTriangle size={12} color={colors.redAlarm} strokeWidth={2.4} />
+          ) : (
+            <ShieldCheck size={12} color={colors.emeraldSafe} strokeWidth={2.4} />
+          )}
+          <Text
+            style={[
+              styles.statusPillText,
+              { color: excursionFlag ? colors.redAlarm : colors.emeraldSafe },
+            ]}>
+            {excursionFlag
+              ? 'Excursion (Threshold: ≤ 6.0°C)'
+              : `Safe Envelope (${safeEnvelopeMin.toFixed(0)}° – ${safeEnvelopeMax.toFixed(0)}°C)`}
+          </Text>
+        </View>
+
+        {/* Hardware Status Note */}
+        <View style={styles.sensorRow}>
+          <Bluetooth size={11} color={colors.cobaltBlue} strokeWidth={2.4} />
+          <Text style={[styles.sensorText, { color: colors.textMuted }]}>
+            Container Probe #9842 • BLE Active
+          </Text>
+        </View>
+      </View>
+
+      {/* RIGHT COLUMN: Apple Watch Style Vitals Ring */}
+      <View style={styles.ringWrapper}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           <Defs>
-            <LinearGradient id="activeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <LinearGradient id="appleRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <Stop
                 offset="0%"
-                stopColor={excursionFlag ? colors.redAlarm : colors.cobaltBlueLight}
+                stopColor={excursionFlag ? '#FF453A' : '#0A84FF'}
               />
               <Stop
                 offset="100%"
-                stopColor={excursionFlag ? '#991B1B' : colors.emeraldSafe}
+                stopColor={excursionFlag ? '#DC2626' : '#34C759'}
               />
             </LinearGradient>
           </Defs>
@@ -89,144 +148,48 @@ export const RadialGauge: React.FC = () => {
           <Path
             d={bgArc}
             fill="none"
-            stroke={isDark ? '#20242E' : '#E2E8F0'}
+            stroke={isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
 
-          {/* Safe Zone Highlight Arc */}
+          {/* Safe Envelope Highlight Band */}
           <Path
             d={safeArc}
             fill="none"
-            stroke={colors.emeraldSafeGlow}
-            strokeWidth={strokeWidth + 4}
+            stroke={isDark ? 'rgba(52, 199, 89, 0.28)' : 'rgba(52, 199, 89, 0.20)'}
+            strokeWidth={strokeWidth + 2}
             strokeLinecap="round"
           />
 
-          {/* Active Temperature Level Arc */}
+          {/* Active Level Arc */}
           <Path
             d={activeArc}
             fill="none"
-            stroke="url(#activeGradient)"
+            stroke="url(#appleRingGradient)"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
 
-          {/* Dial Scale Tick Marks */}
-          {Array.from({ length: 9 }).map((_, i) => {
-            const tickRatio = i / 8;
-            const tickAngle = startAngle + tickRatio * sweepAngle;
-            const p1 = polarToCartesian(center, center, radius - 14, tickAngle);
-            const p2 = polarToCartesian(center, center, radius - 20, tickAngle);
-            return (
-              <G key={`tick-${i}`}>
-                <Line
-                  x1={p1.x}
-                  y1={p1.y}
-                  x2={p2.x}
-                  y2={p2.y}
-                  stroke={colors.borderActive}
-                  strokeWidth={i % 2 === 0 ? 1.5 : 1}
-                />
-              </G>
-            );
-          })}
-
-          {/* Needle / Pointer Marker on Ring */}
+          {/* Indicator Dot */}
           <Circle
             cx={needleCoords.x}
             cy={needleCoords.y}
-            r={8.5}
+            r={6.5}
             fill="#FFFFFF"
             stroke={excursionFlag ? colors.redAlarm : colors.emeraldSafe}
             strokeWidth={2.5}
           />
         </Svg>
 
-        {/* Centerpiece Monospace Readout */}
-        <View style={styles.centerReadout}>
-          <Text style={[styles.sensorBadgeLabel, { color: colors.textMuted }]}>
-            COLD-BOX SENSOR
-          </Text>
+        {/* Center Mini Value inside Ring */}
+        <View style={styles.ringCenterText}>
           <Text
             style={[
-              styles.tempMonospace,
+              styles.centerMiniTemp,
               { color: excursionFlag ? colors.redAlarm : colors.textPrimary },
             ]}>
-            {temperature.toFixed(1)}
-            <Text style={[styles.tempUnit, { color: colors.textMuted }]}>°C</Text>
-          </Text>
-
-          {/* Status Label */}
-          <View
-            style={[
-              styles.envelopePill,
-              excursionFlag
-                ? { backgroundColor: colors.redAlarm, borderColor: colors.redAlarm }
-                : { backgroundColor: colors.emeraldSafeBg, borderColor: colors.emeraldSafe },
-            ]}>
-            {excursionFlag ? (
-              <AlertTriangle size={12} color="#FFFFFF" />
-            ) : (
-              <ShieldCheck size={12} color={colors.emeraldSafe} />
-            )}
-            <Text
-              style={[
-                styles.envelopePillText,
-                { color: excursionFlag ? '#FFFFFF' : colors.emeraldSafe },
-              ]}>
-              {excursionFlag ? 'THERMAL EXCURSION' : 'SAFE ENVELOPE'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Dynamic Safe-Zone Indicator Bar */}
-      <View
-        style={[
-          styles.envelopeInfoCard,
-          {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: colors.border,
-          },
-        ]}>
-        <View style={styles.envelopeHeader}>
-          <Text style={[styles.envelopeLabel, { color: colors.textMuted }]}>
-            TARGET THERMAL ENVELOPE
-          </Text>
-          <Text
-            style={[
-              styles.cargoTypeTag,
-              {
-                color: colors.cobaltBlue,
-                backgroundColor: colors.cobaltBlueBg,
-              },
-            ]}>
-            {cargoType}
-          </Text>
-        </View>
-        <Text style={[styles.envelopeRangeText, { color: colors.textPrimary }]}>
-          {safeEnvelopeMin.toFixed(1)}°C – {safeEnvelopeMax.toFixed(1)}°C
-          <Text style={[styles.envelopeSubtext, { color: colors.textSecondary }]}>
-            {' '}({cargoType === 'PRBC' ? 'Packed Red Cells' : 'Platelets'})
-          </Text>
-        </Text>
-
-        {/* Hardware Telemetry Bar */}
-        <View style={[styles.hwInfoRow, { borderTopColor: colors.border }]}>
-          <View style={styles.hwInfoItem}>
-            <Bluetooth size={12} color={colors.cobaltBlue} />
-            <Text style={[styles.hwInfoText, { color: colors.textSecondary }]}>
-              {bleDeviceId}
-            </Text>
-          </View>
-          <Text style={[styles.hwInfoDot, { color: colors.textMuted }]}>•</Text>
-          <Text style={[styles.hwInfoText, { color: colors.textSecondary }]}>
-            RSSI: {bleRssi} dBm
-          </Text>
-          <Text style={[styles.hwInfoDot, { color: colors.textMuted }]}>•</Text>
-          <Text style={[styles.hwInfoText, { color: colors.textSecondary }]}>
-            NIST Traceable
+            {temperature.toFixed(1)}°
           </Text>
         </View>
       </View>
@@ -235,110 +198,79 @@ export const RadialGauge: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  cardContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
     paddingVertical: 4,
+    paddingHorizontal: 2,
+    gap: 12,
   },
-  gaugeWrapper: {
-    width: 250,
-    height: 250,
+  leftCol: {
+    flex: 1,
+    gap: 4,
+  },
+  eyebrow: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  tempNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  tempNumber: {
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -1.5,
+    lineHeight: 44,
+  },
+  tempUnit: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  statusPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    gap: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 2,
+  },
+  statusPillText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  sensorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 4,
+  },
+  sensorText: {
+    fontSize: 9.5,
+    fontWeight: '500',
+  },
+  ringWrapper: {
+    width: 116,
+    height: 116,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  centerReadout: {
+  ringCenterText: {
     position: 'absolute',
-    top: 45,
-    bottom: 25,
-    left: 20,
-    right: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
   },
-  sensorBadgeLabel: {
-    fontSize: 9.5,
+  centerMiniTemp: {
+    fontSize: 13,
+    fontFamily: 'monospace',
     fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-  tempMonospace: {
-    fontFamily: 'monospace',
-    fontSize: 46,
-    fontWeight: '900',
-    letterSpacing: -1.5,
-  },
-  tempUnit: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  envelopePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    gap: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  envelopePillText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  envelopeInfoCard: {
-    width: '100%',
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
-    marginTop: 6,
-    gap: 6,
-  },
-  envelopeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  envelopeLabel: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  cargoTypeTag: {
-    paddingVertical: 2.5,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    fontSize: 9.5,
-    fontWeight: '900',
-    fontFamily: 'monospace',
-  },
-  envelopeRangeText: {
-    fontFamily: 'monospace',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  envelopeSubtext: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  hwInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  hwInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  hwInfoText: {
-    fontSize: 9.5,
-    fontFamily: 'monospace',
-  },
-  hwInfoDot: {
-    fontSize: 10,
   },
 });

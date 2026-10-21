@@ -15,33 +15,32 @@ export const BottomCockpitNav: React.FC = () => {
   const isScannerActive = pathname === '/scanner';
 
   return (
-    <View
-      style={[
-        styles.outerContainer,
-        {
-          backgroundColor: colors.bg,
-          borderTopColor: colors.border,
-        },
-      ]}>
-      <View style={styles.navBar}>
+    <View style={styles.dockWrapper}>
+      <View
+        style={[
+          styles.glassDock,
+          {
+            backgroundColor: isDark ? 'rgba(28, 29, 35, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+          },
+        ]}>
         {/* TAB 1: Mission Navigation */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Mission Navigation Tab"
           onPress={() => router.push('/')}
           style={({ pressed }) => [
-            styles.tabButton,
-            {
-              backgroundColor: isMissionActive ? colors.bgCardElevated : colors.bgCard,
-              borderColor: isMissionActive ? colors.cobaltBlue : colors.border,
+            styles.tabItem,
+            isMissionActive && {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
             },
-            pressed && styles.tabButtonPressed,
+            pressed && styles.tabPressed,
           ]}>
           <View style={styles.iconContainer}>
             <Navigation
-              size={21}
+              size={20}
               color={isMissionActive ? colors.cobaltBlue : colors.textMuted}
-              strokeWidth={isMissionActive ? 2.5 : 2}
+              strokeWidth={isMissionActive ? 2.4 : 1.9}
             />
             {isMissionActive && (
               <View
@@ -55,9 +54,12 @@ export const BottomCockpitNav: React.FC = () => {
           <Text
             style={[
               styles.tabLabel,
-              { color: isMissionActive ? colors.textPrimary : colors.textMuted },
+              {
+                color: isMissionActive ? colors.cobaltBlue : colors.textMuted,
+                fontWeight: isMissionActive ? '700' : '500',
+              },
             ]}>
-            MISSION
+            Mission
           </Text>
         </Pressable>
 
@@ -67,26 +69,24 @@ export const BottomCockpitNav: React.FC = () => {
           accessibilityLabel="Cold-Chain Telemetry Tab"
           onPress={() => router.push('/telemetry')}
           style={({ pressed }) => [
-            styles.tabButton,
-            {
-              backgroundColor: isTelemetryActive ? colors.bgCardElevated : colors.bgCard,
-              borderColor: excursionFlag
-                ? colors.redAlarm
-                : isTelemetryActive
-                ? colors.emeraldSafe
-                : colors.border,
+            styles.tabItem,
+            isTelemetryActive && {
+              backgroundColor: excursionFlag
+                ? colors.redAlarmBg
+                : isDark
+                ? 'rgba(255, 255, 255, 0.10)'
+                : 'rgba(52, 199, 89, 0.08)',
             },
-            excursionFlag && { backgroundColor: colors.redAlarmBg },
-            pressed && styles.tabButtonPressed,
+            pressed && styles.tabPressed,
           ]}>
           <View style={styles.iconContainer}>
             {excursionFlag ? (
-              <AlertTriangle size={21} color={colors.redAlarm} strokeWidth={2.5} />
+              <AlertTriangle size={20} color={colors.redAlarm} strokeWidth={2.4} />
             ) : (
               <Thermometer
-                size={21}
+                size={20}
                 color={isTelemetryActive ? colors.emeraldSafe : colors.textMuted}
-                strokeWidth={isTelemetryActive ? 2.5 : 2}
+                strokeWidth={isTelemetryActive ? 2.4 : 1.9}
               />
             )}
             {/* Live temp badge */}
@@ -95,7 +95,11 @@ export const BottomCockpitNav: React.FC = () => {
                 styles.miniBadge,
                 excursionFlag
                   ? { backgroundColor: colors.redAlarm }
-                  : { backgroundColor: colors.emeraldSafeBg },
+                  : {
+                      backgroundColor: isDark
+                        ? 'rgba(52, 199, 89, 0.22)'
+                        : 'rgba(52, 199, 89, 0.14)',
+                    },
               ]}>
               <Text
                 style={[
@@ -113,11 +117,12 @@ export const BottomCockpitNav: React.FC = () => {
                 color: excursionFlag
                   ? colors.redAlarm
                   : isTelemetryActive
-                  ? colors.textPrimary
+                  ? colors.emeraldSafe
                   : colors.textMuted,
+                fontWeight: isTelemetryActive ? '700' : '500',
               },
             ]}>
-            COLD-CHAIN
+            Telemetry
           </Text>
         </Pressable>
 
@@ -127,25 +132,24 @@ export const BottomCockpitNav: React.FC = () => {
           accessibilityLabel="Chain-of-Custody Scanner Tab"
           onPress={() => router.push('/scanner')}
           style={({ pressed }) => [
-            styles.tabButton,
-            {
-              backgroundColor: isScannerActive ? colors.bgCardElevated : colors.bgCard,
-              borderColor: isScannerActive ? colors.cobaltBlue : colors.border,
+            styles.tabItem,
+            isScannerActive && {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
             },
-            pressed && styles.tabButtonPressed,
+            pressed && styles.tabPressed,
           ]}>
           <View style={styles.iconContainer}>
             <QrCode
-              size={21}
+              size={20}
               color={isScannerActive ? colors.cobaltBlue : colors.textMuted}
-              strokeWidth={isScannerActive ? 2.5 : 2}
+              strokeWidth={isScannerActive ? 2.4 : 1.9}
             />
             <View
               style={[
                 styles.stepCounterBadge,
                 step3.completed
                   ? { backgroundColor: colors.emeraldSafe }
-                  : { backgroundColor: colors.cobaltBlueDark },
+                  : { backgroundColor: colors.cobaltBlue },
               ]}>
               <Text style={styles.stepCounterText}>
                 {step3.completed ? '✓' : '2/3'}
@@ -155,9 +159,12 @@ export const BottomCockpitNav: React.FC = () => {
           <Text
             style={[
               styles.tabLabel,
-              { color: isScannerActive ? colors.textPrimary : colors.textMuted },
+              {
+                color: isScannerActive ? colors.cobaltBlue : colors.textMuted,
+                fontWeight: isScannerActive ? '700' : '500',
+              },
             ]}>
-            CUSTODY
+            Custody
           </Text>
         </Pressable>
       </View>
@@ -166,30 +173,37 @@ export const BottomCockpitNav: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  outerContainer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
+  dockWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: 6,
+    paddingBottom: 14,
   },
-  navBar: {
+  glassDock: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    borderRadius: 999, // Apple floating pill dock
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 10,
   },
-  tabButton: {
+  tabItem: {
     flex: 1,
-    height: ERGONOMICS.minTouchTarget, // Minimum 56px touch target
-    borderRadius: ERGONOMICS.radiusXl, // Rounded pill shape (Apple Floating Dock)
+    height: 52,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
-  tabButtonPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.97 }],
+  tabPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.96 }],
   },
   iconContainer: {
     position: 'relative',
@@ -198,43 +212,42 @@ const styles = StyleSheet.create({
   },
   activeGlowDot: {
     position: 'absolute',
-    top: -4,
-    right: -8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    top: -3,
+    right: -6,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
   miniBadge: {
     position: 'absolute',
-    top: -8,
+    top: -6,
     right: -24,
     paddingHorizontal: 5,
-    paddingVertical: 1.5,
+    paddingVertical: 1,
     borderRadius: 999,
   },
   miniBadgeText: {
     fontSize: 9,
     fontFamily: 'monospace',
-    fontWeight: '800',
+    fontWeight: '700',
   },
   stepCounterBadge: {
     position: 'absolute',
-    top: -8,
+    top: -6,
     right: -18,
     paddingHorizontal: 5,
-    paddingVertical: 1.5,
+    paddingVertical: 1,
     borderRadius: 999,
   },
   stepCounterText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 8.5,
     fontFamily: 'monospace',
     fontWeight: '800',
   },
   tabLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginTop: 4,
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+    marginTop: 3,
   },
 });

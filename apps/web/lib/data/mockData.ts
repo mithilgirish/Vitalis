@@ -186,16 +186,16 @@ export const INITIAL_TRANSIT_TELEMETRY: TransitTelemetry[] = [
     destY: 520,
     progressPercent: 52,
     velocityKmH: 38,
-    currentTemperatureC: 7.4, // CRITICAL EXCURSION! (Threshold ≤ 6.0°C)
+    currentTemperatureC: 4.2, // Nominal
     tempThresholdMaxC: 6.0,
-    excursionFlag: true,
+    excursionFlag: false,
     etaMinutes: 11,
     departureTime: '14:22 UTC',
     routeHistory: [
       { time: '14:22', tempC: 3.8, lat: 13.077568, lng: 80.260667 },
-      { time: '14:28', tempC: 4.4, lat: 13.065, lng: 80.268 },
-      { time: '14:34', tempC: 5.9, lat: 13.053, lng: 80.272 },
-      { time: '14:40', tempC: 7.4, lat: 13.043349, lng: 80.276111 },
+      { time: '14:28', tempC: 4.0, lat: 13.065, lng: 80.268 },
+      { time: '14:34', tempC: 4.1, lat: 13.053, lng: 80.272 },
+      { time: '14:40', tempC: 4.2, lat: 13.043349, lng: 80.276111 },
     ],
   },
   {

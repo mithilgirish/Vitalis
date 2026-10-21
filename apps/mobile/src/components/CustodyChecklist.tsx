@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import {
   CheckCircle2,
-  QrCode,
   ShieldCheck,
   UserCheck,
   FileCheck,
   ChevronRight,
   RotateCcw,
+  Sparkles,
+  Building2,
 } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 
 interface CustodyChecklistProps {
@@ -48,219 +48,293 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
     setShowCertificate(true);
   };
 
+  const completedCount = Number(step1.completed) + Number(step2.completed) + Number(step3.completed);
+
   return (
     <View style={styles.container}>
-      {/* Verification Checklist Title */}
-      <View style={styles.header}>
-        <View style={styles.titleGroup}>
-          <FileCheck size={14} color={colors.cobaltBlue} />
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            CHAIN-OF-CUSTODY VERIFICATION
-          </Text>
-        </View>
-        <Text style={[styles.statusCount, { color: colors.emeraldSafe }]}>
-          {Number(step1.completed) + Number(step2.completed) + Number(step3.completed)} / 3 VERIFIED
-        </Text>
-      </View>
-
-      {/* STEP 1: Scan Origin Blood Bank Batch Barcode */}
-      <Pressable
-        onPress={() => onSelectStepToScan(1)}
+      {/* Apple Inset Grouped Verification Card */}
+      <View
         style={[
-          styles.stepCard,
+          styles.checklistCard,
           {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: activeScanStep === 1 ? colors.cobaltBlue : colors.border,
+            backgroundColor: isDark ? 'rgba(28, 29, 35, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
           },
-          step1.completed && { borderColor: colors.emeraldSafe },
         ]}>
-        <View style={styles.stepLeft}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.titleGroup}>
+            <FileCheck size={14} color={colors.cobaltBlue} strokeWidth={2.4} />
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              Chain of Custody
+            </Text>
+          </View>
           <View
             style={[
-              styles.iconWrapper,
+              styles.countPill,
               {
-                backgroundColor: step1.completed ? colors.emeraldSafe : colors.bgSurface,
+                backgroundColor: allCompleted
+                  ? isDark
+                    ? 'rgba(52, 199, 89, 0.16)'
+                    : 'rgba(52, 199, 89, 0.10)'
+                  : isDark
+                  ? 'rgba(10, 132, 255, 0.14)'
+                  : 'rgba(0, 122, 255, 0.08)',
+                borderColor: allCompleted
+                  ? isDark
+                    ? 'rgba(52, 199, 89, 0.30)'
+                    : 'rgba(52, 199, 89, 0.22)'
+                  : isDark
+                  ? 'rgba(10, 132, 255, 0.28)'
+                  : 'rgba(0, 122, 255, 0.18)',
               },
             ]}>
-            {step1.completed ? (
-              <CheckCircle2 size={18} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <QrCode size={16} color={colors.textMuted} />
-            )}
-          </View>
-          <View style={styles.stepInfo}>
-            <View style={styles.stepHeaderLine}>
-              <Text style={[styles.stepNumLabel, { color: colors.cobaltBlue }]}>STEP 1</Text>
-              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Origin Blood Bank Batch Barcode
-              </Text>
-            </View>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-              Verifies Batch UUID &amp; O- PRBC match with web dispatch record.
+            <Text
+              style={[
+                styles.countText,
+                { color: allCompleted ? colors.emeraldSafe : colors.cobaltBlue },
+              ]}>
+              {completedCount} of 3 Verified
             </Text>
-            {step1.completed && (
-              <View
-                style={[
-                  styles.verifiedMetaBox,
-                  {
-                    backgroundColor: colors.emeraldSafeBg,
-                    borderColor: colors.emeraldSafe,
-                  },
-                ]}>
-                <Text style={[styles.verifiedBadgeText, { color: colors.emeraldSafe }]}>
-                  MATCH VERIFIED: <Text style={[styles.monoHighlight, { color: colors.textPrimary }]}>{step1.verifiedData}</Text>
-                </Text>
-                <Text style={[styles.verifiedSubText, { color: colors.textSecondary }]}>
-                  Cargo: {step1.metadata?.cargo} • {step1.timestamp}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
-        <ChevronRight
-          size={16}
-          color={activeScanStep === 1 ? colors.cobaltBlue : colors.textMuted}
+
+        {/* STEP 1: Origin Batch */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Step 1: Origin Blood Batch"
+          onPress={() => onSelectStepToScan(1)}
+          style={({ pressed }) => [
+            styles.stepRow,
+            activeScanStep === 1 && !step1.completed && {
+              backgroundColor: isDark ? 'rgba(10, 132, 255, 0.08)' : 'rgba(0, 122, 255, 0.05)',
+            },
+            pressed && { opacity: 0.8 },
+          ]}>
+          <View style={styles.stepLeft}>
+            <View
+              style={[
+                styles.stepIcon,
+                {
+                  backgroundColor: step1.completed
+                    ? isDark
+                      ? 'rgba(52, 199, 89, 0.16)'
+                      : 'rgba(52, 199, 89, 0.10)'
+                    : isDark
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.04)',
+                },
+              ]}>
+              {step1.completed ? (
+                <CheckCircle2 size={16} color={colors.emeraldSafe} strokeWidth={2.6} />
+              ) : (
+                <Text style={[styles.stepNum, { color: colors.cobaltBlue }]}>1</Text>
+              )}
+            </View>
+
+            <View style={styles.stepTexts}>
+              <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
+                Origin Blood Bank Batch
+              </Text>
+              <Text style={[styles.stepSub, { color: colors.textSecondary }]}>
+                {step1.completed
+                  ? `Batch ${step1.verifiedData} • O- PRBC`
+                  : 'Scan barcode on blood unit package'}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.stepStatusPill,
+              step1.completed
+                ? {
+                    backgroundColor: isDark
+                      ? 'rgba(52, 199, 89, 0.14)'
+                      : 'rgba(52, 199, 89, 0.08)',
+                    borderColor: colors.emeraldSafe,
+                  }
+                : {
+                    backgroundColor: isDark
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.04)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
+                  },
+            ]}>
+            <Text
+              style={[
+                styles.stepStatusText,
+                { color: step1.completed ? colors.emeraldSafe : colors.textMuted },
+              ]}>
+              {step1.completed ? 'Verified ✓' : 'Scan'}
+            </Text>
+          </View>
+        </Pressable>
+
+        <View
+          style={[
+            styles.rowDivider,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
+          ]}
         />
-      </Pressable>
 
-      {/* STEP 2: Confirm Cold-Box Seal & Pickup Temperature (<= 6.0°C) */}
-      <Pressable
-        onPress={() => onSelectStepToScan(2)}
-        style={[
-          styles.stepCard,
-          {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: activeScanStep === 2 ? colors.cobaltBlue : colors.border,
-          },
-          step2.completed && { borderColor: colors.emeraldSafe },
-        ]}>
-        <View style={styles.stepLeft}>
-          <View
-            style={[
-              styles.iconWrapper,
-              {
-                backgroundColor: step2.completed ? colors.emeraldSafe : colors.bgSurface,
-              },
-            ]}>
-            {step2.completed ? (
-              <CheckCircle2 size={18} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <ShieldCheck size={16} color={colors.textMuted} />
-            )}
-          </View>
-          <View style={styles.stepInfo}>
-            <View style={styles.stepHeaderLine}>
-              <Text style={[styles.stepNumLabel, { color: colors.cobaltBlue }]}>STEP 2</Text>
+        {/* STEP 2: Container Security Seal */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Step 2: Cold-Box Security Seal"
+          onPress={() => onSelectStepToScan(2)}
+          style={({ pressed }) => [
+            styles.stepRow,
+            activeScanStep === 2 && !step2.completed && {
+              backgroundColor: isDark ? 'rgba(10, 132, 255, 0.08)' : 'rgba(0, 122, 255, 0.05)',
+            },
+            pressed && { opacity: 0.8 },
+          ]}>
+          <View style={styles.stepLeft}>
+            <View
+              style={[
+                styles.stepIcon,
+                {
+                  backgroundColor: step2.completed
+                    ? isDark
+                      ? 'rgba(52, 199, 89, 0.16)'
+                      : 'rgba(52, 199, 89, 0.10)'
+                    : isDark
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.04)',
+                },
+              ]}>
+              {step2.completed ? (
+                <CheckCircle2 size={16} color={colors.emeraldSafe} strokeWidth={2.6} />
+              ) : (
+                <Text style={[styles.stepNum, { color: colors.cobaltBlue }]}>2</Text>
+              )}
+            </View>
+
+            <View style={styles.stepTexts}>
               <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Cold-Box Seal &amp; Pickup Temp (&le; 6.0°C)
+                Cold-Box Security Seal
+              </Text>
+              <Text style={[styles.stepSub, { color: colors.textSecondary }]}>
+                {step2.completed
+                  ? `Seal ${step2.verifiedData} Intact • 4.2°C`
+                  : 'Scan tamper-evident seal on cooler box'}
               </Text>
             </View>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-              Tamper-evident barcode integrity check and thermal envelope audit.
-            </Text>
-            {step2.completed && (
-              <View
-                style={[
-                  styles.verifiedMetaBox,
-                  {
-                    backgroundColor: colors.emeraldSafeBg,
-                    borderColor: colors.emeraldSafe,
-                  },
-                ]}>
-                <Text style={[styles.verifiedBadgeText, { color: colors.emeraldSafe }]}>
-                  SEAL INTACT: <Text style={[styles.monoHighlight, { color: colors.textPrimary }]}>{step2.verifiedData}</Text>
-                </Text>
-                <Text style={[styles.verifiedSubText, { color: colors.textSecondary }]}>
-                  Temp: {step2.metadata?.pickupTemp} • {step2.timestamp}
-                </Text>
-              </View>
-            )}
           </View>
-        </View>
-        <ChevronRight
-          size={16}
-          color={activeScanStep === 2 ? colors.cobaltBlue : colors.textMuted}
+
+          <View
+            style={[
+              styles.stepStatusPill,
+              step2.completed
+                ? {
+                    backgroundColor: isDark
+                      ? 'rgba(52, 199, 89, 0.14)'
+                      : 'rgba(52, 199, 89, 0.08)',
+                    borderColor: colors.emeraldSafe,
+                  }
+                : {
+                    backgroundColor: isDark
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.04)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
+                  },
+            ]}>
+            <Text
+              style={[
+                styles.stepStatusText,
+                { color: step2.completed ? colors.emeraldSafe : colors.textMuted },
+              ]}>
+              {step2.completed ? 'Intact ✓' : 'Scan'}
+            </Text>
+          </View>
+        </Pressable>
+
+        <View
+          style={[
+            styles.rowDivider,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
+          ]}
         />
-      </Pressable>
 
-      {/* STEP 3: Scan Receiving ER Nurse/Doctor ID Badge at Destination */}
-      <Pressable
-        onPress={() => onSelectStepToScan(3)}
-        style={[
-          styles.stepCard,
-          {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: activeScanStep === 3 ? colors.cobaltBlue : colors.border,
-          },
-          step3.completed && { borderColor: colors.emeraldSafe },
-        ]}>
-        <View style={styles.stepLeft}>
-          <View
-            style={[
-              styles.iconWrapper,
-              {
-                backgroundColor: step3.completed ? colors.emeraldSafe : colors.bgSurface,
-              },
-            ]}>
-            {step3.completed ? (
-              <CheckCircle2 size={18} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <UserCheck size={16} color={colors.textMuted} />
-            )}
-          </View>
-          <View style={styles.stepInfo}>
-            <View style={styles.stepHeaderLine}>
-              <Text style={[styles.stepNumLabel, { color: colors.cobaltBlue }]}>STEP 3</Text>
+        {/* STEP 3: Receiving ER Physician Badge */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Step 3: Receiving ER Physician Badge"
+          onPress={() => onSelectStepToScan(3)}
+          style={({ pressed }) => [
+            styles.stepRow,
+            activeScanStep === 3 && !step3.completed && {
+              backgroundColor: isDark ? 'rgba(10, 132, 255, 0.08)' : 'rgba(0, 122, 255, 0.05)',
+            },
+            pressed && { opacity: 0.8 },
+          ]}>
+          <View style={styles.stepLeft}>
+            <View
+              style={[
+                styles.stepIcon,
+                {
+                  backgroundColor: step3.completed
+                    ? isDark
+                      ? 'rgba(52, 199, 89, 0.16)'
+                      : 'rgba(52, 199, 89, 0.10)'
+                    : isDark
+                    ? 'rgba(10, 132, 255, 0.14)'
+                    : 'rgba(0, 122, 255, 0.08)',
+                },
+              ]}>
+              {step3.completed ? (
+                <CheckCircle2 size={16} color={colors.emeraldSafe} strokeWidth={2.6} />
+              ) : (
+                <UserCheck size={16} color={colors.cobaltBlue} strokeWidth={2.2} />
+              )}
+            </View>
+
+            <View style={styles.stepTexts}>
               <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>
-                Receiving ER Physician ID Badge
+                Receiving ER Physician Badge
+              </Text>
+              <Text style={[styles.stepSub, { color: colors.textSecondary }]}>
+                {step3.completed
+                  ? `${step3.metadata?.recipientName} (${step3.metadata?.role})`
+                  : 'Scan doctor ID badge at Apollo Greams ER'}
               </Text>
             </View>
-            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-              Scan staff badge at Apollo Greams Rd Trauma Dept for legal transfer.
-            </Text>
-            {step3.completed ? (
-              <View
-                style={[
-                  styles.verifiedMetaBox,
-                  {
-                    backgroundColor: colors.emeraldSafeBg,
+          </View>
+
+          <View
+            style={[
+              styles.stepStatusPill,
+              step3.completed
+                ? {
+                    backgroundColor: isDark
+                      ? 'rgba(52, 199, 89, 0.14)'
+                      : 'rgba(52, 199, 89, 0.08)',
                     borderColor: colors.emeraldSafe,
-                  },
-                ]}>
-                <Text style={[styles.verifiedBadgeText, { color: colors.emeraldSafe }]}>
-                  PHYSICIAN VERIFIED: <Text style={[styles.monoHighlight, { color: colors.textPrimary }]}>{step3.verifiedData}</Text>
-                </Text>
-                <Text style={[styles.verifiedSubText, { color: colors.textSecondary }]}>
-                  {step3.metadata?.recipientName} ({step3.metadata?.role}) • {step3.timestamp}
-                </Text>
-              </View>
-            ) : (
-              <View
-                style={[
-                  styles.pendingActionPill,
-                  {
-                    backgroundColor: colors.cobaltBlueBg,
+                  }
+                : {
+                    backgroundColor: isDark
+                      ? 'rgba(10, 132, 255, 0.16)'
+                      : 'rgba(0, 122, 255, 0.10)',
                     borderColor: colors.cobaltBlue,
                   },
-                ]}>
-                <Text style={[styles.pendingActionText, { color: colors.cobaltBlue }]}>
-                  POINT CAMERA TO SCAN DR. ID BADGE
-                </Text>
-              </View>
-            )}
+            ]}>
+            <Text
+              style={[
+                styles.stepStatusText,
+                { color: step3.completed ? colors.emeraldSafe : colors.cobaltBlue },
+              ]}>
+              {step3.completed ? 'Verified ✓' : 'Scan Badge'}
+            </Text>
           </View>
-        </View>
-        <ChevronRight
-          size={16}
-          color={activeScanStep === 3 ? colors.cobaltBlue : colors.textMuted}
-        />
-      </Pressable>
+        </Pressable>
+      </View>
 
-      {/* COMPLETION ACTION: "Complete Handoff & Close Mission" (56px+ Touch Target) */}
+      {/* Primary Completion Button */}
       <View style={styles.completionContainer}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Complete Handoff & Close Mission"
+          accessibilityLabel="Complete Handoff & View Receipt"
           disabled={!allCompleted}
           onPress={handleFinishHandoff}
           style={({ pressed }) => [
@@ -270,135 +344,152 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
                 ? colors.cobaltBlue
                 : allCompleted
                 ? colors.emeraldSafe
-                : colors.bgSurface,
+                : isDark
+                ? 'rgba(38, 39, 47, 0.60)'
+                : 'rgba(0, 0, 0, 0.06)',
+            },
+            allCompleted && {
+              shadowColor: colors.emeraldSafe,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.28,
+              shadowRadius: 10,
+              elevation: 6,
             },
             pressed && styles.handoffButtonPressed,
           ]}>
-          <ShieldCheck size={22} color="#FFFFFF" strokeWidth={2.5} />
+          <ShieldCheck
+            size={18}
+            color={allCompleted || isDelivered ? '#FFFFFF' : colors.textMuted}
+            strokeWidth={2.4}
+          />
           <Text
             style={[
               styles.handoffButtonText,
               { color: allCompleted || isDelivered ? '#FFFFFF' : colors.textMuted },
             ]}>
             {isDelivered
-              ? 'VIEW HANDOFF CERTIFICATE & RECEIPT'
+              ? 'View Digital Delivery Receipt'
               : allCompleted
-              ? 'COMPLETE HANDOFF & CLOSE MISSION'
-              : 'COMPLETE ALL 3 VERIFICATION STEPS'}
+              ? 'Complete Transfer & Generate Receipt'
+              : 'Scan Doctor Badge to Finish'}
           </Text>
+          {(allCompleted || isDelivered) && (
+            <ChevronRight size={16} color="#FFFFFF" strokeWidth={2.4} />
+          )}
         </Pressable>
-
-        {isDelivered && (
-          <Text style={[styles.deliveredTimestamp, { color: colors.emeraldSafe }]}>
-            DELIVERED &amp; SEAL TRANSFERRED AT {deliveredAt}
-          </Text>
-        )}
       </View>
 
-      {/* DIGITAL HANDOFF CERTIFICATE MODAL */}
-      <Modal visible={showCertificate} transparent animationType="slide">
+      {/* APPLE HEALTH STYLE DIGITAL RECEIPT MODAL */}
+      <Modal visible={showCertificate} transparent animationType="fade">
         <View
           style={[
             styles.modalBackdrop,
-            { backgroundColor: isDark ? 'rgba(10, 12, 16, 0.92)' : 'rgba(15, 23, 42, 0.65)' },
+            { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(15, 23, 42, 0.65)' },
           ]}>
           <View
             style={[
               styles.certCard,
               {
-                backgroundColor: colors.bgCard,
-                borderColor: colors.emeraldSafe,
+                backgroundColor: isDark ? 'rgba(28, 29, 35, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
               },
             ]}>
-            {/* Modal Header */}
+            {/* Header: Green Apple Medical Pass */}
             <View style={[styles.certHeader, { backgroundColor: colors.emeraldSafe }]}>
               <View style={styles.certShieldIcon}>
-                <ShieldCheck size={26} color="#FFFFFF" strokeWidth={2.5} />
+                <ShieldCheck size={22} color="#FFFFFF" strokeWidth={2.5} />
               </View>
               <View style={styles.certHeaderText}>
-                <Text style={styles.certTitle}>CHAIN-OF-CUSTODY CERTIFICATE</Text>
-                <Text style={styles.certSub}>LEGAL MEDICAL DISPATCH HANDOFF COMPLETE</Text>
+                <Text style={styles.certTitle}>Chain-of-Custody Delivery Receipt</Text>
+                <Text style={styles.certSub}>LEGAL MEDICAL TRANSFER CONFIRMED</Text>
               </View>
             </View>
 
-            {/* Cert Body */}
+            {/* Receipt Body */}
             <View style={styles.certBody}>
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>MISSION ID:</Text>
-                <Text style={[styles.certValMono, { color: colors.textPrimary }]}>{missionId}</Text>
-              </View>
-
-              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>CARGO TRANSFERRED:</Text>
-                <Text style={[styles.certValBold, { color: colors.textPrimary }]}>{cargo}</Text>
-              </View>
-
-              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>ORIGIN FACILITY:</Text>
-                <Text style={[styles.certVal, { color: colors.textSecondary }]}>{origin}</Text>
-              </View>
-
-              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>RECEIVING FACILITY:</Text>
-                <Text style={[styles.certValBold, { color: colors.textPrimary }]}>{destination}</Text>
-              </View>
-
-              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>RECEIVING DOCTOR:</Text>
-                <Text style={[styles.certValHighlight, { color: colors.emeraldSafe }]}>
-                  {step3.metadata?.recipientName || 'Dr. Arvind Swaminathan, MD'}
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>TRANSFER ID</Text>
+                <Text style={[styles.certValBold, { color: colors.textPrimary }]}>
+                  {missionId}
                 </Text>
               </View>
 
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>RECEIVER STAFF ID:</Text>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>BIOLOGICAL PAYLOAD</Text>
+                <Text style={[styles.certValHighlight, { color: colors.cobaltBlue }]}>
+                  {cargo}
+                </Text>
+              </View>
+
+              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>ORIGIN</Text>
+                <Text style={[styles.certVal, { color: colors.textSecondary }]}>
+                  {origin}
+                </Text>
+              </View>
+
+              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>DESTINATION</Text>
+                <Text style={[styles.certVal, { color: colors.textSecondary }]}>
+                  {destination}
+                </Text>
+              </View>
+
+              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>RECEIVING PHYSICIAN</Text>
+                <Text style={[styles.certValBold, { color: colors.textPrimary }]}>
+                  {step3.metadata?.recipientName} ({step3.metadata?.role})
+                </Text>
+              </View>
+
+              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>DELIVERY TIME</Text>
                 <Text style={[styles.certValMono, { color: colors.textPrimary }]}>
-                  {step3.verifiedData || 'EMP-APOLLO-9041'}
+                  {deliveredAt} IST
                 </Text>
               </View>
 
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>COLD-CHAIN AUDIT:</Text>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>COLD-CHAIN AUDIT</Text>
                 <Text
                   style={[
-                    styles.certValMono,
+                    styles.certValBold,
                     { color: excursionFlag ? colors.redAlarm : colors.emeraldSafe },
                   ]}>
-                  {excursionFlag ? 'EXCURSION LOGGED (7.4°C)' : 'PASS (3.8°C ENVELOPE SAFE)'}
+                  {excursionFlag ? 'Excursion Alert (7.4°C)' : 'Pass (≤ 6.0°C Nominal)'}
                 </Text>
               </View>
 
-              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>DELIVERY TIMESTAMP:</Text>
-                <Text style={[styles.certValMono, { color: colors.textPrimary }]}>
-                  {deliveredAt || 'Just Now'}
-                </Text>
-              </View>
-
-              {/* Cryptographic hash badge */}
+              {/* Digital Verification Seal */}
               <View
                 style={[
                   styles.cryptoBadge,
                   {
-                    backgroundColor: colors.bgCardElevated,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(52, 199, 89, 0.12)'
+                      : 'rgba(52, 199, 89, 0.08)',
+                    borderColor: isDark
+                      ? 'rgba(52, 199, 89, 0.28)'
+                      : 'rgba(52, 199, 89, 0.20)',
                   },
                 ]}>
-                <Text style={[styles.cryptoLabel, { color: colors.textMuted }]}>
-                  SHA-256 AUDIT LOG VERIFICATION HASH
-                </Text>
-                <Text style={[styles.cryptoHash, { color: colors.cobaltBlue }]}>
-                  e8a2f4c91b7d3019a4e09f83bbd7261a84f3299c15e8
+                <Sparkles size={13} color={colors.emeraldSafe} />
+                <Text style={[styles.cryptoText, { color: colors.emeraldSafe }]}>
+                  Digitally Signed &amp; Stamped for Medical Audit
                 </Text>
               </View>
             </View>
 
-            {/* Modal Actions */}
+            {/* Actions */}
             <View style={[styles.certActions, { borderTopColor: colors.border }]}>
               <Pressable
                 onPress={() => setShowCertificate(false)}
-                style={[styles.certCloseButton, { backgroundColor: colors.cobaltBlue }]}>
-                <Text style={styles.certCloseText}>CLOSE AUDIT RECEIPT</Text>
+                style={({ pressed }) => [
+                  styles.certCloseButton,
+                  { backgroundColor: colors.emeraldSafe },
+                  pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                ]}>
+                <Text style={styles.certCloseText}>Done</Text>
               </Pressable>
 
               <Pressable
@@ -406,16 +497,21 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
                   setShowCertificate(false);
                   resetToDispatchModal();
                 }}
-                style={[
+                style={({ pressed }) => [
                   styles.certResetButton,
                   {
-                    backgroundColor: colors.bgCardElevated,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : 'rgba(0, 0, 0, 0.04)',
+                    borderColor: isDark
+                      ? 'rgba(255, 255, 255, 0.12)'
+                      : 'rgba(0, 0, 0, 0.08)',
                   },
+                  pressed && { opacity: 0.75 },
                 ]}>
-                <RotateCcw size={15} color={colors.textPrimary} />
-                <Text style={[styles.certResetText, { color: colors.textPrimary }]}>
-                  RESET TO NEW DISPATCH
+                <RotateCcw size={13} color={colors.textSecondary} />
+                <Text style={[styles.certResetText, { color: colors.textSecondary }]}>
+                  Reset Demo for Next Dispatch
                 </Text>
               </Pressable>
             </View>
@@ -428,14 +524,24 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    gap: 9,
+    gap: 12,
+  },
+  checklistCard: {
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   titleGroup: {
     flexDirection: 'row',
@@ -443,114 +549,91 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  countPill: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  countText: {
     fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontWeight: '700',
   },
-  statusCount: {
-    fontSize: 9,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-  },
-  stepCard: {
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: 1,
-    padding: 11,
+  stepRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
   },
   stepLeft: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
     flex: 1,
   },
-  iconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 7,
+  stepIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepInfo: {
+  stepNum: {
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+  },
+  stepTexts: {
     flex: 1,
-    gap: 2,
-  },
-  stepHeaderLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  stepNumLabel: {
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    gap: 1,
   },
   stepTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
   },
-  stepDescription: {
+  stepSub: {
+    fontSize: 10,
+  },
+  stepStatusPill: {
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  stepStatusText: {
     fontSize: 9.5,
-    lineHeight: 13,
+    fontWeight: '700',
   },
-  verifiedMetaBox: {
-    borderRadius: 5,
-    padding: 5,
-    marginTop: 3,
-    borderWidth: 1,
-  },
-  verifiedBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  monoHighlight: {
-    fontFamily: 'monospace',
-    fontWeight: '900',
-  },
-  verifiedSubText: {
-    fontSize: 8,
-    marginTop: 2,
-  },
-  pendingActionPill: {
-    alignSelf: 'flex-start',
-    paddingVertical: 2.5,
-    paddingHorizontal: 7,
-    borderRadius: 4,
-    marginTop: 3,
-    borderWidth: 1,
-  },
-  pendingActionText: {
-    fontSize: 8,
-    fontWeight: '800',
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
   },
   completionContainer: {
-    marginTop: 6,
-    gap: 5,
+    gap: 6,
   },
   handoffButton: {
-    height: ERGONOMICS.buttonHeight, // Minimum 56px touch target
-    borderRadius: ERGONOMICS.radiusMd,
+    height: 50,
+    borderRadius: 999,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 9,
+    gap: 8,
+    paddingHorizontal: 16,
   },
   handoffButtonPressed: {
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
   handoffButtonText: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  deliveredTimestamp: {
-    fontSize: 9,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-    textAlign: 'center',
+    fontSize: 12.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   modalBackdrop: {
     flex: 1,
@@ -560,27 +643,28 @@ const styles = StyleSheet.create({
   },
   certCard: {
     width: '100%',
-    maxWidth: 480,
-    borderRadius: ERGONOMICS.radiusXl,
-    borderWidth: 1.5,
+    maxWidth: 440,
+    borderRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 14,
   },
   certHeader: {
-    padding: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   certShieldIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.16)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -589,94 +673,91 @@ const styles = StyleSheet.create({
   },
   certTitle: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '800',
     fontSize: 13,
-    letterSpacing: 0.8,
+    letterSpacing: -0.2,
   },
   certSub: {
     color: '#ECFDF5',
-    fontSize: 8.5,
-    fontWeight: '800',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.4,
     marginTop: 1,
   },
   certBody: {
-    padding: 16,
-    gap: 8,
+    padding: 14,
+    gap: 6,
   },
   certRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: 5,
   },
   certKey: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   certVal: {
-    fontSize: 10.5,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
   },
   certValBold: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   certValHighlight: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   certValMono: {
     fontFamily: 'monospace',
-    fontSize: 10.5,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '700',
   },
   cryptoBadge: {
-    borderRadius: 7,
-    padding: 7,
-    borderWidth: 1,
-    marginTop: 3,
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 4,
+    gap: 6,
   },
-  cryptoLabel: {
-    fontSize: 7.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  cryptoHash: {
-    fontFamily: 'monospace',
-    fontSize: 8.5,
+  cryptoText: {
+    fontSize: 9.5,
+    fontWeight: '600',
   },
   certActions: {
-    padding: 14,
-    gap: 8,
-    borderTopWidth: 1,
+    padding: 12,
+    gap: 7,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   certCloseButton: {
-    height: ERGONOMICS.buttonHeight,
-    borderRadius: ERGONOMICS.radiusMd,
+    height: 46,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
   },
   certCloseText: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '700',
     fontSize: 12,
-    letterSpacing: 0.8,
   },
   certResetButton: {
-    height: 46,
-    borderRadius: ERGONOMICS.radiusMd,
+    height: 38,
+    borderRadius: 999,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 7,
-    borderWidth: 1,
+    gap: 6,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   certResetText: {
-    fontWeight: '800',
-    fontSize: 10.5,
-    letterSpacing: 0.5,
+    fontWeight: '600',
+    fontSize: 10,
   },
 });

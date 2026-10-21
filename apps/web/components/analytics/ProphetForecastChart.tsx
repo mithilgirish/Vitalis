@@ -118,14 +118,14 @@ export function ProphetForecastChart({
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-rose-600 dark:text-rose-500" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Meta Prophet Bayesian Time-Series Demand Trajectory
+              Hospital Blood & Supply Demand Forecast
             </h3>
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 font-medium">
-              NHAMCS Calibrated
+              Clinical Usage Model
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Historical consumption curve vs. {horizon === '7d' ? '7-Day' : '14-Day'} rolling demand forecast with 80% CI uncertainty bands (ŷ_lower to ŷ_upper)
+            Past clinical usage vs. {horizon === '7d' ? '7-Day' : '14-Day'} rolling patient demand forecast with safety reserve buffers
           </p>
         </div>
 
@@ -133,19 +133,19 @@ export function ProphetForecastChart({
         <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono">
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-rose-500" />
-            <span className="text-slate-700 dark:text-slate-300">Historical Actuals</span>
+            <span className="text-slate-700 dark:text-slate-300">Past Daily Usage</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-blue-500" />
-            <span className="text-slate-700 dark:text-slate-300">Forecast ŷ</span>
+            <span className="text-slate-700 dark:text-slate-300">Expected Demand</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-4 bg-blue-500/20 border border-blue-500/40 rounded-sm" />
-            <span className="text-slate-500 dark:text-slate-400">80% CI Band</span>
+            <span className="text-slate-500 dark:text-slate-400">Demand Range</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-0.5 w-4 bg-amber-500 border-dashed" />
-            <span className="text-amber-600 dark:text-amber-400 font-semibold">Safety Buffer</span>
+            <span className="text-amber-600 dark:text-amber-400 font-semibold">Min Safety Stock</span>
           </div>
         </div>
       </div>

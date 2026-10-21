@@ -79,16 +79,11 @@ export const VitalisLogo: React.FC<VitalisLogoProps> = ({
 
       {showText && (
         <View style={styles.textColumn}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { fontSize: titleSize, color: textColor }]}>
-              VITALIS
-            </Text>
-            <View style={styles.badge}>
-              <Text style={[styles.badgeText, { fontSize: badgeSize }]}>COCKPIT 2.4</Text>
-            </View>
-          </View>
+          <Text style={[styles.title, { fontSize: titleSize, color: textColor }]}>
+            VITALIS
+          </Text>
           <Text style={[styles.subtitle, { fontSize: subtitleSize, color: subtextColor }]}>
-            MEDICAL COURIER DISPATCH
+            EMERGENCY COURIER
           </Text>
         </View>
       )}

@@ -19,11 +19,11 @@ export default function ScannerScreen() {
   const getTargetLabel = (step: 1 | 2 | 3): string => {
     switch (step) {
       case 1:
-        return 'Origin Blood Bank Batch Barcode (Batch UUID & O- PRBC)';
+        return 'Scan Origin Blood Batch Barcode';
       case 2:
-        return 'Cold-Box Security Seal QR & Temperature Verification';
+        return 'Scan Cold-Box Security Seal QR';
       case 3:
-        return 'Apollo Greams ER Receiving Physician ID Badge';
+        return 'Scan Apollo ER Physician ID Badge';
     }
   };
 
@@ -46,7 +46,7 @@ export default function ScannerScreen() {
       {/* Excursion Banner if alarm active */}
       <ExcursionBanner />
 
-      {/* CAMERA VIEWFINDER: Full-screen scanner interface with targeting reticle and animated laser scan line */}
+      {/* APPLE CODE SCANNER VIEWFINDER */}
       <View style={styles.viewfinderSection}>
         <BarcodeScannerReticle
           currentStep={activeScanStep}
@@ -55,7 +55,7 @@ export default function ScannerScreen() {
         />
       </View>
 
-      {/* VERIFICATION CHECKLIST & COMPLETION ACTION */}
+      {/* APPLE INSET GROUPED VERIFICATION CHECKLIST */}
       <View style={styles.checklistSection}>
         <CustodyChecklist
           activeScanStep={activeScanStep}
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 12,
+    padding: 14,
     gap: 12,
     paddingBottom: 28,
   },

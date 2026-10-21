@@ -3,24 +3,24 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, {
   Path,
   Line,
+  Rect,
   Circle,
   Defs,
   LinearGradient,
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
-import { Activity } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
+import { TrendingUp } from 'lucide-react-native';
 import { useMission } from '@/context/MissionContext';
 
 export const SparklineGraph: React.FC = () => {
   const { sparklineHistory, safeEnvelopeMin, safeEnvelopeMax, excursionFlag, cargoType, colors, isDark } =
     useMission();
 
-  const width = 340;
-  const height = 115;
-  const paddingX = 20;
-  const paddingY = 18;
+  const width = 330;
+  const height = 120;
+  const paddingX = 16;
+  const paddingY = 16;
 
   const graphMin = cargoType === 'PRBC' ? 0.0 : 18.0;
   const graphMax = cargoType === 'PRBC' ? 8.0 : 26.0;
@@ -61,6 +61,7 @@ export const SparklineGraph: React.FC = () => {
 
   const upperY = getY(safeEnvelopeMax);
   const lowerY = getY(safeEnvelopeMin);
+  const safeBandHeight = Math.max(4, lowerY - upperY);
 
   const temps = sparklineHistory.map((p) => p.temp);
   const minTemp = Math.min(...temps).toFixed(1);
@@ -72,169 +73,141 @@ export const SparklineGraph: React.FC = () => {
       style={[
         styles.card,
         {
-          backgroundColor: colors.bgCardElevated,
-          borderColor: colors.border,
+          backgroundColor: isDark ? 'rgba(28, 29, 35, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
         },
       ]}>
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.titleGroup}>
-          <Activity size={13} color={colors.cobaltBlue} />
+          <TrendingUp size={14} color={colors.cobaltBlue} strokeWidth={2.4} />
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-            15-MIN TEMPERATURE MONITOR
+            Temperature History
           </Text>
         </View>
         <Text style={[styles.sampleFreq, { color: colors.textMuted }]}>
-          SAMPLED EVERY 60S
+          Past 15 Minutes
         </Text>
       </View>
 
-      {/* SVG Canvas */}
+      {/* Apple Health Style SVG Chart with Safe Band */}
       <View style={styles.chartWrapper}>
         <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
           <Defs>
-            <LinearGradient id="sparklineArea" x1="0%" y1="0%" x2="0%" y2="100%">
+            <LinearGradient id="appleSparklineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
               <Stop
                 offset="0%"
-                stopColor={excursionFlag ? colors.redAlarm : colors.emeraldSafe}
-                stopOpacity={isDark ? '0.3' : '0.15'}
+                stopColor={excursionFlag ? '#FF453A' : '#34C759'}
+                stopOpacity={isDark ? '0.22' : '0.12'}
               />
               <Stop
                 offset="100%"
-                stopColor={excursionFlag ? colors.redAlarm : colors.emeraldSafe}
+                stopColor={excursionFlag ? '#FF453A' : '#34C759'}
                 stopOpacity="0.0"
               />
             </LinearGradient>
           </Defs>
 
-          {/* Grid Guideline */}
-          <Line
-            x1={paddingX}
-            y1={height - paddingY}
-            x2={width - paddingX}
-            y2={height - paddingY}
-            stroke={colors.border}
-            strokeWidth="1"
+          {/* Shaded Apple Safe Zone Band */}
+          <Rect
+            x={paddingX}
+            y={upperY}
+            width={width - 2 * paddingX}
+            height={safeBandHeight}
+            fill={isDark ? 'rgba(52, 199, 89, 0.08)' : 'rgba(52, 199, 89, 0.06)'}
+            rx={4}
           />
 
-          {/* Upper Safe Threshold line */}
+          {/* Safe Threshold Upper Line */}
           <Line
             x1={paddingX}
             y1={upperY}
             x2={width - paddingX}
             y2={upperY}
-            stroke={colors.redAlarm}
+            stroke={isDark ? 'rgba(52, 199, 89, 0.45)' : 'rgba(52, 199, 89, 0.35)'}
             strokeWidth="1"
-            strokeDasharray="4, 4"
-            opacity={0.65}
+            strokeDasharray="4, 3"
           />
+
+          {/* Safe Target Annotation */}
           <SvgText
             x={width - paddingX - 4}
-            y={upperY - 3}
-            fill={colors.redAlarm}
-            fontSize="7"
-            fontFamily="monospace"
+            y={upperY - 4}
+            fill={colors.emeraldSafe}
+            fontSize="8"
+            fontWeight="600"
             textAnchor="end">
-            MAX {safeEnvelopeMax.toFixed(1)}°C
+            Safe Envelope Max: {safeEnvelopeMax.toFixed(0)}°C
           </SvgText>
 
-          {/* Lower Safe Threshold line */}
-          <Line
-            x1={paddingX}
-            y1={lowerY}
-            x2={width - paddingX}
-            y2={lowerY}
-            stroke={colors.cobaltBlue}
-            strokeWidth="1"
-            strokeDasharray="4, 4"
-            opacity={0.65}
-          />
-          <SvgText
-            x={width - paddingX - 4}
-            y={lowerY + 8}
-            fill={colors.cobaltBlue}
-            fontSize="7"
-            fontFamily="monospace"
-            textAnchor="end">
-            MIN {safeEnvelopeMin.toFixed(1)}°C
-          </SvgText>
+          {/* Shaded Area under Curve */}
+          <Path d={areaPath} fill="url(#appleSparklineGradient)" />
 
-          {/* Area Fill */}
-          <Path d={areaPath} fill="url(#sparklineArea)" />
-
-          {/* Line Path */}
+          {/* Temperature Polyline */}
           <Path
             d={linePath}
             fill="none"
-            stroke={excursionFlag ? colors.redAlarm : colors.emeraldSafe}
-            strokeWidth="2.2"
+            stroke={excursionFlag ? '#FF453A' : '#34C759'}
+            strokeWidth="2.4"
             strokeLinecap="round"
           />
 
-          {/* Points */}
-          {sparklineHistory.map((point, index) => {
-            const px = getX(index);
-            const py = getY(point.temp);
-            const isLast = index === sparklineHistory.length - 1;
-            return (
-              <Circle
-                key={`pt-${index}`}
-                cx={px}
-                cy={py}
-                r={isLast ? 4 : 2}
-                fill={isLast ? '#FFFFFF' : excursionFlag ? colors.redAlarm : colors.emeraldSafe}
-                stroke={isLast ? (excursionFlag ? colors.redAlarm : colors.emeraldSafe) : 'none'}
-                strokeWidth={isLast ? 2 : 0}
-              />
-            );
-          })}
+          {/* Current Reading Dot */}
+          {lastPoint && (
+            <Circle
+              cx={lastX}
+              cy={getY(lastPoint.temp)}
+              r={4}
+              fill="#FFFFFF"
+              stroke={excursionFlag ? '#FF453A' : '#34C759'}
+              strokeWidth={2}
+            />
+          )}
         </Svg>
       </View>
 
-      {/* Time Axis Labels */}
-      <View style={styles.timeAxisRow}>
-        <Text style={[styles.timeLabel, { color: colors.textMuted }]}>-15m</Text>
-        <Text style={[styles.timeLabel, { color: colors.textMuted }]}>-10m</Text>
-        <Text style={[styles.timeLabel, { color: colors.textMuted }]}>-5m</Text>
-        <Text style={[styles.timeLabel, { color: colors.emeraldSafe, fontWeight: '800' }]}>
-          Now (Live)
-        </Text>
-      </View>
-
-      {/* Summary Metrics */}
+      {/* Glanceable Metrics Row */}
       <View
         style={[
           styles.metricsRow,
           {
-            backgroundColor: colors.bgCard,
-            borderColor: colors.border,
+            backgroundColor: isDark ? 'rgba(20, 21, 25, 0.65)' : 'rgba(242, 242, 247, 0.75)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
           },
         ]}>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>MIN TEMP</Text>
+          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>MINIMUM</Text>
           <Text style={[styles.metricVal, { color: colors.textPrimary }]}>{minTemp}°C</Text>
         </View>
-        <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
+
+        <View
+          style={[
+            styles.metricDivider,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
+          ]}
+        />
+
         <View style={styles.metricItem}>
-          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>AVG 15M</Text>
+          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>AVERAGE</Text>
           <Text style={[styles.metricVal, { color: colors.textPrimary }]}>{avgTemp}°C</Text>
         </View>
-        <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
+
+        <View
+          style={[
+            styles.metricDivider,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
+          ]}
+        />
+
         <View style={styles.metricItem}>
-          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>PEAK TEMP</Text>
+          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>PEAK</Text>
           <Text
             style={[
               styles.metricVal,
-              { color: colors.textPrimary },
-              parseFloat(maxTemp) > safeEnvelopeMax && { color: colors.redAlarm },
+              { color: parseFloat(maxTemp) > safeEnvelopeMax ? colors.redAlarm : colors.textPrimary },
             ]}>
             {maxTemp}°C
           </Text>
-        </View>
-        <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.metricItem}>
-          <Text style={[styles.metricLabel, { color: colors.textMuted }]}>VARIANCE</Text>
-          <Text style={[styles.metricVal, { color: colors.emeraldSafe }]}>±0.2°C</Text>
         </View>
       </View>
     </View>
@@ -244,15 +217,21 @@ export const SparklineGraph: React.FC = () => {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: 1,
-    padding: 12,
-    gap: 6,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 2,
   },
   titleGroup: {
     flexDirection: 'row',
@@ -260,54 +239,43 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   sampleFreq: {
-    fontSize: 8,
-    fontWeight: '700',
-    fontFamily: 'monospace',
+    fontSize: 9.5,
+    fontWeight: '500',
   },
   chartWrapper: {
     width: '100%',
-    height: 115,
-  },
-  timeAxisRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-  },
-  timeLabel: {
-    fontSize: 8.5,
-    fontFamily: 'monospace',
+    height: 120,
   },
   metricsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    borderRadius: ERGONOMICS.radiusSm,
-    borderWidth: 1,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    marginTop: 4,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   metricItem: {
     alignItems: 'center',
     gap: 2,
   },
   metricLabel: {
-    fontSize: 7.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   metricVal: {
-    fontSize: 10.5,
+    fontSize: 11.5,
     fontFamily: 'monospace',
-    fontWeight: '800',
+    fontWeight: '700',
   },
   metricDivider: {
-    width: 1,
-    height: 18,
+    width: StyleSheet.hairlineWidth,
+    height: 20,
   },
 });

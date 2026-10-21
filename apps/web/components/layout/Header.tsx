@@ -42,29 +42,29 @@ export function Header() {
   const getPageInfo = () => {
     if (pathname.includes('/approvals')) {
       return {
-        title: 'HITL Verification & Governance',
-        subtitle: 'Human-in-the-Loop dispatch authorization with explainable AI reasoning',
-        badge: 'Zero Autonomous Dispatch Enforced',
+        title: 'Doctor Dispatch Authorizations',
+        subtitle: 'Review & approve urgent hospital transfer requests before couriers dispatch',
+        badge: 'Physician Sign-Off Required',
       };
     }
     if (pathname.includes('/analytics')) {
       return {
-        title: 'Predictive Stockout & Demand Engine',
-        subtitle: 'Meta Prophet time-series & XGBoost 72-hour clinical depletion matrices',
-        badge: 'NHAMCS Calibrated',
+        title: '72-Hour Blood Stock Forecast',
+        subtitle: 'Anticipate hospital shortages early and balance regional blood supply',
+        badge: 'Clinical Demand Prediction',
       };
     }
     if (pathname.includes('/inventory')) {
       return {
-        title: 'Biological Inventory Ledger',
-        subtitle: 'Real-time telemetry, cold storage chambers, and batch viability tracking',
-        badge: 'IoT RFID Synchronized',
+        title: 'Regional Blood & Organ Bank',
+        subtitle: 'Live hospital reserves, cold chain refrigeration status, and expiration tracking',
+        badge: 'Hospital Reserves Online',
       };
     }
     return {
-      title: 'GIS Command & Logistics Grid',
-      subtitle: 'Real-time Chennai clinical network, spatial routing & cold-chain telemetry',
-      badge: 'Live Regional Mesh',
+      title: 'Live Medical Transfers',
+      subtitle: 'Track in-transit blood, organs, and critical supplies across Chennai hospitals',
+      badge: 'Live Hospital Network',
     };
   };
 
@@ -127,15 +127,15 @@ export function Header() {
           )}
         </button>
 
-        {/* Triage Simulator Action Pill Button */}
+        {/* Emergency Intake Action Button */}
         <button
           onClick={openTriage}
           className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-rose-600 hover:bg-rose-500 active:scale-95 text-white shadow-sm hover:shadow-[0_2px_12px_rgba(225,29,72,0.3)] transition-all cursor-pointer"
         >
           <Zap className="w-3.5 h-3.5 fill-white text-white" />
-          <span className="hidden sm:inline">Triage Simulator</span>
+          <span className="hidden sm:inline">Emergency Intake</span>
           <span className="text-[10px] font-mono bg-rose-700 px-1.5 py-0.5 rounded-full text-rose-100">
-            Jev + ReAct
+            AI Triage
           </span>
         </button>
 

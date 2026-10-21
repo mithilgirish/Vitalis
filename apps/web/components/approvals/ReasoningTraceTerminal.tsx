@@ -33,9 +33,9 @@ export function ReasoningTraceTerminal({ trace }: ReasoningTraceTerminalProps) {
           </div>
 
           <div className="flex items-center gap-2 pl-2 border-l border-slate-300 dark:border-white/[0.08]">
-            <Terminal className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="text-xs font-mono font-medium text-slate-800 dark:text-slate-300">
-              LangChain ReAct Agent Reasoning Trace
+              AI Clinical Safety & Recommendation Trace
             </span>
           </div>
         </div>
@@ -51,7 +51,7 @@ export function ReasoningTraceTerminal({ trace }: ReasoningTraceTerminalProps) {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              Scratchpad
+              Evaluation Steps
             </button>
             <button
               onClick={() => setActiveTab('synthesis')}
@@ -61,7 +61,7 @@ export function ReasoningTraceTerminal({ trace }: ReasoningTraceTerminalProps) {
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
-              Synthesis
+              Clinical Summary
             </button>
           </div>
 

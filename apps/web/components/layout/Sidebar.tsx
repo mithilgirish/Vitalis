@@ -25,68 +25,86 @@ export function Sidebar() {
 
   const navItems = [
     {
-      name: 'Command Map',
+      name: 'Live Transfers',
       href: '/dashboard',
       icon: MapPin,
       badge: telemetry.length > 0 ? `${telemetry.length}` : undefined,
-      badgeLabel: 'in transit',
     },
     {
-      name: 'Approvals Queue',
+      name: 'Dispatch Approvals',
       href: '/approvals',
       icon: CheckSquare,
       badge: pendingRequestsCount > 0 ? `${pendingRequestsCount}` : undefined,
       urgent: pendingRequestsCount > 0,
-      badgeLabel: 'pending',
     },
     {
-      name: 'Predictive Engine',
+      name: 'Blood Stock Forecast',
       href: '/analytics',
       icon: TrendingUp,
       badge: undefined,
     },
     {
-      name: 'Inventory Ledger',
+      name: 'Blood & Organ Bank',
       href: '/inventory',
       icon: Boxes,
       badge: excursionCount > 0 ? `${excursionCount}` : undefined,
       urgent: excursionCount > 0,
-      badgeLabel: 'alert',
     },
   ];
 
   return (
     <aside
       className={`relative z-40 flex flex-col apple-liquid-glass transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shrink-0 select-none ${
-        collapsed ? 'w-[76px]' : 'w-64'
+        collapsed ? 'w-[72px]' : 'w-64'
       }`}
     >
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-black/[0.04] dark:border-white/[0.06]">
+      <div
+        className={`relative flex h-16 items-center border-b border-black/[0.04] dark:border-white/[0.05] transition-all ${
+          collapsed ? 'justify-center px-2' : 'justify-between px-4'
+        }`}
+      >
         <Link
           href="/dashboard"
-          className="flex items-center overflow-hidden focus:outline-none"
+          className="flex items-center justify-center focus:outline-none"
           title="Vitalis Autonomous Logistics Grid"
         >
           <VitalisLogo size="md" showText={!collapsed} />
         </Link>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="flex h-7 w-7 items-center justify-center rounded-xl border border-black/[0.04] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.03] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-all cursor-pointer active:scale-95"
-        >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-        </button>
+
+        {/* Toggle Button in Header (when expanded) */}
+        {!collapsed && (
+          <button
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all cursor-pointer active:scale-95"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+        )}
+
+        {/* Floating Slider Opening Handle on Edge (when collapsed) */}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            className="absolute -right-3 top-5 z-50 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-[#222329] border border-black/10 dark:border-white/10 shadow-[0_2px_8px_rgba(0,0,0,0.12)] text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-all hover:scale-110 active:scale-95 cursor-pointer"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
-      {/* Quick Triage Ingestion Action */}
+      {/* Quick Emergency Intake Action (Apple Intelligence style) */}
       <div className="p-3">
         <button
           onClick={openTriage}
-          className={`w-full group relative flex items-center rounded-xl border border-rose-500/20 bg-rose-500/[0.07] hover:bg-rose-500/[0.13] dark:bg-rose-500/10 dark:hover:bg-rose-500/20 transition-all duration-200 cursor-pointer shadow-xs ${
-            collapsed ? 'h-10 justify-center p-0' : 'justify-between px-3 py-2.5'
+          className={`w-full group relative flex items-center rounded-xl border border-rose-500/15 dark:border-rose-500/20 bg-rose-500/[0.05] hover:bg-rose-500/[0.10] dark:bg-rose-500/[0.08] dark:hover:bg-rose-500/[0.14] transition-all duration-200 cursor-pointer ${
+            collapsed ? 'h-10 w-10 mx-auto justify-center p-0' : 'justify-between px-3 py-2'
           }`}
-          title="Open AI Clinical Triage Simulator (Jev Extraction + ReAct)"
+          title="Open Emergency Clinical Intake Assistant"
         >
           <div className="flex items-center gap-2.5">
             <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-rose-600 to-rose-400 text-white shadow-xs">
@@ -95,27 +113,27 @@ export function Sidebar() {
             {!collapsed && (
               <div className="flex flex-col text-left">
                 <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors leading-tight">
-                  Triage Ingestion
+                  Emergency Intake
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  AI Clinical Parser
+                  AI Triage Assistant
                 </span>
               </div>
             )}
           </div>
           {!collapsed && (
-            <span className="text-[9px] font-mono font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
-              AGENT
+            <span className="text-[9px] font-mono font-medium tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              NEW
             </span>
           )}
         </button>
       </div>
 
       {/* Navigation Section */}
-      <nav className="mt-1 px-3 space-y-1 flex-1">
+      <nav className="mt-1 px-2.5 space-y-1 flex-1">
         {!collapsed && (
-          <div className="px-2 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold select-none">
-            Platform
+          <div className="px-2.5 pt-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 font-medium select-none">
+            Clinical Operations
           </div>
         )}
 
@@ -128,39 +146,41 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`relative flex items-center rounded-xl transition-all duration-200 group cursor-pointer ${
+              className={`relative flex items-center rounded-xl transition-all duration-150 group cursor-pointer ${
                 collapsed
-                  ? 'h-11 justify-center p-0'
-                  : 'gap-3 px-3 py-2.5 text-xs font-medium'
+                  ? 'h-10 w-10 mx-auto justify-center p-0'
+                  : 'gap-3 px-3 py-2 text-xs font-medium'
               } ${
                 isActive
-                  ? 'text-slate-900 dark:text-white bg-slate-900/[0.05] dark:bg-white/[0.08] border border-black/[0.04] dark:border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04] border border-transparent'
+                  ? 'text-slate-900 dark:text-white bg-black/[0.06] dark:bg-white/[0.09] border border-black/[0.04] dark:border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.035] dark:hover:bg-white/[0.045] border border-transparent'
               }`}
               title={collapsed ? item.name : undefined}
             >
-              {/* Active Apple Glass Glow Indicator */}
-              {isActive && (
-                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#0071E3] dark:bg-[#2997FF] shadow-[0_0_8px_rgba(0,113,227,0.5)]" />
-              )}
-
               <Icon
-                className={`h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                className={`h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-105 ${
                   isActive
                     ? 'text-[#0071E3] dark:text-[#2997FF]'
                     : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                 }`}
               />
 
+              {/* Collapsed notification indicator dot */}
+              {collapsed && item.badge && item.urgent && (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#18191E]" />
+              )}
+
               {!collapsed && (
                 <div className="flex flex-1 items-center justify-between">
-                  <span className={isActive ? 'font-semibold' : ''}>{item.name}</span>
+                  <span className={isActive ? 'font-semibold text-slate-900 dark:text-white' : ''}>
+                    {item.name}
+                  </span>
                   {item.badge && (
                     <span
                       className={`font-mono text-[10px] px-2 py-0.5 rounded-full font-medium ${
                         item.urgent
-                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse font-bold'
-                          : 'bg-black/[0.04] dark:bg-white/[0.07] text-slate-600 dark:text-slate-300 border border-black/[0.04] dark:border-white/[0.06]'
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25 font-bold'
+                          : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border border-black/[0.03] dark:border-white/[0.04]'
                       }`}
                     >
                       {item.badge}
@@ -172,6 +192,29 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Bottom Sidebar Collapse/Expand Toggle */}
+      <div className="p-2.5 border-t border-black/[0.04] dark:border-white/[0.05]">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={`flex items-center rounded-xl text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-black/[0.035] dark:hover:bg-white/[0.045] transition-all cursor-pointer active:scale-95 ${
+            collapsed
+              ? 'h-10 w-10 mx-auto justify-center'
+              : 'w-full gap-2.5 px-3 py-2 text-xs font-medium'
+          }`}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronLeft className="h-4 w-4 shrink-0" />
+              <span>Collapse sidebar</span>
+            </>
+          )}
+        </button>
+      </div>
     </aside>
   );
 }

@@ -10,15 +10,15 @@ interface VitalisLogoProps {
 
 export function VitalisLogo({ size = 'md', showText = true, className = '' }: VitalisLogoProps) {
   const sizeMap = {
-    sm: { box: 26, font: 'text-sm', badge: 'text-[9px] px-1 py-0.5' },
-    md: { box: 34, font: 'text-base', badge: 'text-[10px] px-1.5 py-0.5' },
-    lg: { box: 44, font: 'text-xl', badge: 'text-xs px-2 py-0.5' },
+    sm: { box: 26, font: 'text-sm' },
+    md: { box: 34, font: 'text-base' },
+    lg: { box: 44, font: 'text-xl' },
   };
 
-  const { box, font, badge } = sizeMap[size];
+  const { box, font } = sizeMap[size];
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center ${showText ? 'gap-3' : 'justify-center'} ${className}`}>
       {/* Interlocking Crimson & Cobalt Ribbon Logo */}
       <div className="relative flex items-center justify-center">
         <svg
@@ -80,16 +80,11 @@ export function VitalisLogo({ size = 'md', showText = true, className = '' }: Vi
 
       {showText && (
         <div className="flex flex-col leading-tight select-none">
-          <div className="flex items-center gap-2">
-            <span className={`font-semibold tracking-tight text-slate-900 dark:text-white ${font}`}>
-              VITALIS
-            </span>
-            <span className={`rounded font-mono font-medium tracking-wider uppercase bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 ${badge}`}>
-              CLINICAL 2.4
-            </span>
-          </div>
+          <span className={`font-semibold tracking-tight text-slate-900 dark:text-white ${font}`}>
+            VITALIS
+          </span>
           <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-            Autonomous Supply Grid
+            Emergency Medical Logistics
           </span>
         </div>
       )}

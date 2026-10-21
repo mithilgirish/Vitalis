@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { VitalisProvider } from '../lib/store/vitalisContext';
-import { EmergencyBanner } from '../components/layout/EmergencyBanner';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Header } from '../components/layout/Header';
 import { TriageSimulatorDrawer } from '../components/triage/TriageSimulatorDrawer';
@@ -36,9 +35,6 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-50 dark:bg-[#18191E] text-slate-900 dark:text-slate-100 selection:bg-rose-500/20 selection:text-rose-600 dark:selection:text-rose-200">
         <VitalisProvider>
-          {/* Global Conditional Emergency Banner for Cold-Chain Excursions */}
-          <EmergencyBanner />
-
           {/* Main Interface Layout */}
           <div className="flex flex-1 min-h-0 w-full overflow-hidden">
             {/* Left Collapsible Sidebar */}

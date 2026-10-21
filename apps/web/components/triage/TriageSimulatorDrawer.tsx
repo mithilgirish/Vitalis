@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
 import { VitalisLogo } from '../common/VitalisLogo';
 import { IngestionSource, JevExtractionResult, BiologicalResourceType, BloodGroup } from '../../lib/types';
@@ -18,6 +18,11 @@ import {
   ArrowRight,
   Terminal,
   Layers,
+  Mic,
+  MicOff,
+  Volume2,
+  Square,
+  Play,
 } from 'lucide-react';
 
 const PRESET_SCENARIOS = [
@@ -103,6 +108,114 @@ export function TriageSimulatorDrawer() {
     viabilityMinutes: number;
     synthesis: string;
   } | null>(null);
+
+  // Free & Local Voice Dictation (Speech-to-Text) State
+  const [isListening, setIsListening] = useState(false);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const recognitionRef = useRef<any>(null);
+  const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+      }
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  const startVoiceDictation = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      simulateVoiceStream(
+        'Ambulance 104 dispatch: Need 4 units of O-negative blood immediately at Apollo Greams Rd for incoming Level 1 trauma with severe hemorrhagic shock.'
+      );
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setAudioDuration(0);
+        timerRef.current = setInterval(() => {
+          setAudioDuration((prev) => prev + 1);
+        }, 1000);
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + ' ';
+        }
+        if (transcript.trim()) {
+          setInputText(transcript.trim());
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition warning/error:', event.error);
+        stopVoiceDictation();
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('SpeechRecognition initialization error:', err);
+      simulateVoiceStream(
+        'Ambulance 104 dispatch: Need 4 units of O-negative PRBC immediately at Apollo Hospitals Greams Road for incoming Level 1 trauma victim.'
+      );
+    }
+  };
+
+  const stopVoiceDictation = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const simulateVoiceStream = (phrase: string) => {
+    stopVoiceDictation();
+    setIsListening(true);
+    setInputText('');
+    setAudioDuration(0);
+    const words = phrase.split(' ');
+    let currentIdx = 0;
+
+    const timer = setInterval(() => {
+      setAudioDuration((prev) => prev + 1);
+    }, 1000);
+
+    const streamInterval = setInterval(() => {
+      if (currentIdx < words.length) {
+        setInputText((prev) => (prev ? prev + ' ' + words[currentIdx] : words[currentIdx]));
+        currentIdx++;
+      } else {
+        clearInterval(streamInterval);
+        clearInterval(timer);
+        setIsListening(false);
+      }
+    }, 150);
+  };
 
   if (!isTriageOpen) return null;
 
@@ -238,14 +351,14 @@ export function TriageSimulatorDrawer() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Triage Simulator Drawer
+                  Emergency Clinical Intake Assistant
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 font-medium">
-                  Operator Console
+                  Clinical Triage
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Test unstructured text ingestion via Jev Pydantic extraction & ReAct solver
+                Convert emergency radio calls, paramedic messages, or doctor orders into verified dispatch requests
               </p>
             </div>
           </div>
@@ -262,7 +375,7 @@ export function TriageSimulatorDrawer() {
           {/* Preset Scenario Quick Loader */}
           <div>
             <label className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2 font-medium">
-              Quick Clinical Scenario Presets
+              Sample Emergency Patient Cases
             </label>
             <div className="grid grid-cols-2 gap-2">
               {PRESET_SCENARIOS.map((preset) => (
@@ -272,7 +385,7 @@ export function TriageSimulatorDrawer() {
                   className="px-3 py-2 text-left rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 text-xs transition-all cursor-pointer shadow-xs"
                 >
                   <div className="font-semibold text-slate-800 dark:text-slate-200">{preset.name}</div>
-                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{preset.source} Protocol</div>
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{preset.source} Order</div>
                 </button>
               ))}
             </div>
@@ -281,7 +394,7 @@ export function TriageSimulatorDrawer() {
           {/* Ingestion Source Selector */}
           <div>
             <label className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2 font-medium">
-              Ingestion Protocol Source
+              Message Source Channel
             </label>
             <div className="grid grid-cols-4 gap-2">
               {(['Radio', 'SMS', 'EHR', 'Manual'] as IngestionSource[]).map((src) => {
@@ -312,14 +425,95 @@ export function TriageSimulatorDrawer() {
             </div>
           </div>
 
+          {/* Local Free Voice-to-Text & Ambulance Dispatch Dictation Bar */}
+          <div className="p-3.5 rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] dark:bg-rose-500/[0.07] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`p-2 rounded-xl transition-all ${
+                    isListening
+                      ? 'bg-rose-600 text-white animate-pulse shadow-[0_0_12px_rgba(225,29,72,0.5)]'
+                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  <Mic className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                      Emergency Voice-to-Text
+                    </span>
+                    <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+                      Local &amp; Free
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Browser Web Speech Engine • Zero API keys or cloud tokens required
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Audio Equalizer Waveform & Timer */}
+              {isListening && (
+                <div className="flex items-center gap-2 font-mono text-xs text-rose-600 dark:text-rose-400 font-bold bg-white dark:bg-[#18191E] px-2.5 py-1 rounded-full border border-rose-500/25 shadow-xs">
+                  <div className="flex items-end gap-0.5 h-3.5">
+                    <span className="w-0.5 bg-rose-500 rounded-full animate-bounce h-2" style={{ animationDelay: '0ms' }} />
+                    <span className="w-0.5 bg-rose-500 rounded-full animate-bounce h-3.5" style={{ animationDelay: '150ms' }} />
+                    <span className="w-0.5 bg-rose-500 rounded-full animate-bounce h-2.5" style={{ animationDelay: '300ms' }} />
+                    <span className="w-0.5 bg-rose-500 rounded-full animate-bounce h-3.5" style={{ animationDelay: '450ms' }} />
+                  </div>
+                  <span>00:{audioDuration.toString().padStart(2, '0')}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {/* Mic Start / Stop Dictation Toggle */}
+              {isListening ? (
+                <button
+                  type="button"
+                  onClick={stopVoiceDictation}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-all active:scale-95"
+                >
+                  <Square className="w-3.5 h-3.5 fill-white" />
+                  <span>Stop Dictation</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startVoiceDictation}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-xs cursor-pointer transition-all active:scale-95"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>Start Live Dictation</span>
+                </button>
+              )}
+
+              {/* Radio Dispatch Audio Stream Simulator */}
+              <button
+                type="button"
+                disabled={isListening}
+                onClick={() =>
+                  simulateVoiceStream(
+                    'Ambulance 104 dispatch: Need 4 units of O-negative PRBC immediately at Apollo Greams Rd for incoming Level 1 trauma with severe hemorrhagic shock.'
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#18191E] hover:bg-slate-50 dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 text-xs font-medium cursor-pointer transition-all disabled:opacity-50 shadow-2xs"
+              >
+                <Radio className="w-3.5 h-3.5 text-blue-500" />
+                <span>Simulate Ambulance Radio Voice</span>
+              </button>
+            </div>
+          </div>
+
           {/* Unstructured Dispatch Text Input */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">
-                Raw Unstructured Dispatch Text
+                Emergency Request Notes / Audio Transcript
               </label>
               <span className="text-[10px] font-mono text-slate-400">
-                Simulated {source} Transmission
+                Incoming {source} Transmission
               </span>
             </div>
             <div className="relative">
@@ -332,7 +526,7 @@ export function TriageSimulatorDrawer() {
               />
             </div>
 
-            {/* Run Jev Extraction Button */}
+            {/* Run Extraction Button */}
             <div className="mt-3 flex items-center justify-end">
               <button
                 onClick={handleRunJevExtraction}
@@ -342,12 +536,12 @@ export function TriageSimulatorDrawer() {
                 {isExtracting ? (
                   <>
                     <Cpu className="w-3.5 h-3.5 animate-spin" />
-                    <span>Executing Jev Schema Extraction...</span>
+                    <span>Analyzing Patient Emergency Order...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Run Jev Extraction</span>
+                    <span>Extract Patient Order</span>
                   </>
                 )}
               </button>
@@ -361,7 +555,7 @@ export function TriageSimulatorDrawer() {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-semibold text-slate-900 dark:text-slate-200">
-                    Validated Pydantic Clinical Schema
+                    Extracted Clinical Order Details
                   </span>
                 </div>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-medium">
@@ -369,15 +563,32 @@ export function TriageSimulatorDrawer() {
                 </span>
               </div>
 
-              {/* Formatted JSON Box */}
-              <pre className="p-3 rounded-xl bg-slate-900 dark:bg-[#18191E] border border-slate-800 dark:border-white/[0.08] font-mono text-[11px] text-emerald-400 overflow-x-auto leading-relaxed shadow-inner">
-{JSON.stringify(extractionResult.extracted, null, 2)}
-              </pre>
+              {/* Formatted Order Summary Grid */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#18191E] border border-slate-200 dark:border-white/[0.08]">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Requested Resource</span>
+                  <span className="font-bold text-rose-600 dark:text-rose-400">
+                    {extractionResult.extracted.units_requested} Units • {extractionResult.extracted.blood_group} {extractionResult.extracted.resource_type}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#18191E] border border-slate-200 dark:border-white/[0.08]">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Patient Urgency</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">
+                    ESI Tier {extractionResult.extracted.urgency_tier} (Emergency)
+                  </span>
+                </div>
+                <div className="col-span-2 p-2.5 rounded-xl bg-slate-100 dark:bg-[#18191E] border border-slate-200 dark:border-white/[0.08]">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block">Receiving Hospital</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {extractionResult.extracted.destination_facility_name}
+                  </span>
+                </div>
+              </div>
 
-              {/* Invoke LangChain ReAct Solver Button */}
+              {/* Find Match Button */}
               <div className="pt-2 flex items-center justify-between">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Ready for spatial candidate matching
+                  Ready to search hospital donor reserves
                 </span>
                 <button
                   onClick={handleInvokeReActSolver}
@@ -385,18 +596,18 @@ export function TriageSimulatorDrawer() {
                   className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white shadow-xs transition-all cursor-pointer"
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  <span>{isSolving ? 'Solving Trajectory...' : 'Invoke LangChain ReAct Solver'}</span>
+                  <span>{isSolving ? 'Matching Donor Hospitals...' : 'Find Best Hospital Match & Route'}</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* LangChain ReAct Terminal Trace */}
+          {/* AI Clinical Route Evaluation Trace */}
           {(isSolving || reactSteps.length > 0) && (
             <div className="rounded-2xl border border-blue-200 dark:border-blue-900/40 bg-slate-900 dark:bg-slate-950 p-4 space-y-2 font-mono text-[11px] animate-in fade-in duration-200 shadow-xs">
               <div className="flex items-center gap-2 text-blue-400 border-b border-slate-800 pb-2">
-                <Terminal className="w-4 h-4" />
-                <span className="font-semibold text-xs text-white">LangChain ReAct Scratchpad</span>
+                <Sparkles className="w-4 h-4" />
+                <span className="font-semibold text-xs text-white">AI Safety & Route Verification Steps</span>
               </div>
               <div className="space-y-1.5 pt-1 text-slate-300">
                 {reactSteps.map((step, idx) => (
@@ -408,15 +619,15 @@ export function TriageSimulatorDrawer() {
             </div>
           )}
 
-          {/* Solver Result & Push to HITL Queue Action */}
+          {/* Solver Result & Push to Doctor Sign-Off Action */}
           {solverResult && (
             <div className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-3 animate-in fade-in duration-300 shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-                  Optimal Match Identified (Rank 1)
+                  Best Donor Hospital Identified (Rank 1)
                 </span>
                 <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs">
-                  PI Score: {solverResult.pi}
+                  Match Score: {solverResult.pi}
                 </span>
               </div>
               <p className="text-xs text-slate-700 dark:text-slate-300">{solverResult.synthesis}</p>
@@ -428,7 +639,7 @@ export function TriageSimulatorDrawer() {
                   onClick={handlePushToHitl}
                   className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all cursor-pointer"
                 >
-                  <span>Broadcast to HITL Queue</span>
+                  <span>Submit for Doctor Sign-Off</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

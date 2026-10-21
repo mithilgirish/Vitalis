@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
-import { BellRing } from 'lucide-react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { useMission } from '@/context/MissionContext';
 import { NavigationMap } from '@/components/NavigationMap';
@@ -9,7 +8,7 @@ import { IncomingDispatchModal } from '@/components/IncomingDispatchModal';
 import { ExcursionBanner } from '@/components/ExcursionBanner';
 
 export default function MissionScreen() {
-  const { status, acceptMission, excursionFlag, colors, isDark } = useMission();
+  const { status, acceptMission, excursionFlag, colors } = useMission();
   const [showSimulatedPushModal, setShowSimulatedPushModal] = useState(false);
 
   const isModalVisible = status === 'pending_dispatch' || showSimulatedPushModal;
@@ -28,34 +27,16 @@ export default function MissionScreen() {
         </View>
       )}
 
-      {/* TOP 60% OF VIEWPORT: Live Navigation Map */}
+      {/* TOP: Immersive Live Navigation Map */}
       <View style={styles.mapSection}>
         <NavigationMap />
-
-        {/* Floating Quick Simulator Toolbar */}
-        <View style={styles.floatingToolbar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Simulate Incoming Web Dispatch"
-            onPress={() => setShowSimulatedPushModal(true)}
-            style={[
-              styles.demoPushPill,
-              {
-                backgroundColor: colors.bgCard,
-                borderColor: colors.border,
-              },
-            ]}>
-            <BellRing size={11} color={colors.cobaltBlue} />
-            <Text style={[styles.demoPushText, { color: colors.textPrimary }]}>
-              TEST INCOMING PUSH DISPATCH
-            </Text>
-          </Pressable>
-        </View>
       </View>
 
-      {/* BOTTOM 40% OF VIEWPORT: Biological Viability & Mission Card */}
+      {/* BOTTOM: Ergonomic Apple Maps Biological Viability Sheet */}
       <View style={styles.bottomSheetSection}>
-        <BiologicalViabilityCard />
+        <BiologicalViabilityCard
+          onSimulateDispatch={() => setShowSimulatedPushModal(true)}
+        />
       </View>
 
       {/* Incoming Dispatch Modal (Push State) */}
@@ -76,35 +57,10 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   mapSection: {
-    flex: 6, // 60% of viewport
+    flex: 6,
     position: 'relative',
   },
-  floatingToolbar: {
-    position: 'absolute',
-    bottom: 46,
-    left: 12,
-    zIndex: 10,
-  },
-  demoPushPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  demoPushText: {
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
   bottomSheetSection: {
-    flex: 4, // 40% of viewport
+    flex: 4,
   },
 });

@@ -2,16 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import {
   AlertTriangle,
-  Radio,
-  FileText,
   ChevronDown,
   ChevronUp,
+  PhoneCall,
+  ShieldAlert,
 } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 
 export const ExcursionBanner: React.FC = () => {
-  const { excursionFlag, temperature, safeEnvelopeMax, colors } = useMission();
+  const { excursionFlag, temperature, safeEnvelopeMax, colors, isDark } = useMission();
   const [expanded, setExpanded] = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -21,13 +20,13 @@ export const ExcursionBanner: React.FC = () => {
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 0.35,
-          duration: 350,
+          toValue: 0.4,
+          duration: 400,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 350,
+          duration: 400,
           useNativeDriver: true,
         }),
       ])
@@ -43,7 +42,7 @@ export const ExcursionBanner: React.FC = () => {
       style={[
         styles.banner,
         {
-          backgroundColor: colors.redAlarmBg,
+          backgroundColor: isDark ? 'rgba(45, 18, 22, 0.95)' : 'rgba(254, 242, 242, 0.98)',
           borderColor: colors.redAlarm,
         },
       ]}>
@@ -54,74 +53,62 @@ export const ExcursionBanner: React.FC = () => {
             styles.iconPulse,
             { backgroundColor: colors.redAlarm, opacity: pulseAnim },
           ]}>
-          <AlertTriangle size={20} color="#FFFFFF" strokeWidth={2.5} />
+          <AlertTriangle size={18} color="#FFFFFF" strokeWidth={2.4} />
         </Animated.View>
 
         <View style={styles.headerDetails}>
           <Text style={[styles.alertHeader, { color: colors.redAlarm }]}>
-            CRITICAL EXCURSION BROADCASTED TO COMMAND CENTER
+            Cold-Chain Thermal Excursion
           </Text>
           <Text style={[styles.telemetryStatus, { color: colors.textSecondary }]}>
-            Sensor Temp: <Text style={styles.monoRed}>{temperature.toFixed(1)}°C</Text> (Threshold: &gt;{safeEnvelopeMax.toFixed(1)}°C)
+            Temperature at <Text style={styles.monoRed}>{temperature.toFixed(1)}°C</Text> (Limit: ≤ {safeEnvelopeMax.toFixed(1)}°C)
           </Text>
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toggle Emergency Protocols"
+          onPress={() => setExpanded(!expanded)}
+          style={({ pressed }) => [
+            styles.expandChevron,
+            pressed && { opacity: 0.7 },
+          ]}>
+          {expanded ? (
+            <ChevronUp size={18} color={colors.redAlarm} />
+          ) : (
+            <ChevronDown size={18} color={colors.redAlarm} />
+          )}
+        </Pressable>
       </View>
 
-      {/* Broadcast Meta Badge */}
-      <View
-        style={[
-          styles.broadcastMeta,
-          {
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderColor: colors.redAlarm,
-          },
-        ]}>
-        <View style={styles.telemetryTag}>
-          <Radio size={11} color={colors.redAlarm} />
-          <Text style={[styles.telemetryTagText, { color: colors.redAlarm }]}>
-            EMITTED: excursion_flag: true
-          </Text>
-        </View>
-        <Text style={[styles.packetId, { color: colors.textMuted }]}>
-          PACKET: #EXC-9921-VTL
-        </Text>
-      </View>
-
-      {/* Emergency Action Checklist Toggle */}
-      <Pressable
-        onPress={() => setExpanded(!expanded)}
-        style={styles.expandHeader}>
-        <View style={styles.expandLeft}>
-          <FileText size={13} color={colors.redAlarm} />
-          <Text style={[styles.expandTitle, { color: colors.redAlarm }]}>
-            EMERGENCY PROTOCOL CHECKLIST
-          </Text>
-        </View>
-        {expanded ? (
-          <ChevronUp size={15} color={colors.redAlarm} />
-        ) : (
-          <ChevronDown size={15} color={colors.redAlarm} />
-        )}
-      </Pressable>
-
+      {/* Expanded Clinical Protocols */}
       {expanded && (
         <View
           style={[
             styles.protocolBody,
-            { backgroundColor: 'rgba(0, 0, 0, 0.15)' },
+            {
+              backgroundColor: isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.8)',
+              borderColor: isDark ? 'rgba(255, 69, 58, 0.2)' : 'rgba(239, 68, 68, 0.15)',
+            },
           ]}>
-          <Text style={[styles.protocolStep, { color: colors.textPrimary }]}>
-            1. DO NOT open primary container seal without command authorization.
-          </Text>
-          <Text style={[styles.protocolStep, { color: colors.textPrimary }]}>
-            2. Inspect thermoelectric Peltier collar and cooling vents.
-          </Text>
-          <Text style={[styles.protocolStep, { color: colors.textPrimary }]}>
-            3. Contact Emergency Logistics Dispatcher: <Text style={styles.monoPhone}>+91 44 2829 0200</Text>.
-          </Text>
-          <Text style={[styles.protocolStep, { color: colors.textPrimary }]}>
-            4. Prepare secondary dry ice transfer upon arrival at Apollo Trauma Bay.
-          </Text>
+          <View style={styles.instructionRow}>
+            <ShieldAlert size={14} color={colors.redAlarm} strokeWidth={2.2} />
+            <Text style={[styles.instructionText, { color: colors.textPrimary }]}>
+              Engage PCM cold stabilization pack inside container collar.
+            </Text>
+          </View>
+          <View style={styles.instructionRow}>
+            <ShieldAlert size={14} color={colors.redAlarm} strokeWidth={2.2} />
+            <Text style={[styles.instructionText, { color: colors.textPrimary }]}>
+              Do NOT break primary biological seal until Apollo ER handoff.
+            </Text>
+          </View>
+          <View style={styles.instructionRow}>
+            <PhoneCall size={14} color={colors.cobaltBlue} strokeWidth={2.2} />
+            <Text style={[styles.instructionText, { color: colors.textPrimary }]}>
+              Emergency Dispatch Support: <Text style={styles.phoneText}>+91 44 2829 0200</Text>
+            </Text>
+          </View>
         </View>
       )}
     </Animated.View>
@@ -130,21 +117,26 @@ export const ExcursionBanner: React.FC = () => {
 
 const styles = StyleSheet.create({
   banner: {
-    borderRadius: ERGONOMICS.radiusMd,
-    borderWidth: 1.5,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 10,
     marginVertical: 4,
-    gap: 7,
+    gap: 8,
+    shadowColor: '#FF453A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 4,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: 10,
   },
   iconPulse: {
-    width: 34,
-    height: 34,
-    borderRadius: 7,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -152,71 +144,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   alertHeader: {
-    fontWeight: '900',
-    fontSize: 10.5,
-    letterSpacing: 0.4,
-    lineHeight: 14,
+    fontWeight: '700',
+    fontSize: 12.5,
+    letterSpacing: -0.2,
   },
   telemetryStatus: {
-    fontSize: 9.5,
-    fontWeight: '600',
-    marginTop: 2,
+    fontSize: 10.5,
+    marginTop: 1,
   },
   monoRed: {
     fontFamily: 'monospace',
-    fontWeight: '900',
-    color: '#DC2626',
-  },
-  broadcastMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  telemetryTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  telemetryTagText: {
-    fontSize: 9,
-    fontFamily: 'monospace',
     fontWeight: '800',
+    color: '#FF453A',
   },
-  packetId: {
-    fontSize: 8.5,
-    fontFamily: 'monospace',
-  },
-  expandHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 3,
-  },
-  expandLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  expandTitle: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+  expandChevron: {
+    padding: 4,
   },
   protocolBody: {
-    padding: 8,
-    borderRadius: 6,
-    gap: 3,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 6,
   },
-  protocolStep: {
-    fontSize: 9,
-    lineHeight: 13,
+  instructionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  monoPhone: {
+  instructionText: {
+    fontSize: 10.5,
+    flex: 1,
+    lineHeight: 14,
+  },
+  phoneText: {
+    fontWeight: '700',
     fontFamily: 'monospace',
-    fontWeight: '900',
   },
 });

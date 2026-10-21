@@ -1,24 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import {
-  Radio,
-  AlertOctagon,
-  BatteryMedium,
   ShieldAlert,
   Sun,
   Moon,
+  Thermometer,
 } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 import { VitalisLogo } from './VitalisLogo';
 
 export const HeaderCockpit: React.FC = () => {
   const {
     urgencyLabel,
-    gpsPulseCountdown,
     excursionFlag,
     temperature,
-    batteryLevel,
     colors,
     isDark,
     toggleTheme,
@@ -26,18 +21,22 @@ export const HeaderCockpit: React.FC = () => {
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Pulse animation for GPS sync indicator and excursion alarm
+  // Pulse animation for excursion alarm
   useEffect(() => {
+    if (!excursionFlag) {
+      pulseAnim.setValue(1);
+      return;
+    }
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: excursionFlag ? 0.3 : 0.6,
-          duration: excursionFlag ? 400 : 800,
+          toValue: 0.3,
+          duration: 400,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: excursionFlag ? 400 : 800,
+          duration: 400,
           useNativeDriver: true,
         }),
       ])
@@ -51,104 +50,83 @@ export const HeaderCockpit: React.FC = () => {
       style={[
         styles.container,
         {
-          backgroundColor: colors.bg,
-          borderBottomColor: excursionFlag ? colors.redAlarm : colors.border,
+          backgroundColor: isDark ? 'rgba(20, 21, 25, 0.94)' : 'rgba(255, 255, 255, 0.95)',
+          borderBottomColor: excursionFlag
+            ? colors.redAlarm
+            : isDark
+            ? 'rgba(255, 255, 255, 0.08)'
+            : 'rgba(0, 0, 0, 0.06)',
         },
         excursionFlag && { backgroundColor: colors.redAlarmBg },
       ]}>
-      {/* Top row: Brand, ESI Badge, and Theme Toggle */}
-      <View style={styles.topRow}>
-        <View style={styles.brandGroup}>
-          <VitalisLogo
-            size="md"
-            textColor={colors.textPrimary}
-            subtextColor={colors.textMuted}
-          />
-        </View>
-
-        <View style={styles.topRightControls}>
-          {/* ESI TIER 1 BADGE */}
-          <View style={[styles.esiBadge, { backgroundColor: colors.esiCrimson }]}>
-            <ShieldAlert size={13} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.esiBadgeText}>{urgencyLabel}</Text>
-          </View>
-
-          {/* Theme Mode Toggle Button (Charcoal Dark <-> Clinical Light) */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Toggle Theme Mode"
-            onPress={toggleTheme}
-            style={({ pressed }) => [
-              styles.themeToggleButton,
-              {
-                backgroundColor: colors.bgCardElevated,
-                borderColor: colors.border,
-              },
-              pressed && { opacity: 0.7 },
-            ]}>
-            {isDark ? (
-              <Sun size={15} color="#FBBF24" />
-            ) : (
-              <Moon size={15} color={colors.textSecondary} />
-            )}
-          </Pressable>
-        </View>
+      {/* Brand Logo on Left */}
+      <View style={styles.brandGroup}>
+        <VitalisLogo
+          size="md"
+          textColor={colors.textPrimary}
+          subtextColor={colors.textMuted}
+        />
       </View>
 
-      {/* Bottom row: Live 15s GPS Telemetry Pulse & Cold Chain Status */}
-      <View style={styles.telemetryRow}>
-        {/* 15s GPS Telemetry Pulse badge */}
+      {/* Right Controls: Live Temp Pill + ESI Pill + Theme Toggle */}
+      <View style={styles.rightControls}>
+        {/* Live Temperature Quick Pill */}
         <View
           style={[
-            styles.pulseBadge,
-            {
-              backgroundColor: colors.cobaltBlueBg,
-              borderColor: colors.cobaltBlueGlow,
-            },
+            styles.tempPill,
+            excursionFlag
+              ? {
+                  backgroundColor: colors.redAlarm,
+                  borderColor: colors.redAlarm,
+                }
+              : {
+                  backgroundColor: isDark
+                    ? 'rgba(52, 199, 89, 0.12)'
+                    : 'rgba(52, 199, 89, 0.08)',
+                  borderColor: isDark
+                    ? 'rgba(52, 199, 89, 0.28)'
+                    : 'rgba(52, 199, 89, 0.20)',
+                },
           ]}>
-          <Animated.View
-            style={[
-              styles.pulseDot,
-              {
-                backgroundColor: colors.cobaltBlue,
-                opacity: pulseAnim,
-              },
-            ]}
+          <Thermometer
+            size={12}
+            color={excursionFlag ? '#FFFFFF' : colors.emeraldSafe}
+            strokeWidth={2.4}
           />
-          <Radio size={12} color={colors.cobaltBlue} strokeWidth={2.5} />
-          <Text style={[styles.pulseText, { color: colors.cobaltBlue }]}>
-            GPS PULSE: <Text style={[styles.pulseMono, { color: colors.textPrimary }]}>{gpsPulseCountdown}s</Text>
-          </Text>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <Text style={[styles.syncText, { color: colors.emeraldSafe }]}>LIVE SYNC</Text>
-        </View>
-
-        {/* Hardware Status & Temperature Mini-Readout */}
-        <View style={styles.statusGroup}>
-          <View
+          <Text
             style={[
-              styles.tempBadge,
-              excursionFlag
-                ? { backgroundColor: colors.redAlarm, borderColor: '#FFFFFF' }
-                : { backgroundColor: colors.emeraldSafeBg, borderColor: colors.emeraldSafe },
+              styles.tempPillText,
+              { color: excursionFlag ? '#FFFFFF' : colors.emeraldSafe },
             ]}>
-            {excursionFlag && <AlertOctagon size={12} color="#FFFFFF" />}
-            <Text
-              style={[
-                styles.tempText,
-                excursionFlag ? { color: '#FFFFFF' } : { color: colors.emeraldSafe },
-              ]}>
-              {temperature.toFixed(1)}°C
-            </Text>
-          </View>
-
-          <View style={styles.batteryBadge}>
-            <BatteryMedium size={14} color={colors.textMuted} />
-            <Text style={[styles.batteryText, { color: colors.textSecondary }]}>
-              {batteryLevel}%
-            </Text>
-          </View>
+            {temperature.toFixed(1)}°C
+          </Text>
         </View>
+
+        {/* ESI TIER 1 Badge */}
+        <View style={[styles.esiBadge, { backgroundColor: colors.esiCrimson }]}>
+          <ShieldAlert size={11} color="#FFFFFF" strokeWidth={2.4} />
+          <Text style={styles.esiBadgeText}>{urgencyLabel}</Text>
+        </View>
+
+        {/* Circular Theme Toggle */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toggle Theme Mode"
+          onPress={toggleTheme}
+          style={({ pressed }) => [
+            styles.themeToggleButton,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+            },
+            pressed && { opacity: 0.65, transform: [{ scale: 0.94 }] },
+          ]}>
+          {isDark ? (
+            <Sun size={14} color="#FFD60A" />
+          ) : (
+            <Moon size={14} color={colors.textSecondary} />
+          )}
+        </Pressable>
       </View>
     </View>
   );
@@ -158,137 +136,54 @@ const styles = StyleSheet.create({
   container: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 12,
-  },
-  topRow: {
+    paddingVertical: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
   },
   brandGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
-  brandIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FF375F',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  brandIconText: {
-    color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: -0.5,
-  },
-  brandTitle: {
-    fontWeight: '800',
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  brandSubtitle: {
-    fontSize: 8.5,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  topRightControls: {
+  rightControls: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  tempPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 4,
+  },
+  tempPillText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    fontWeight: '700',
   },
   esiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: ERGONOMICS.radiusFull,
-    gap: 5,
+    paddingVertical: 4.5,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    gap: 4,
   },
   esiBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
+    fontSize: 9.5,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   themeToggleButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-  },
-  telemetryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pulseBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 11,
-    borderRadius: ERGONOMICS.radiusFull,
-    borderWidth: 1,
-    gap: 6,
-  },
-  pulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  pulseText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  pulseMono: {
-    fontFamily: 'monospace',
-    fontWeight: '900',
-  },
-  divider: {
-    width: 1,
-    height: 10,
-  },
-  syncText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  statusGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tempBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 3.5,
-    paddingHorizontal: 8,
-    borderRadius: ERGONOMICS.radiusFull,
-    borderWidth: 1,
-    gap: 4,
-  },
-  tempText: {
-    fontSize: 11,
-    fontFamily: 'monospace',
-    fontWeight: '800',
-  },
-  batteryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  batteryText: {
-    fontSize: 10.5,
-    fontFamily: 'monospace',
-    fontWeight: '600',
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });

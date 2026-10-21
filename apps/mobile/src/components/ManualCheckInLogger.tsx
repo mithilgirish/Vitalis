@@ -11,39 +11,39 @@ import {
 import {
   ClipboardCheck,
   CheckCircle2,
-  MapPin,
   Clock,
   ShieldCheck,
+  Edit3,
 } from 'lucide-react-native';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 
 export const ManualCheckInLogger: React.FC = () => {
-  const { manualLogs, logManualTemperature, temperature, safeEnvelopeMin, safeEnvelopeMax, colors } =
+  const { manualLogs, logManualTemperature, temperature, safeEnvelopeMin, safeEnvelopeMax, colors, isDark } =
     useMission();
 
   const [inputTemp, setInputTemp] = useState<string>(temperature.toFixed(1));
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<string>(
     'Destination ER Handoff'
   );
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [justLogged, setJustLogged] = useState(false);
 
   const checkpoints = [
-    'Pickup Facility Loading',
-    'Midway Transit Audit',
-    'Destination ER Handoff',
+    { label: 'Pickup', full: 'Pickup Facility Loading' },
+    { label: 'Midway', full: 'Midway Transit Audit' },
+    { label: 'ER Handoff', full: 'Destination ER Handoff' },
   ];
 
-  const handleLog = () => {
+  const handleLog = (tempToLog: number) => {
     Keyboard.dismiss();
-    const parsed = parseFloat(inputTemp);
-    if (isNaN(parsed) || parsed < -20 || parsed > 50) {
+    if (isNaN(tempToLog) || tempToLog < -20 || tempToLog > 50) {
       Alert.alert('Invalid Reading', 'Please enter a valid calibrated Celsius temperature reading.');
       return;
     }
 
-    logManualTemperature(parsed, selectedCheckpoint);
+    logManualTemperature(tempToLog, selectedCheckpoint);
     setJustLogged(true);
+    setShowCustomInput(false);
     setTimeout(() => setJustLogged(false), 2500);
   };
 
@@ -52,71 +52,119 @@ export const ManualCheckInLogger: React.FC = () => {
       style={[
         styles.card,
         {
-          backgroundColor: colors.bgCardElevated,
-          borderColor: colors.border,
+          backgroundColor: isDark ? 'rgba(28, 29, 35, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
         },
       ]}>
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.titleGroup}>
-          <ClipboardCheck size={14} color={colors.cobaltBlue} />
+          <ClipboardCheck size={14} color={colors.cobaltBlue} strokeWidth={2.4} />
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-            MANUAL CHECK-IN LOGGER
+            Physical Probe Check-In
           </Text>
         </View>
-        <Text style={[styles.subtitle, { color: colors.emeraldSafe }]}>MANDATORY SOP</Text>
+        <Text style={[styles.subtitle, { color: colors.emeraldSafe }]}>
+          SOP Required
+        </Text>
       </View>
 
-      <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-        Driver confirmation required at Pickup and Delivery Handoff using calibrated physical probe.
-      </Text>
-
-      {/* Checkpoint selector pills */}
-      <View style={styles.checkpointRow}>
+      {/* Apple-style 3-way Segmented Control */}
+      <View
+        style={[
+          styles.segmentedTrack,
+          {
+            backgroundColor: isDark ? 'rgba(20, 21, 25, 0.75)' : 'rgba(0, 0, 0, 0.05)',
+          },
+        ]}>
         {checkpoints.map((cp) => {
-          const isSelected = selectedCheckpoint === cp;
+          const isSelected = selectedCheckpoint === cp.full;
           return (
             <Pressable
-              key={cp}
-              onPress={() => setSelectedCheckpoint(cp)}
-              style={[
-                styles.checkpointPill,
-                {
-                  backgroundColor: isSelected ? colors.cobaltBlueBg : colors.bgCard,
-                  borderColor: isSelected ? colors.cobaltBlue : colors.border,
-                },
+              key={cp.full}
+              onPress={() => setSelectedCheckpoint(cp.full)}
+              style={({ pressed }) => [
+                styles.segmentedTab,
+                isSelected && [
+                  styles.segmentedTabActive,
+                  {
+                    backgroundColor: isDark ? 'rgba(38, 39, 47, 0.96)' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                  },
+                ],
+                pressed && { opacity: 0.8 },
               ]}>
               <Text
                 style={[
                   styles.checkpointText,
                   {
-                    color: isSelected ? colors.cobaltBlue : colors.textMuted,
-                    fontWeight: isSelected ? '900' : '700',
+                    color: isSelected ? colors.textPrimary : colors.textMuted,
+                    fontWeight: isSelected ? '700' : '500',
                   },
                 ]}>
-                {cp === 'Pickup Facility Loading'
-                  ? '1. PICKUP'
-                  : cp === 'Midway Transit Audit'
-                  ? '2. TRANSIT'
-                  : '3. HANDOFF'}
+                {cp.label}
               </Text>
             </Pressable>
           );
         })}
       </View>
 
-      {/* Input row */}
-      <View style={styles.inputRow}>
-        <View style={styles.inputWrapper}>
-          <Text style={[styles.inputLabel, { color: colors.textMuted }]}>
-            PROBE READING (°C):
-          </Text>
+      {/* One-Tap Primary Action Button */}
+      {!showCustomInput ? (
+        <View style={styles.actionContainer}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Record Probe Reading"
+            onPress={() => handleLog(parseFloat(temperature.toFixed(1)))}
+            style={({ pressed }) => [
+              styles.submitButton,
+              {
+                backgroundColor: justLogged ? colors.emeraldSafe : colors.cobaltBlue,
+              },
+              pressed && styles.submitButtonPressed,
+            ]}>
+            {justLogged ? (
+              <>
+                <CheckCircle2 size={17} color="#FFFFFF" strokeWidth={2.6} />
+                <Text style={styles.submitButtonText}>Verification Recorded ✓</Text>
+              </>
+            ) : (
+              <>
+                <ShieldCheck size={17} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.submitButtonText}>
+                  Record Check-In ({temperature.toFixed(1)}°C)
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          {/* Secondary subtle toggle for custom manual probe entry */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Enter custom probe reading"
+            onPress={() => {
+              setInputTemp(temperature.toFixed(1));
+              setShowCustomInput(true);
+            }}
+            style={({ pressed }) => [
+              styles.customToggle,
+              pressed && { opacity: 0.7 },
+            ]}>
+            <Edit3 size={11} color={colors.textMuted} />
+            <Text style={[styles.customToggleText, { color: colors.textMuted }]}>
+              Enter custom physical probe reading
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        /* Inline Custom Temperature Field */
+        <View style={styles.customInputContainer}>
           <View
             style={[
               styles.textInputBox,
               {
-                backgroundColor: colors.bgCard,
-                borderColor: colors.border,
+                backgroundColor: isDark ? 'rgba(20, 21, 25, 0.75)' : 'rgba(0, 0, 0, 0.04)',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
               },
             ]}>
             <TextInput
@@ -124,61 +172,32 @@ export const ManualCheckInLogger: React.FC = () => {
               value={inputTemp}
               onChangeText={setInputTemp}
               keyboardType="numeric"
-              placeholder="e.g. 3.8"
+              autoFocus
+              placeholder="e.g. 4.1"
               placeholderTextColor={colors.textMuted}
             />
             <Text style={[styles.inputUnit, { color: colors.textMuted }]}>°C</Text>
           </View>
+
+          <View style={styles.customButtonsRow}>
+            <Pressable
+              onPress={() => handleLog(parseFloat(inputTemp))}
+              style={[styles.customSaveButton, { backgroundColor: colors.cobaltBlue }]}>
+              <Text style={styles.customSaveText}>Save</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowCustomInput(false)}
+              style={styles.customCancelButton}>
+              <Text style={[styles.customCancelText, { color: colors.textMuted }]}>Cancel</Text>
+            </Pressable>
+          </View>
         </View>
+      )}
 
-        {/* Quick set current sensor temp */}
-        <Pressable
-          onPress={() => setInputTemp(temperature.toFixed(1))}
-          style={[
-            styles.syncProbeButton,
-            {
-              backgroundColor: colors.bgCard,
-              borderColor: colors.border,
-            },
-          ]}>
-          <Text style={[styles.syncProbeText, { color: colors.cobaltBlue }]}>
-            USE BLE SENSOR
-          </Text>
-          <Text style={[styles.syncProbeVal, { color: colors.textPrimary }]}>
-            {temperature.toFixed(1)}°C
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Primary Action Button: Minimum 56px height for ergonomic one-handed operation */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Verify & Log Temperature"
-        onPress={handleLog}
-        style={({ pressed }) => [
-          styles.submitButton,
-          {
-            backgroundColor: justLogged ? colors.emeraldSafe : colors.cobaltBlue,
-          },
-          pressed && styles.submitButtonPressed,
-        ]}>
-        {justLogged ? (
-          <>
-            <CheckCircle2 size={20} color="#FFFFFF" />
-            <Text style={styles.submitButtonText}>LOGGED TO AUDIT TRAIL ✓</Text>
-          </>
-        ) : (
-          <>
-            <ShieldCheck size={20} color="#FFFFFF" />
-            <Text style={styles.submitButtonText}>VERIFY &amp; LOG TEMPERATURE</Text>
-          </>
-        )}
-      </Pressable>
-
-      {/* Recent Check-In Audit Logs */}
+      {/* Audit History (Apple Inset Grouped) */}
       <View style={styles.historySection}>
         <Text style={[styles.historyTitle, { color: colors.textMuted }]}>
-          VERIFIED AUDIT LOG ({manualLogs.length})
+          VERIFIED AUDITS ({manualLogs.length})
         </Text>
         <View style={styles.historyList}>
           {manualLogs.map((log) => {
@@ -189,33 +208,19 @@ export const ManualCheckInLogger: React.FC = () => {
                 style={[
                   styles.logItem,
                   {
-                    backgroundColor: colors.bgCard,
-                    borderColor: colors.border,
+                    backgroundColor: isDark ? 'rgba(20, 21, 25, 0.65)' : 'rgba(242, 242, 247, 0.75)',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
                 <View style={styles.logLeft}>
-                  <View
-                    style={[
-                      styles.logCheckpointTag,
-                      { backgroundColor: colors.bgSurface },
-                    ]}>
-                    <Text style={[styles.logCheckpointText, { color: colors.textPrimary }]}>
-                      {log.checkpoint}
-                    </Text>
-                  </View>
+                  <Text style={[styles.logCheckpointText, { color: colors.textPrimary }]}>
+                    {log.checkpoint}
+                  </Text>
                   <View style={styles.logMeta}>
-                    <View style={styles.metaIconText}>
-                      <Clock size={10} color={colors.textMuted} />
-                      <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                        {log.timestamp}
-                      </Text>
-                    </View>
-                    <View style={styles.metaIconText}>
-                      <MapPin size={10} color={colors.textMuted} />
-                      <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                        {log.location}
-                      </Text>
-                    </View>
+                    <Clock size={10} color={colors.textMuted} />
+                    <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                      {log.timestamp} • {log.driverId}
+                    </Text>
                   </View>
                 </View>
 
@@ -224,7 +229,14 @@ export const ManualCheckInLogger: React.FC = () => {
                   style={[
                     styles.logTempBadge,
                     {
-                      backgroundColor: isSafe ? colors.emeraldSafeBg : colors.redAlarmBg,
+                      backgroundColor: isSafe
+                        ? isDark
+                          ? 'rgba(52, 199, 89, 0.16)'
+                          : 'rgba(52, 199, 89, 0.10)'
+                        : isDark
+                        ? 'rgba(255, 69, 58, 0.18)'
+                        : 'rgba(255, 69, 58, 0.12)',
+                      borderColor: isSafe ? colors.emeraldSafe : colors.redAlarm,
                     },
                   ]}>
                   <Text
@@ -233,9 +245,6 @@ export const ManualCheckInLogger: React.FC = () => {
                       { color: isSafe ? colors.emeraldSafe : colors.redAlarm },
                     ]}>
                     {log.temp.toFixed(1)}°C
-                  </Text>
-                  <Text style={[styles.logVerifiedBy, { color: colors.textMuted }]}>
-                    {log.driverId}
                   </Text>
                 </View>
               </View>
@@ -250,15 +259,21 @@ export const ManualCheckInLogger: React.FC = () => {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: 1,
-    padding: 12,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 2,
   },
   titleGroup: {
     flexDirection: 'row',
@@ -266,90 +281,53 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
-    fontSize: 10.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: 8.5,
-    fontWeight: '800',
-    fontFamily: 'monospace',
+    fontSize: 9,
+    fontWeight: '700',
   },
-  instruction: {
-    fontSize: 9.5,
-    lineHeight: 14,
-  },
-  checkpointRow: {
+  segmentedTrack: {
     flexDirection: 'row',
-    gap: 6,
+    borderRadius: 14,
+    padding: 3,
+    gap: 4,
   },
-  checkpointPill: {
+  segmentedTab: {
     flex: 1,
-    borderRadius: ERGONOMICS.radiusSm,
+    borderRadius: 11,
     paddingVertical: 7,
     alignItems: 'center',
-    borderWidth: 1,
+    justifyContent: 'center',
+  },
+  segmentedTabActive: {
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   checkpointText: {
-    fontSize: 9,
+    fontSize: 11,
   },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-end',
-  },
-  inputWrapper: {
-    flex: 1,
-    gap: 3,
-  },
-  inputLabel: {
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  textInputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: ERGONOMICS.radiusSm,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    height: 44,
-  },
-  textInput: {
-    flex: 1,
-    fontFamily: 'monospace',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  inputUnit: {
-    fontSize: 13,
-    fontFamily: 'monospace',
-    fontWeight: '800',
-  },
-  syncProbeButton: {
-    borderRadius: ERGONOMICS.radiusSm,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  syncProbeText: {
-    fontSize: 7.5,
-    fontWeight: '900',
-  },
-  syncProbeVal: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    fontWeight: '900',
+  actionContainer: {
+    gap: 6,
   },
   submitButton: {
-    height: ERGONOMICS.buttonHeight, // Minimum 56px height
-    borderRadius: ERGONOMICS.radiusMd,
+    height: 48,
+    borderRadius: 999,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
+    shadowColor: '#0A84FF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonPressed: {
     opacity: 0.85,
@@ -358,17 +336,75 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  customToggle: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 3,
+  },
+  customToggleText: {
+    fontSize: 9.5,
+    fontWeight: '500',
+  },
+  customInputContainer: {
+    gap: 8,
+  },
+  textInputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  textInput: {
+    flex: 1,
+    fontFamily: 'monospace',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  inputUnit: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  customButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  customSaveButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customSaveText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  customCancelButton: {
+    height: 40,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customCancelText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   historySection: {
     marginTop: 2,
-    gap: 5,
+    gap: 6,
   },
   historyTitle: {
     fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
   historyList: {
     gap: 5,
@@ -377,51 +413,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: ERGONOMICS.radiusSm,
-    borderWidth: 1,
-    padding: 7,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   logLeft: {
     flex: 1,
-    gap: 3,
-  },
-  logCheckpointTag: {
-    alignSelf: 'flex-start',
-    paddingVertical: 1,
-    paddingHorizontal: 5,
-    borderRadius: 3,
+    gap: 2,
   },
   logCheckpointText: {
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
   },
   logMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  metaIconText: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   metaText: {
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'monospace',
   },
   logTempBadge: {
     paddingVertical: 3,
-    paddingHorizontal: 7,
-    borderRadius: 5,
+    paddingHorizontal: 8,
+    borderRadius: 8,
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
   logTempText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontFamily: 'monospace',
-    fontWeight: '900',
-  },
-  logVerifiedBy: {
-    fontSize: 7.5,
-    fontFamily: 'monospace',
+    fontWeight: '800',
   },
 });

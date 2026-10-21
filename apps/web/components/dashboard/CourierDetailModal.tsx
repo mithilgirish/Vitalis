@@ -46,7 +46,7 @@ export function CourierDetailModal() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {selectedCourier.vehicleType} • Active Dispatch Corridor
+                {selectedCourier.vehicleType} • Live Emergency Transfer
               </p>
             </div>
           </div>
@@ -61,7 +61,7 @@ export function CourierDetailModal() {
         {/* Courier Route Path */}
         <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-mono">
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase text-slate-400">Origin Facility</span>
+            <span className="text-[10px] uppercase text-slate-400">Donor Hospital</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedCourier.originFacilityName}</span>
           </div>
           <div className="flex flex-col items-center px-4">
@@ -74,7 +74,7 @@ export function CourierDetailModal() {
             </div>
           </div>
           <div className="flex flex-col text-right">
-            <span className="text-[10px] uppercase text-slate-400">Destination</span>
+            <span className="text-[10px] uppercase text-slate-400">Receiving Hospital</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedCourier.destinationFacilityName}</span>
           </div>
         </div>
@@ -89,33 +89,33 @@ export function CourierDetailModal() {
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase text-slate-400">Payload Temp</span>
+              <span className="text-[10px] uppercase text-slate-400">Blood Temp</span>
               <Thermometer className="w-3.5 h-3.5" />
             </div>
             <div className="text-xl font-bold mt-1">
               {selectedCourier.currentTemperatureC.toFixed(1)}°C
             </div>
             <span className="text-[10px] text-slate-500 dark:text-slate-400">
-              Limit: ≤ {selectedCourier.tempThresholdMaxC}°C
+              Safe: ≤ {selectedCourier.tempThresholdMaxC}°C
             </span>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase text-slate-400">Velocity</span>
+              <span className="text-[10px] uppercase text-slate-400">Speed</span>
               <Navigation className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
             </div>
             <div className="text-xl font-bold mt-1 text-slate-900 dark:text-slate-100">
               {selectedCourier.velocityKmH} km/h
             </div>
             <span className="text-[10px] text-slate-400">
-              GPS Lock Verified
+              GPS Signal Verified
             </span>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase text-slate-400">ETA</span>
+              <span className="text-[10px] uppercase text-slate-400">Est. Arrival (ETA)</span>
               <Clock className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
@@ -130,22 +130,22 @@ export function CourierDetailModal() {
         {/* Cargo Details */}
         <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-slate-500 dark:text-slate-400 uppercase text-[10px]">Biological Cargo Manifest</span>
+            <span className="font-mono text-slate-500 dark:text-slate-400 uppercase text-[10px]">Medical Cargo</span>
             <span className="font-mono text-rose-600 dark:text-rose-400 font-bold">
               {selectedCourier.units} Units • {selectedCourier.bloodGroup} {selectedCourier.resource}
             </span>
           </div>
         </div>
 
-        {/* Temperature Excursion Alert Box & Action */}
+        {/* Temperature Alert Box & Action */}
         {isExcursion ? (
           <div className="mt-4 p-3.5 rounded-xl border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
               <div className="text-xs text-rose-800 dark:text-rose-200">
-                <span className="font-bold">Active Cold-Chain Excursion!</span>
+                <span className="font-bold">Temperature Exceeds Threshold!</span>
                 <p className="text-[11px] text-rose-600 dark:text-rose-300">
-                  Temperature exceeds viability threshold. Deploy emergency PCM cooling pack.
+                  Temperature exceeds 6.0°C limit. Deploy emergency secondary cooling pack.
                 </p>
               </div>
             </div>
@@ -153,13 +153,13 @@ export function CourierDetailModal() {
               onClick={() => resolveExcursion(selectedCourier.transferId)}
               className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shrink-0 shadow-md cursor-pointer transition-all"
             >
-              Stabilize (PCM)
+              Activate Cooling
             </button>
           </div>
         ) : (
           <div className="mt-4 p-3 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/20 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>Thermal envelope certified safe within biological preservation parameters.</span>
+            <span>Temperature is safe within clinical preservation limits (1.0°C – 6.0°C).</span>
           </div>
         )}
       </div>

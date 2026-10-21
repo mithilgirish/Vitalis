@@ -11,8 +11,7 @@ import {
   Flame,
   Snowflake,
   ShieldAlert,
-  Radio,
-  Sliders,
+  Package,
 } from 'lucide-react-native';
 
 import { useMission } from '@/context/MissionContext';
@@ -20,7 +19,6 @@ import { RadialGauge } from '@/components/RadialGauge';
 import { SparklineGraph } from '@/components/SparklineGraph';
 import { ManualCheckInLogger } from '@/components/ManualCheckInLogger';
 import { ExcursionBanner } from '@/components/ExcursionBanner';
-import { ERGONOMICS } from '@/theme/vitalis-theme';
 
 export default function TelemetryScreen() {
   const {
@@ -31,6 +29,7 @@ export default function TelemetryScreen() {
     safeEnvelopeMin,
     safeEnvelopeMax,
     colors,
+    isDark,
   } = useMission();
 
   return (
@@ -41,121 +40,151 @@ export default function TelemetryScreen() {
       {/* Top Banner Alert if excursion active */}
       <ExcursionBanner />
 
-      {/* Cargo Type Envelope Selector Switch */}
+      {/* Apple-style Payload Type Segmented Selector */}
       <View
         style={[
           styles.cargoSelectorCard,
           {
-            backgroundColor: colors.bgCardElevated,
-            borderColor: colors.border,
+            backgroundColor: isDark ? 'rgba(28, 29, 35, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
           },
         ]}>
         <View style={styles.cargoSelectorHeader}>
           <View style={styles.cargoHeaderLeft}>
-            <Sliders size={13} color={colors.cobaltBlue} />
+            <Package size={14} color={colors.cobaltBlue} strokeWidth={2.4} />
             <Text style={[styles.cargoHeaderTitle, { color: colors.textPrimary }]}>
-              ACTIVE PAYLOAD ENVELOPE
+              Active Payload Type
             </Text>
           </View>
-          <Text style={[styles.cargoEnvelopeText, { color: colors.cobaltBlue }]}>
-            {safeEnvelopeMin}°C – {safeEnvelopeMax}°C
-          </Text>
+          <View
+            style={[
+              styles.envelopePill,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(10, 132, 255, 0.14)'
+                  : 'rgba(0, 122, 255, 0.08)',
+                borderColor: isDark
+                  ? 'rgba(10, 132, 255, 0.28)'
+                  : 'rgba(0, 122, 255, 0.18)',
+              },
+            ]}>
+            <Text style={[styles.cargoEnvelopeText, { color: colors.cobaltBlue }]}>
+              Target: {safeEnvelopeMin.toFixed(0)}° – {safeEnvelopeMax.toFixed(0)}°C
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.cargoButtonsRow}>
-          {/* PRBC Option */}
+        {/* Segmented Control Track */}
+        <View
+          style={[
+            styles.segmentedTrack,
+            {
+              backgroundColor: isDark ? 'rgba(20, 21, 25, 0.75)' : 'rgba(0, 0, 0, 0.05)',
+            },
+          ]}>
+          {/* PRBC Segment */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Select PRBC Cargo"
             onPress={() => setCargoType('PRBC')}
-            style={[
-              styles.cargoTab,
-              {
-                backgroundColor: cargoType === 'PRBC' ? colors.cobaltBlueBg : colors.bgCard,
-                borderColor: cargoType === 'PRBC' ? colors.cobaltBlue : colors.border,
-              },
+            style={({ pressed }) => [
+              styles.segmentedTab,
+              cargoType === 'PRBC' && [
+                styles.segmentedTabActive,
+                {
+                  backgroundColor: isDark ? 'rgba(38, 39, 47, 0.96)' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                },
+              ],
+              pressed && { opacity: 0.8 },
             ]}>
             <Snowflake
-              size={15}
+              size={14}
               color={cargoType === 'PRBC' ? colors.cobaltBlue : colors.textMuted}
+              strokeWidth={2.2}
             />
-            <View>
-              <Text
-                style={[
-                  styles.cargoTabText,
-                  {
-                    color: cargoType === 'PRBC' ? colors.cobaltBlue : colors.textMuted,
-                    fontWeight: cargoType === 'PRBC' ? '900' : '700',
-                  },
-                ]}>
-                PRBC (Red Cells)
-              </Text>
-              <Text style={[styles.cargoTabRange, { color: colors.textSecondary }]}>
-                1.0°C – 6.0°C
-              </Text>
-            </View>
+            <Text
+              style={[
+                styles.cargoTabText,
+                {
+                  color: cargoType === 'PRBC' ? colors.textPrimary : colors.textMuted,
+                  fontWeight: cargoType === 'PRBC' ? '700' : '500',
+                },
+              ]}>
+              PRBC (1.0° – 6.0°C)
+            </Text>
           </Pressable>
 
-          {/* Platelets Option */}
+          {/* Platelets Segment */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Select Platelets Cargo"
             onPress={() => setCargoType('Platelets')}
-            style={[
-              styles.cargoTab,
-              {
-                backgroundColor: cargoType === 'Platelets' ? colors.cobaltBlueBg : colors.bgCard,
-                borderColor: cargoType === 'Platelets' ? colors.cobaltBlue : colors.border,
-              },
+            style={({ pressed }) => [
+              styles.segmentedTab,
+              cargoType === 'Platelets' && [
+                styles.segmentedTabActive,
+                {
+                  backgroundColor: isDark ? 'rgba(38, 39, 47, 0.96)' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                },
+              ],
+              pressed && { opacity: 0.8 },
             ]}>
             <Flame
-              size={15}
+              size={14}
               color={cargoType === 'Platelets' ? colors.cobaltBlue : colors.textMuted}
+              strokeWidth={2.2}
             />
-            <View>
-              <Text
-                style={[
-                  styles.cargoTabText,
-                  {
-                    color: cargoType === 'Platelets' ? colors.cobaltBlue : colors.textMuted,
-                    fontWeight: cargoType === 'Platelets' ? '900' : '700',
-                  },
-                ]}>
-                Platelets (Apheresis)
-              </Text>
-              <Text style={[styles.cargoTabRange, { color: colors.textSecondary }]}>
-                20.0°C – 24.0°C
-              </Text>
-            </View>
+            <Text
+              style={[
+                styles.cargoTabText,
+                {
+                  color: cargoType === 'Platelets' ? colors.textPrimary : colors.textMuted,
+                  fontWeight: cargoType === 'Platelets' ? '700' : '500',
+                },
+              ]}>
+              Platelets (20° – 24°C)
+            </Text>
           </Pressable>
         </View>
       </View>
 
-      {/* CENTERPIECE: Live Sensor Gauge */}
+      {/* CARD 1: Apple Health Hero Vitals Card */}
       <View
         style={[
           styles.gaugeCard,
           {
-            backgroundColor: colors.bgCard,
-            borderColor: colors.border,
+            backgroundColor: isDark ? 'rgba(28, 29, 35, 0.90)' : 'rgba(255, 255, 255, 0.94)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
           },
         ]}>
         <RadialGauge />
       </View>
 
-      {/* Live Sparkline Graph (15-min history sampled every 60s) */}
+      {/* CARD 2: Apple Health Temperature History Chart with Safe Band */}
       <SparklineGraph />
 
-      {/* Manual Check-In Logger */}
+      {/* CARD 3: Physical Probe Verification Logger */}
       <ManualCheckInLogger />
 
-      {/* INTERACTIVE DEMO SIMULATION TOGGLE (For Presentation Pitch) */}
+      {/* CARD 4: Apple Settings Style Drill Simulator */}
       <View
         style={[
           styles.demoToggleCard,
           {
-            backgroundColor: isExcursionSimulated ? colors.redAlarmBg : colors.bgCardElevated,
-            borderColor: isExcursionSimulated ? colors.redAlarm : colors.border,
+            backgroundColor: isExcursionSimulated
+              ? isDark
+                ? 'rgba(45, 18, 22, 0.95)'
+                : 'rgba(254, 242, 242, 0.98)'
+              : isDark
+              ? 'rgba(28, 29, 35, 0.90)'
+              : 'rgba(255, 255, 255, 0.94)',
+            borderColor: isExcursionSimulated
+              ? colors.redAlarm
+              : isDark
+              ? 'rgba(255, 255, 255, 0.10)'
+              : 'rgba(0, 0, 0, 0.08)',
           },
         ]}>
         <View style={styles.demoToggleLeft}>
@@ -163,23 +192,25 @@ export default function TelemetryScreen() {
             style={[
               styles.demoIconWrapper,
               {
-                backgroundColor: isExcursionSimulated ? colors.redAlarm : colors.amberWarningBg,
+                backgroundColor: isExcursionSimulated
+                  ? colors.redAlarm
+                  : isDark
+                  ? 'rgba(255, 159, 10, 0.16)'
+                  : 'rgba(255, 159, 10, 0.10)',
               },
             ]}>
             <ShieldAlert
-              size={18}
+              size={16}
               color={isExcursionSimulated ? '#FFFFFF' : colors.amberWarning}
+              strokeWidth={2.2}
             />
           </View>
           <View style={styles.demoTexts}>
-            <Text style={[styles.demoBadgeTitle, { color: colors.amberWarning }]}>
-              PRESENTATION PITCH SIMULATOR
-            </Text>
             <Text style={[styles.demoLabel, { color: colors.textPrimary }]}>
-              Simulate Thermal Excursion (&gt; 6.0°C)
+              Simulate Excursion Drill
             </Text>
             <Text style={[styles.demoSub, { color: colors.textSecondary }]}>
-              Spikes temp to 7.4°C, flashes perimeter alarm, and emits excursion_flag.
+              Triggers temperature alarm (&gt; 6.0°C) for protocol drills
             </Text>
           </View>
         </View>
@@ -188,18 +219,17 @@ export default function TelemetryScreen() {
           value={isExcursionSimulated}
           onValueChange={(val) => toggleExcursion(val)}
           trackColor={{
-            false: colors.border,
+            false: isDark ? '#3A3A3C' : '#E5E5EA',
             true: colors.redAlarm,
           }}
           thumbColor="#FFFFFF"
         />
       </View>
 
-      {/* Telemetry Footer Meta */}
+      {/* Quiet Telemetry Footer */}
       <View style={styles.footerInfo}>
-        <Radio size={12} color={colors.textMuted} />
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
-          Vitalis Cold-Chain IoT Node • BLE 5.3 Connected • NIST Calibrated
+          Vitalis Cold-Chain Sensor Node • NIST Calibrated
         </Text>
       </View>
     </ScrollView>
@@ -213,75 +243,95 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 14,
     gap: 12,
-    paddingBottom: 28,
+    paddingBottom: 24,
   },
   cargoSelectorCard: {
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: 1,
-    padding: 11,
-    gap: 8,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   cargoSelectorHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 2,
   },
   cargoHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   cargoHeaderTitle: {
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  envelopePill: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   cargoEnvelopeText: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 9.5,
+    fontWeight: '600',
   },
-  cargoButtonsRow: {
+  segmentedTrack: {
     flexDirection: 'row',
-    gap: 8,
+    borderRadius: 14,
+    padding: 3,
+    gap: 4,
   },
-  cargoTab: {
+  segmentedTab: {
     flex: 1,
-    borderRadius: ERGONOMICS.radiusSm,
-    borderWidth: 1,
-    paddingVertical: 7,
-    paddingHorizontal: 9,
+    borderRadius: 11,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    justifyContent: 'center',
+    gap: 6,
   },
-  cargoTabText: {
-    fontSize: 10,
-  },
-  cargoTabRange: {
-    fontSize: 8.5,
-    fontFamily: 'monospace',
-    marginTop: 1,
-  },
-  gaugeCard: {
-    borderRadius: ERGONOMICS.radiusXl,
-    borderWidth: 1,
-    padding: 12,
-    alignItems: 'center',
+  segmentedTabActive: {
+    borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cargoTabText: {
+    fontSize: 11,
+  },
+  gaugeCard: {
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
   demoToggleCard: {
-    borderRadius: ERGONOMICS.radiusLg,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   demoToggleLeft: {
     flexDirection: 'row',
@@ -292,37 +342,29 @@ const styles = StyleSheet.create({
   demoIconWrapper: {
     width: 34,
     height: 34,
-    borderRadius: 7,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   demoTexts: {
     flex: 1,
   },
-  demoBadgeTitle: {
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
   demoLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    marginTop: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   demoSub: {
-    fontSize: 8.5,
-    lineHeight: 12,
-    marginTop: 2,
+    fontSize: 9.5,
+    marginTop: 1,
+    lineHeight: 13,
   },
   footerInfo: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 6,
+    justifyContent: 'center',
+    paddingVertical: 4,
   },
   footerText: {
-    fontSize: 8.5,
-    fontFamily: 'monospace',
+    fontSize: 9,
   },
 });

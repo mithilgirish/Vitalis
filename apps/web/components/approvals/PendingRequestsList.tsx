@@ -47,11 +47,11 @@ export function PendingRequestsList({
           <div className="flex items-center gap-2">
             <CheckSquare className="w-4 h-4 text-[#FF375F] dark:text-[#FF453A]" />
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-              Authorization Queue
+              Hospital Transfer Requests
             </h2>
           </div>
           <span className="font-mono text-[11px] px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold">
-            {requests.filter((r) => r.status === 'pending_approval').length} Pending
+            {requests.filter((r) => r.status === 'pending_approval').length} To Approve
           </span>
         </div>
 
@@ -76,7 +76,7 @@ export function PendingRequestsList({
             }`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
-            Tier 1
+            ESI 1 (Critical)
           </button>
           <button
             onClick={() => setFilterTier(2)}
@@ -86,7 +86,7 @@ export function PendingRequestsList({
                 : 'text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-300'
             }`}
           >
-            Tier 2
+            ESI 2 (Urgent)
           </button>
         </div>
       </div>
