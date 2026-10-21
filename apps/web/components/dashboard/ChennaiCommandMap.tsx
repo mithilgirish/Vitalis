@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useVitalis } from '../../lib/store/vitalisContext';
+import { VitalisLogo } from '../common/VitalisLogo';
 import {
   Layers,
   ZoomIn,
@@ -22,10 +23,10 @@ const ChennaiLeafletMap = dynamic(
     loading: () => (
       <div className="w-full h-[620px] rounded-3xl flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0D12] border border-black/[0.06] dark:border-white/[0.08] animate-pulse">
         <div className="p-3.5 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] mb-3">
-          <Globe className="w-6 h-6 text-[#0071E3] dark:text-[#0A84FF] animate-spin" />
+          <VitalisLogo size="lg" showText={false} className="animate-pulse" />
         </div>
         <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-          Loading OpenStreetMap Leaflet Engine...
+          Loading Vitalis OpenStreetMap Leaflet Engine...
         </p>
       </div>
     ),
@@ -304,6 +305,16 @@ export function ChennaiCommandMap() {
           </div>
         </div>
       )}
+
+      {/* Vitalis Brand Watermark Pill (Bottom Right) */}
+      <div className="absolute bottom-4 right-4 z-20 pointer-events-none hidden sm:block">
+        <div className="px-3 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#161820]/85 backdrop-blur-xl flex items-center gap-2 shadow-xs">
+          <VitalisLogo size="sm" showText={false} />
+          <span className="text-[10px] font-mono font-semibold tracking-wider text-slate-600 dark:text-slate-300">
+            VITALIS MEDICAL GRID
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

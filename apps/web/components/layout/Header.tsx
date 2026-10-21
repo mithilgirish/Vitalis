@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useVitalis } from '../../lib/store/vitalisContext';
+import { VitalisLogo } from '../common/VitalisLogo';
 import {
   Bell,
   Search,
@@ -74,6 +75,9 @@ export function Header() {
     <header className="h-16 w-full border-b border-black/[0.06] dark:border-white/[0.08] apple-glass px-6 flex items-center justify-between z-30 shrink-0 transition-colors">
       {/* Page Title & Breadcrumb */}
       <div className="flex items-center gap-3">
+        <div className="lg:hidden">
+          <VitalisLogo size="sm" showText={false} />
+        </div>
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white tracking-tight">

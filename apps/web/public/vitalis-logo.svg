@@ -1,0 +1,48 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Crimson Ribbon Gradient (Blood / Urgency) -->
+    <linearGradient id="crimsonRibbon" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FB7185" />
+      <stop offset="45%" stop-color="#E11D48" />
+      <stop offset="100%" stop-color="#9F1239" />
+    </linearGradient>
+
+    <!-- Cobalt Ribbon Gradient (Network / Logistics) -->
+    <linearGradient id="cobaltRibbon" x1="42" y1="6" x2="6" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="55%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+
+    <!-- Intersection glow -->
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Underloop - Cobalt Ribbon -->
+  <path
+    d="M12 36C8 30 10 18 20 12C28 7.2 38 12 38 20C38 28 28 34 24 38C20 42 16 42 12 36Z"
+    stroke="url(#cobaltRibbon)"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+    opacity="0.9"
+  />
+
+  <!-- Overloop - Crimson Ribbon Interlocking -->
+  <path
+    d="M36 36C40 30 38 18 28 12C20 7.2 10 12 10 20C10 28 20 34 24 38C28 42 32 42 36 36Z"
+    stroke="url(#crimsonRibbon)"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- Central Crossing Node / Viability Core -->
+  <circle cx="24" cy="20" r="2.5" fill="#FFFFFF" opacity="0.95" />
+  <circle cx="24" cy="20" r="5" fill="url(#centerGlow)" />
+</svg>

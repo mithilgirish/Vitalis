@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
+import { VitalisLogo } from '../common/VitalisLogo';
 import { IngestionSource, JevExtractionResult, BiologicalResourceType, BloodGroup } from '../../lib/types';
 import {
   X,
@@ -232,10 +233,8 @@ export function TriageSimulatorDrawer() {
       <div className="relative w-full max-w-xl bg-white dark:bg-[#1A202C] border-l border-slate-200 dark:border-[#2D3748] shadow-2xl flex flex-col h-full overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Drawer Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-600 text-white font-bold shadow-xs">
-              <Zap className="h-4 w-4" />
-            </div>
+          <div className="flex items-center gap-3">
+            <VitalisLogo size="md" showText={false} />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">

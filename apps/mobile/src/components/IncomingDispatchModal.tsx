@@ -11,6 +11,7 @@ import {
 import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { SlideToConfirm } from './SlideToConfirm';
 import { useMission } from '@/context/MissionContext';
+import { VitalisLogo } from './VitalisLogo';
 
 interface IncomingDispatchModalProps {
   visible: boolean;
@@ -50,13 +51,16 @@ export const IncomingDispatchModal: React.FC<IncomingDispatchModalProps> = ({
           {/* Modal Header Title */}
           <View style={styles.content}>
             <View style={styles.titleRow}>
-              <View>
-                <Text style={[styles.calloutText, { color: colors.textMuted }]}>
-                  DISPATCH COMMAND ASSIGNMENT
-                </Text>
-                <Text style={[styles.mainTitle, { color: colors.textPrimary }]}>
-                  EMERGENCY BLOOD TRANSFER
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <VitalisLogo size="md" showText={false} />
+                <View>
+                  <Text style={[styles.calloutText, { color: colors.textMuted }]}>
+                    DISPATCH COMMAND ASSIGNMENT
+                  </Text>
+                  <Text style={[styles.mainTitle, { color: colors.textPrimary }]}>
+                    EMERGENCY BLOOD TRANSFER
+                  </Text>
+                </View>
               </View>
               <View
                 style={[

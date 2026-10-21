@@ -10,6 +10,7 @@ import {
 } from 'lucide-react-native';
 import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
+import { VitalisLogo } from './VitalisLogo';
 
 export const HeaderCockpit: React.FC = () => {
   const {
@@ -58,15 +59,11 @@ export const HeaderCockpit: React.FC = () => {
       {/* Top row: Brand, ESI Badge, and Theme Toggle */}
       <View style={styles.topRow}>
         <View style={styles.brandGroup}>
-          <View style={[styles.brandIconWrapper, { backgroundColor: colors.esiCrimson }]}>
-            <Text style={styles.brandIconText}>V+</Text>
-          </View>
-          <View>
-            <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>VITALIS</Text>
-            <Text style={[styles.brandSubtitle, { color: colors.textMuted }]}>
-              MEDICAL COURIER DISPATCH
-            </Text>
-          </View>
+          <VitalisLogo
+            size="md"
+            textColor={colors.textPrimary}
+            subtextColor={colors.textMuted}
+          />
         </View>
 
         <View style={styles.topRightControls}>
