@@ -9,14 +9,11 @@ import { ReasoningTraceTerminal } from './ReasoningTraceTerminal';
 import { RejectReasonModal } from './RejectReasonModal';
 import { formatUrgencyTier } from '../../lib/utils';
 import {
-  CheckCircle2,
   XCircle,
   Truck,
   Clock,
   User,
   ShieldCheck,
-  AlertTriangle,
-  RefreshCw,
 } from 'lucide-react';
 
 interface RequestInspectorProps {
@@ -34,13 +31,16 @@ export function RequestInspector({ request }: RequestInspectorProps) {
 
   const selectedCandidate =
     request.candidates.find((c) => c.id === request.selectedCandidateId) ||
-    request.candidates[0];
+    request.candidates[0] ||
+    null;
 
   const { color, badgeBg } = formatUrgencyTier(request.esiUrgencyTier);
   const isPending = request.status === 'pending_approval';
 
   const handleApprove = () => {
-    approveRequest(request.id, selectedCandidate.id);
+    if (selectedCandidate) {
+      approveRequest(request.id, selectedCandidate.id);
+    }
   };
 
   const handleRejectConfirm = (reason: string) => {
@@ -118,15 +118,28 @@ export function RequestInspector({ request }: RequestInspectorProps) {
 
       {/* Scrollable Body: Candidates, Breakdown, Trace */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {/* Ranked Candidate Comparison */}
-        <CandidateComparison
-          candidates={request.candidates}
-          selectedCandidateId={selectedCandidate.id}
-          onSelectCandidate={(cid) => selectCandidateForRequest(request.id, cid)}
-        />
+        {selectedCandidate ? (
+          <>
+            {/* Ranked Candidate Comparison */}
+            <CandidateComparison
+              candidates={request.candidates}
+              selectedCandidateId={selectedCandidate.id}
+              onSelectCandidate={(cid) => selectCandidateForRequest(request.id, cid)}
+            />
 
-        {/* Mathematical Priority Index ($PI$) Decomposition Widget */}
-        <PriorityIndexWidget candidate={selectedCandidate} />
+            {/* Mathematical Priority Index ($PI$) Decomposition Widget */}
+            <PriorityIndexWidget candidate={selectedCandidate} />
+          </>
+        ) : (
+          <div className="p-6 rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] text-center space-y-2">
+            <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+              No Eligible Donor Facilities Available
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              All regional donor facilities either lack sufficient unexpired stock or were disqualified by the 40% depletion guardrail. Reject this request to trigger alternative redistribution pathways.
+            </p>
+          </div>
+        )}
 
         {/* Explainable AI Reasoning Trace Box */}
         <ReasoningTraceTerminal trace={request.reactTrace} />
@@ -153,7 +166,7 @@ export function RequestInspector({ request }: RequestInspectorProps) {
           {/* Approve & Broadcast to Courier Button - Apple Style Pill */}
           <button
             onClick={handleApprove}
-            disabled={!isPending}
+            disabled={!isPending || !selectedCandidate}
             className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white shadow-md hover:shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer active:scale-98"
           >
             <Truck className="w-4 h-4" />

@@ -5,8 +5,8 @@ import {
   BLOOD_GROUPS_LIST,
   XGBOOST_HEATMAP_DATA,
 } from '../../lib/data/mockData';
-import { XGBoostRiskCell, BloodGroup } from '../../lib/types';
-import { ShieldAlert, AlertTriangle, CheckCircle, Info, Sparkles, X } from 'lucide-react';
+import { XGBoostRiskCell } from '../../lib/types';
+import { ShieldAlert, Sparkles } from 'lucide-react';
 
 export function XGBoostHeatmap() {
   const [selectedCell, setSelectedCell] = useState<XGBoostRiskCell | null>(
@@ -112,7 +112,7 @@ export function XGBoostHeatmap() {
                     );
                   }
 
-                  const { bg: cellBg, status } = getCellStyling(cellData.riskProbability);
+                  const { bg: cellBg } = getCellStyling(cellData.riskProbability);
                   const isSelected =
                     selectedCell?.facilityName === facName && selectedCell?.bloodGroup === bg;
 

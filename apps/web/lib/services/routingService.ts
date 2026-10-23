@@ -62,7 +62,6 @@ export async function getRoadSnappedRoute(
   }
 
   const forwardKey = `${originId}_${destId}`;
-  const reverseKey = `${destId}_${originId}`;
 
   // Dynamic OSRM API lookup (100% Free, Zero API Key)
   try {

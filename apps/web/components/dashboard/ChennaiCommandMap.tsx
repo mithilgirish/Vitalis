@@ -12,7 +12,6 @@ import {
   X,
   Compass,
   Route,
-  Globe,
 } from 'lucide-react';
 
 // Dynamic import of the Leaflet Map to ensure zero SSR / window issues in Next.js

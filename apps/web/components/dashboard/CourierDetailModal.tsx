@@ -10,8 +10,6 @@ import {
   Navigation,
   Clock,
   X,
-  Zap,
-  ArrowRight,
 } from 'lucide-react';
 
 export function CourierDetailModal() {

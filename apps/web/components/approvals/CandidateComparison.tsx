@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { DonorCandidate } from '../../lib/types';
-import { Building2, CheckCircle2, ShieldAlert, Award, Clock, Navigation } from 'lucide-react';
+import { Building2, CheckCircle2 } from 'lucide-react';
 
 interface CandidateComparisonProps {
   candidates: DonorCandidate[];

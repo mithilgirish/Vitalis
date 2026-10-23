@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AlertTriangle, TrendingDown, ArrowUpRight, ShieldCheck, Zap } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
 
 export function AnalyticsSummaryCards() {
   return (

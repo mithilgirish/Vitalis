@@ -98,8 +98,6 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export function ProphetForecastChart({
-  selectedFacility: _selectedFacility,
-  selectedResource: _selectedResource,
   horizon,
 }: ProphetForecastChartProps) {
   const { theme } = useVitalis();

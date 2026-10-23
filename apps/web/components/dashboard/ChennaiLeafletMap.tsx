@@ -520,6 +520,9 @@ export default function ChennaiLeafletMap({
         }).addTo(layerGroup);
 
         renderCourierMarker(courier, courierPos, isExcursion, isSelected, layerGroup, map);
+      } else {
+        // Fallback: render vehicle marker at its GPS position even if facilities are custom
+        renderCourierMarker(courier, courierPos, isExcursion, isSelected, layerGroup, map);
       }
     });
   }, [telemetry, hospitals, selectedCourier, isDark, roadRoutes, renderCourierMarker]);

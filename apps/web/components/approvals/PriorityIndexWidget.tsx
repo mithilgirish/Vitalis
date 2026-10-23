@@ -3,13 +3,9 @@
 import React from 'react';
 import { DonorCandidate } from '../../lib/types';
 import {
-  Calculator,
   ShieldCheck,
   Navigation,
-  Clock,
   Award,
-  AlertCircle,
-  HelpCircle,
 } from 'lucide-react';
 
 interface PriorityIndexWidgetProps {
@@ -17,7 +13,6 @@ interface PriorityIndexWidgetProps {
 }
 
 export function PriorityIndexWidget({ candidate }: PriorityIndexWidgetProps) {
-  const isRiskSafe = candidate.stockoutRisk72h < 0.4;
   const riskPercent = (candidate.stockoutRisk72h * 100).toFixed(1);
 
   return (

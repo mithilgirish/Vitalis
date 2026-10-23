@@ -5,21 +5,15 @@ import { usePathname } from 'next/navigation';
 import { useVitalis } from '../../lib/store/vitalisContext';
 import { VitalisLogo } from '../common/VitalisLogo';
 import {
-  Bell,
-  Search,
   Zap,
   Clock,
-  ShieldCheck,
-  Radio,
-  MapPin,
-  CheckCircle,
   Sun,
   Moon,
 } from 'lucide-react';
 
 export function Header() {
   const pathname = usePathname();
-  const { openTriage, requests, telemetry, theme, toggleTheme } = useVitalis();
+  const { openTriage, telemetry, theme, toggleTheme } = useVitalis();
   const [timeStr, setTimeStr] = useState<string>('');
 
   useEffect(() => {
