@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { BarcodeScannerReticle } from '@/components/BarcodeScannerReticle';
 import { CustodyChecklist } from '@/components/CustodyChecklist';
@@ -6,7 +6,7 @@ import { ExcursionBanner } from '@/components/ExcursionBanner';
 import { useMission } from '@/context/MissionContext';
 
 export default function ScannerScreen() {
-  const { step1, step2, completeCustodyStep, colors } = useMission();
+  const { step1, step2, step3, completeCustodyStep, colors } = useMission();
 
   const getInitialStep = (): 1 | 2 | 3 => {
     if (!step1.completed) return 1;
@@ -15,6 +15,13 @@ export default function ScannerScreen() {
   };
 
   const [activeScanStep, setActiveScanStep] = useState<1 | 2 | 3>(getInitialStep());
+
+  // Automatically update active step when steps change or reset
+  useEffect(() => {
+    if (!step1.completed) setActiveScanStep(1);
+    else if (!step2.completed) setActiveScanStep(2);
+    else if (!step3.completed) setActiveScanStep(3);
+  }, [step1.completed, step2.completed, step3.completed]);
 
   const getTargetLabel = (step: 1 | 2 | 3): string => {
     switch (step) {

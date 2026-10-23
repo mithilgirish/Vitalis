@@ -78,9 +78,37 @@ export interface MissionState {
   setCargoType: (type: CargoType) => void;
   logManualTemperature: (temp: number, checkpoint: string) => boolean;
   completeCustodyStep: (stepNumber: 1 | 2 | 3, verificationPayload?: any) => void;
+  resetCustodySteps: () => void;
   completeHandoff: () => void;
   resetToDispatchModal: () => void;
 }
+
+/**
+ * Returns dynamic real local time string with optional minute offset.
+ */
+export const getRealTimeIST = (offsetMinutes = 0): string => {
+  const target = new Date(Date.now() - offsetMinutes * 60000);
+  return (
+    target.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }) + ' IST'
+  );
+};
+
+/**
+ * Returns dynamic real date string (e.g., "Oct 23, 2026").
+ */
+export const getRealDateString = (): string => {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
 
 const INITIAL_SPARKLINE: SparklinePoint[] = [
   { minute: '-15m', temp: 3.7 },
@@ -113,42 +141,55 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [viabilityLimitSeconds, setViabilityLimitSeconds] = useState<number>(45 * 60); // 45 minutes = 2700s
   const [acceptedAt, setAcceptedAt] = useState<string | null>(null);
   const [deliveredAt, setDeliveredAt] = useState<string | null>(null);
-  const [lastGpsSyncTime, setLastGpsSyncTime] = useState<string>('Just now');
+  const [lastGpsSyncTime, setLastGpsSyncTime] = useState<string>(() =>
+    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  );
+
+  // Dynamic Mission ID incorporating real date
+  const [missionId] = useState<string>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `MSN-${y}${m}${d}-ESI1-9842`;
+  });
 
   const [sparklineHistory, setSparklineHistory] = useState<SparklinePoint[]>(INITIAL_SPARKLINE);
 
-  const [manualLogs, setManualLogs] = useState<ManualLog[]>([
+  // Initial audit log with dynamic real time (12 minutes ago)
+  const [manualLogs, setManualLogs] = useState<ManualLog[]>(() => [
     {
       id: 'LOG-001',
       checkpoint: 'Facility Loading Bay',
       temp: 3.8,
-      timestamp: '14:32:10 IST',
+      timestamp: getRealTimeIST(12),
       location: 'Kilpauk Transfusion Depot',
       driverId: 'VTL-DRV-784',
     },
   ]);
 
-  const [step1, setStep1] = useState<CustodyStepState>({
+  // Initial custody verification steps with dynamic real timestamps
+  const [step1, setStep1] = useState<CustodyStepState>(() => ({
     completed: true,
-    timestamp: '14:34:02 IST',
+    timestamp: getRealTimeIST(8),
     verifiedData: 'BATCH-O-NEG-9842',
     metadata: {
       cargo: '4 Units O- PRBC',
       bloodGroup: 'O Negative',
       donorCode: 'TX-9022-TN',
     },
-  });
+  }));
 
-  const [step2, setStep2] = useState<CustodyStepState>({
+  const [step2, setStep2] = useState<CustodyStepState>(() => ({
     completed: true,
-    timestamp: '14:35:15 IST',
+    timestamp: getRealTimeIST(5),
     verifiedData: 'SEAL-VALID-4029',
     metadata: {
       sealStatus: 'Tamper-Evident Intact',
       pickupTemp: '3.8°C (Within Envelope ≤ 6.0°C)',
       boxId: 'VTL-SMART-COOLER-88',
     },
-  });
+  }));
 
   const [step3, setStep3] = useState<CustodyStepState>({
     completed: false,
@@ -166,7 +207,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const isDark = themeMode === 'dark';
   const colors = THEME_PALETTE[themeMode];
 
-  // GPS 15s pulse ticker
+  // GPS 15s pulse ticker with real-time update
   useEffect(() => {
     const timer = setInterval(() => {
       setGpsPulseCountdown((prev) => {
@@ -239,7 +280,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const acceptMission = () => {
     setStatus('in_transit');
-    setAcceptedAt(new Date().toLocaleTimeString());
+    setAcceptedAt(getRealTimeIST(0));
   };
 
   const logManualTemperature = (temp: number, checkpoint: string): boolean => {
@@ -247,7 +288,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       id: `LOG-00${manualLogs.length + 1}`,
       checkpoint,
       temp,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp: getRealTimeIST(0),
       location: checkpoint.includes('Destination') ? 'Apollo Greams Rd Entry' : 'Anna Salai En Route',
       driverId: 'VTL-DRV-784',
     };
@@ -256,16 +297,16 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const completeCustodyStep = (stepNumber: 1 | 2 | 3, verificationPayload?: any) => {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timestamp = getRealTimeIST(0);
     if (stepNumber === 1) {
       setStep1({
         completed: true,
         timestamp,
         verifiedData: verificationPayload?.batchId || 'BATCH-O-NEG-9842',
         metadata: {
-          cargo: '4 Units O- PRBC',
-          bloodGroup: 'O Negative',
-          donorCode: 'TX-9022-TN',
+          cargo: cargoType === 'PRBC' ? '4 Units O- PRBC' : '2 Platelet Apheresis Units',
+          bloodGroup: cargoType === 'PRBC' ? 'O Negative' : 'AB Positive',
+          donorCode: `TX-${Math.floor(1000 + Math.random() * 9000)}-TN`,
         },
       });
     } else if (stepNumber === 2) {
@@ -294,19 +335,26 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const resetCustodySteps = () => {
+    setStep1({ completed: false });
+    setStep2({ completed: false });
+    setStep3({ completed: false });
+  };
+
   const completeHandoff = () => {
     setStatus('delivered');
-    setDeliveredAt(new Date().toLocaleTimeString());
+    setDeliveredAt(getRealTimeIST(0));
   };
 
   const resetToDispatchModal = () => {
     setStatus('pending_dispatch');
     setIsExcursionSimulated(false);
     setTemperature(3.8);
-    setStep3({ completed: false });
+    resetCustodySteps();
     setEtaSeconds(18 * 60);
     setViabilityLimitSeconds(45 * 60);
     setDeliveredAt(null);
+    setAcceptedAt(null);
   };
 
   const value: MissionState = {
@@ -315,7 +363,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     colors,
     toggleTheme,
 
-    id: 'MSN-2026-9842-ESI1',
+    id: missionId,
     status,
     esiTier: 1,
     urgencyLabel: 'ESI TIER 1 - IMMEDIATE',
@@ -357,6 +405,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCargoType,
     logManualTemperature,
     completeCustodyStep,
+    resetCustodySteps,
     completeHandoff,
     resetToDispatchModal,
   };

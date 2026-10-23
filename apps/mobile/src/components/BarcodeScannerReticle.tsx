@@ -1,12 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Pressable,
+  TextInput,
+  Vibration,
+  Platform,
+} from 'react-native';
 import {
   Flashlight,
   FlashlightOff,
   Crosshair,
   ScanLine,
   CheckCircle2,
+  Camera,
+  SwitchCamera,
+  Keyboard,
+  Sparkles,
+  AlertCircle,
 } from 'lucide-react-native';
+import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import { useMission } from '@/context/MissionContext';
 
 interface BarcodeScannerReticleProps {
@@ -21,12 +36,23 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
   onScanDetected,
 }) => {
   const { colors, isDark } = useMission();
-  const [torchOn, setTorchOn] = useState(false);
-  const [scannedFeedback, setScannedFeedback] = useState(false);
 
+  // Camera & Hardware Controls
+  const [permission, requestPermission] = useCameraPermissions();
+  const [torchOn, setTorchOn] = useState(false);
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [useVirtualCamera, setUseVirtualCamera] = useState(false);
+
+  // Scanning State
+  const [scannedFeedback, setScannedFeedback] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualCodeInput, setManualCodeInput] = useState('');
+  const isCoolingDown = useRef(false);
+
+  // Animated Laser Beam
   const laserAnim = useRef(new Animated.Value(0)).current;
 
-  // Smooth laser sweep
   useEffect(() => {
     const laserLoop = Animated.loop(
       Animated.sequence([
@@ -46,20 +72,51 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
     return () => laserLoop.stop();
   }, [laserAnim]);
 
-  const handleSimulateScan = () => {
+  // Handle Barcode Scanned Event from CameraView
+  const handleBarcodeScanned = (result: { data: string; type?: string }) => {
+    if (scannedFeedback || isCoolingDown.current) return;
+    const code = result?.data?.trim();
+    if (!code) return;
+
+    isCoolingDown.current = true;
+    try {
+      Vibration.vibrate(80);
+    } catch {}
+
     setScannedFeedback(true);
-    const mockCode =
-      currentStep === 1
-        ? 'BATCH-O-NEG-9842'
-        : currentStep === 2
-        ? 'SEAL-VALID-4029'
-        : 'EMP-APOLLO-9041';
+    setLastScannedCode(code);
 
     setTimeout(() => {
       setScannedFeedback(false);
-      onScanDetected(mockCode);
-    }, 500);
+      onScanDetected(code);
+      setTimeout(() => {
+        isCoolingDown.current = false;
+      }, 1200);
+    }, 600);
   };
+
+  // Quick 1-Tap Sample Scan (for testing without a printed barcode)
+  const handleQuickSampleScan = () => {
+    const sampleCode =
+      currentStep === 1
+        ? `BATCH-O-NEG-${Math.floor(1000 + Math.random() * 9000)}`
+        : currentStep === 2
+        ? `SEAL-VALID-${Math.floor(1000 + Math.random() * 9000)}`
+        : `EMP-APOLLO-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    handleBarcodeScanned({ data: sampleCode });
+  };
+
+  // Submit Manually Entered Barcode String
+  const handleManualSubmit = () => {
+    const code = manualCodeInput.trim();
+    if (!code) return;
+    handleBarcodeScanned({ data: code });
+    setManualCodeInput('');
+    setShowManualInput(false);
+  };
+
+  const isCameraReady = permission?.granted && !useVirtualCamera;
 
   return (
     <View
@@ -70,7 +127,7 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
           borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
         },
       ]}>
-      {/* Top Header Row inside Viewfinder: Target Pill + Torch Button */}
+      {/* Top Header Row inside Viewfinder: Target Pill + Torch + Camera Flip */}
       <View style={styles.topControlRow}>
         <View
           style={[
@@ -88,34 +145,44 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
           </Text>
         </View>
 
-        {/* Circular Torch Toggle */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Toggle Torch"
-          onPress={() => setTorchOn(!torchOn)}
-          style={({ pressed }) => [
-            styles.torchCircle,
-            {
-              backgroundColor: torchOn
-                ? '#FFD60A'
-                : 'rgba(255, 255, 255, 0.15)',
-            },
-            pressed && { opacity: 0.75, transform: [{ scale: 0.94 }] },
-          ]}>
-          {torchOn ? (
-            <Flashlight size={16} color="#000000" strokeWidth={2.4} />
-          ) : (
-            <FlashlightOff size={16} color="#FFFFFF" strokeWidth={2.2} />
-          )}
-        </Pressable>
+        {/* Action Controls: Torch Toggle & Camera Switch */}
+        <View style={styles.headerButtonsGroup}>
+          {/* Torch / Flashlight Toggle */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={torchOn ? 'Turn Off Torch' : 'Turn On Torch'}
+            onPress={() => setTorchOn(!torchOn)}
+            style={({ pressed }) => [
+              styles.controlCircle,
+              {
+                backgroundColor: torchOn ? '#FFD60A' : 'rgba(255, 255, 255, 0.15)',
+              },
+              pressed && { opacity: 0.75, transform: [{ scale: 0.94 }] },
+            ]}>
+            {torchOn ? (
+              <Flashlight size={16} color="#000000" strokeWidth={2.5} />
+            ) : (
+              <FlashlightOff size={16} color="#FFFFFF" strokeWidth={2.2} />
+            )}
+          </Pressable>
+
+          {/* Camera Lens Flip (Front / Back) */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Flip Camera Lens"
+            onPress={() => setFacing((prev) => (prev === 'back' ? 'front' : 'back'))}
+            style={({ pressed }) => [
+              styles.controlCircle,
+              { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
+              pressed && { opacity: 0.75, transform: [{ scale: 0.94 }] },
+            ]}>
+            <SwitchCamera size={16} color="#FFFFFF" strokeWidth={2.2} />
+          </Pressable>
+        </View>
       </View>
 
-      {/* Center Apple-style Code Reticle Viewport */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Tap to Scan Code"
-        onPress={handleSimulateScan}
-        style={styles.reticleTouchArea}>
+      {/* Center Viewport: Real Camera Feed OR Permission Request Card */}
+      <View style={styles.viewportContainer}>
         <View
           style={[
             styles.reticleFrame,
@@ -123,22 +190,73 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
               borderColor: scannedFeedback ? colors.emeraldSafe : 'rgba(255, 255, 255, 0.25)',
               backgroundColor: scannedFeedback
                 ? 'rgba(52, 199, 89, 0.16)'
-                : 'rgba(255, 255, 255, 0.04)',
+                : 'rgba(0, 0, 0, 0.70)',
             },
           ]}>
+          {/* Real CameraView Component */}
+          {isCameraReady ? (
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              facing={facing}
+              enableTorch={torchOn}
+              barcodeScannerSettings={{
+                barcodeTypes: [
+                  'qr',
+                  'code128',
+                  'ean13',
+                  'ean8',
+                  'code39',
+                  'upc_a',
+                  'upc_e',
+                  'datamatrix',
+                  'pdf417',
+                ],
+              }}
+              onBarcodeScanned={scannedFeedback ? undefined : handleBarcodeScanned}
+            />
+          ) : (
+            /* Permission Prompt or Virtual Viewfinder */
+            <View style={styles.permissionPlaceholder}>
+              <Camera size={26} color="rgba(255, 255, 255, 0.6)" strokeWidth={2} />
+              <Text style={styles.permissionTitle}>Camera Viewfinder</Text>
+              {!permission?.granted && !useVirtualCamera ? (
+                <View style={styles.permissionActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Enable Device Camera"
+                    onPress={requestPermission}
+                    style={styles.permissionButton}>
+                    <Text style={styles.permissionButtonText}>Enable Camera</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setUseVirtualCamera(true)}
+                    style={styles.virtualModeButton}>
+                    <Text style={styles.virtualModeText}>Use Without Camera</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Text style={styles.permissionHint}>Point camera at barcode or tap test scan</Text>
+              )}
+            </View>
+          )}
+
+          {/* Torch Flashlight Illuminator Beam Effect */}
+          {torchOn && <View style={styles.torchBeamOverlay} pointerEvents="none" />}
+
           {/* Apple Vision Corner Brackets */}
-          <View style={[styles.corner, styles.cornerTL]} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
+          <View style={[styles.corner, styles.cornerTL]} pointerEvents="none" />
+          <View style={[styles.corner, styles.cornerTR]} pointerEvents="none" />
+          <View style={[styles.corner, styles.cornerBL]} pointerEvents="none" />
+          <View style={[styles.corner, styles.cornerBR]} pointerEvents="none" />
 
           {/* Center Crosshair */}
-          <View style={styles.centerCrosshair}>
-            <Crosshair size={22} color="rgba(255, 255, 255, 0.20)" />
+          <View style={styles.centerCrosshair} pointerEvents="none">
+            <Crosshair size={22} color="rgba(255, 255, 255, 0.25)" />
           </View>
 
           {/* Animated Laser Beam */}
           <Animated.View
+            pointerEvents="none"
             style={[
               styles.laserBeam,
               {
@@ -149,35 +267,89 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
             ]}
           />
 
-          {/* Success Overlay */}
+          {/* Verified Success Overlay */}
           {scannedFeedback && (
             <View style={styles.verifiedOverlay}>
               <CheckCircle2 size={36} color={colors.emeraldSafe} strokeWidth={2.8} />
               <Text style={[styles.verifiedText, { color: colors.emeraldSafe }]}>
                 Verified ✓
               </Text>
+              {lastScannedCode && (
+                <Text style={styles.scannedCodeBadge} numberOfLines={1}>
+                  {lastScannedCode}
+                </Text>
+              )}
             </View>
           )}
         </View>
-      </Pressable>
-
-      {/* Bottom Hint & Action */}
-      <View style={styles.bottomInstructionRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Trigger Barcode Scan"
-          onPress={handleSimulateScan}
-          style={({ pressed }) => [
-            styles.scanButton,
-            { backgroundColor: colors.cobaltBlue },
-            pressed && styles.scanButtonPressed,
-          ]}>
-          <ScanLine size={17} color="#FFFFFF" strokeWidth={2.4} />
-          <Text style={styles.scanButtonText}>
-            Align &amp; Tap to Scan
-          </Text>
-        </Pressable>
       </View>
+
+      {/* Manual Code Input Drawer / Quick Actions */}
+      {showManualInput ? (
+        <View style={styles.manualInputCard}>
+          <View style={styles.manualInputRow}>
+            <TextInput
+              style={[
+                styles.manualTextInput,
+                {
+                  color: '#FFFFFF',
+                  borderColor: 'rgba(255, 255, 255, 0.20)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                },
+              ]}
+              placeholder="Type barcode/seal/badge ID..."
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              value={manualCodeInput}
+              onChangeText={setManualCodeInput}
+              autoCapitalize="characters"
+              autoFocus
+            />
+            <Pressable
+              onPress={handleManualSubmit}
+              style={[styles.manualSubmitButton, { backgroundColor: colors.cobaltBlue }]}>
+              <Text style={styles.manualSubmitText}>Verify</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() => setShowManualInput(false)}
+            style={styles.cancelManualButton}>
+            <Text style={styles.cancelManualText}>Cancel</Text>
+          </Pressable>
+        </View>
+      ) : (
+        /* Action Buttons Row */
+        <View style={styles.bottomInstructionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Quick Verify Step"
+            onPress={handleQuickSampleScan}
+            style={({ pressed }) => [
+              styles.scanButton,
+              { backgroundColor: colors.cobaltBlue },
+              pressed && styles.scanButtonPressed,
+            ]}>
+            <ScanLine size={16} color="#FFFFFF" strokeWidth={2.4} />
+            <Text style={styles.scanButtonText}>
+              Align &amp; Scan / Test Current Step
+            </Text>
+          </Pressable>
+
+          {/* Toggle Manual Input */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Enter Barcode Manually"
+            onPress={() => setShowManualInput(true)}
+            style={({ pressed }) => [
+              styles.manualToggleRow,
+              pressed && { opacity: 0.7 },
+            ]}>
+            <Keyboard size={12} color="rgba(255, 255, 255, 0.6)" />
+            <Text style={styles.manualToggleText}>
+              Manual Code Entry (If Label Damaged)
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 };
@@ -206,7 +378,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 999,
-    paddingVertical: 4.5,
+    paddingVertical: 5,
     paddingHorizontal: 8,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 6,
@@ -230,21 +402,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  torchCircle: {
+  headerButtonsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  controlCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  reticleTouchArea: {
+  viewportContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
   },
   reticleFrame: {
-    width: 220,
-    height: 160,
+    width: '100%',
+    maxWidth: 320,
+    height: 180,
     borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     position: 'relative',
@@ -252,43 +430,84 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  permissionPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    gap: 6,
+  },
+  permissionTitle: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  permissionActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  permissionButton: {
+    backgroundColor: '#0A84FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  virtualModeButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  virtualModeText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  permissionHint: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  torchBeamOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(255, 240, 180, 0.22)',
+  },
   corner: {
     position: 'absolute',
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderColor: '#FFFFFF',
   },
-  bracketTL: {
-    top: 5,
-    left: 5,
-    borderTopWidth: 2.5,
-    borderLeftWidth: 2.5,
-    borderTopLeftRadius: 6,
-  },
   cornerTL: {
-    top: 6,
-    left: 6,
+    top: 8,
+    left: 8,
     borderTopWidth: 2.5,
     borderLeftWidth: 2.5,
     borderTopLeftRadius: 6,
   },
   cornerTR: {
-    top: 6,
-    right: 6,
+    top: 8,
+    right: 8,
     borderTopWidth: 2.5,
     borderRightWidth: 2.5,
     borderTopRightRadius: 6,
   },
   cornerBL: {
-    bottom: 6,
-    left: 6,
+    bottom: 8,
+    left: 8,
     borderBottomWidth: 2.5,
     borderLeftWidth: 2.5,
     borderBottomLeftRadius: 6,
   },
   cornerBR: {
-    bottom: 6,
-    right: 6,
+    bottom: 8,
+    right: 8,
     borderBottomWidth: 2.5,
     borderRightWidth: 2.5,
     borderBottomRightRadius: 6,
@@ -300,28 +519,40 @@ const styles = StyleSheet.create({
   },
   laserBeam: {
     position: 'absolute',
-    left: 10,
-    right: 10,
+    left: 12,
+    right: 12,
     height: 2,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.85,
     shadowRadius: 6,
     elevation: 4,
   },
   verifiedOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(15, 23, 42, 0.90)',
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
+    padding: 10,
   },
   verifiedText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
+  scannedCodeBadge: {
+    color: '#FFFFFF',
+    fontFamily: 'monospace',
+    fontSize: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 2,
+  },
   bottomInstructionRow: {
     alignItems: 'center',
+    gap: 8,
   },
   scanButton: {
     width: '100%',
@@ -343,8 +574,55 @@ const styles = StyleSheet.create({
   },
   scanButtonText: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  manualToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 4,
+  },
+  manualToggleText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 10.5,
+    fontWeight: '500',
+  },
+  manualInputCard: {
+    gap: 6,
+  },
+  manualInputRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  manualTextInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    fontSize: 11,
+    fontFamily: 'monospace',
+  },
+  manualSubmitButton: {
+    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  manualSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  cancelManualButton: {
+    alignSelf: 'center',
+    paddingVertical: 3,
+  },
+  cancelManualText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 10,
   },
 });

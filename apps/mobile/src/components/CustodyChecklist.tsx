@@ -9,8 +9,11 @@ import {
   RotateCcw,
   Sparkles,
   Building2,
+  Calendar,
+  Clock,
+  QrCode,
 } from 'lucide-react-native';
-import { useMission } from '@/context/MissionContext';
+import { useMission, getRealDateString, getRealTimeIST } from '@/context/MissionContext';
 
 interface CustodyChecklistProps {
   onSelectStepToScan: (step: 1 | 2 | 3) => void;
@@ -34,6 +37,7 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
     cargo,
     id: missionId,
     resetToDispatchModal,
+    resetCustodySteps,
     colors,
     isDark,
   } = useMission();
@@ -46,6 +50,11 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
   const handleFinishHandoff = () => {
     completeHandoff();
     setShowCertificate(true);
+  };
+
+  const handleResetChecklist = () => {
+    resetCustodySteps();
+    onSelectStepToScan(1);
   };
 
   const completedCount = Number(step1.completed) + Number(step2.completed) + Number(step3.completed);
@@ -296,7 +305,7 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
               </Text>
               <Text style={[styles.stepSub, { color: colors.textSecondary }]}>
                 {step3.completed
-                  ? `${step3.metadata?.recipientName} (${step3.metadata?.role})`
+                  ? `${step3.metadata?.recipientName} (${step3.metadata?.role}) • ${step3.timestamp}`
                   : 'Scan doctor ID badge at Apollo Greams ER'}
               </Text>
             </View>
@@ -327,6 +336,21 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
               {step3.completed ? 'Verified ✓' : 'Scan Badge'}
             </Text>
           </View>
+        </Pressable>
+
+        {/* Reset & Restart Flow Button */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reset all 3 verification steps"
+          onPress={handleResetChecklist}
+          style={({ pressed }) => [
+            styles.resetFlowRow,
+            pressed && { opacity: 0.65 },
+          ]}>
+          <RotateCcw size={12} color={colors.cobaltBlue} />
+          <Text style={[styles.resetFlowText, { color: colors.cobaltBlue }]}>
+            Reset All Steps (Test Camera from Step 1)
+          </Text>
         </Pressable>
       </View>
 
@@ -415,6 +439,13 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
               </View>
 
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>TRANSFER DATE</Text>
+                <Text style={[styles.certValBold, { color: colors.textPrimary }]}>
+                  {getRealDateString()}
+                </Text>
+              </View>
+
+              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.certKey, { color: colors.textMuted }]}>BIOLOGICAL PAYLOAD</Text>
                 <Text style={[styles.certValHighlight, { color: colors.cobaltBlue }]}>
                   {cargo}
@@ -422,9 +453,16 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
               </View>
 
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.certKey, { color: colors.textMuted }]}>ORIGIN</Text>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>ORIGIN & BATCH CODE</Text>
                 <Text style={[styles.certVal, { color: colors.textSecondary }]}>
-                  {origin}
+                  {origin} • {step1.verifiedData || 'BATCH-O-NEG-9842'}
+                </Text>
+              </View>
+
+              <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.certKey, { color: colors.textMuted }]}>COOLER SEAL</Text>
+                <Text style={[styles.certVal, { color: colors.textSecondary }]}>
+                  {step2.verifiedData || 'SEAL-VALID-4029'} (Verified Intact)
                 </Text>
               </View>
 
@@ -438,14 +476,14 @@ export const CustodyChecklist: React.FC<CustodyChecklistProps> = ({
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.certKey, { color: colors.textMuted }]}>RECEIVING PHYSICIAN</Text>
                 <Text style={[styles.certValBold, { color: colors.textPrimary }]}>
-                  {step3.metadata?.recipientName} ({step3.metadata?.role})
+                  {step3.metadata?.recipientName || 'Dr. Arvind Swaminathan, MD'} ({step3.verifiedData || 'STAFF ID'})
                 </Text>
               </View>
 
               <View style={[styles.certRow, { borderBottomColor: colors.border }]}>
                 <Text style={[styles.certKey, { color: colors.textMuted }]}>DELIVERY TIME</Text>
                 <Text style={[styles.certValMono, { color: colors.textPrimary }]}>
-                  {deliveredAt} IST
+                  {deliveredAt || getRealTimeIST(0)}
                 </Text>
               </View>
 
@@ -759,5 +797,17 @@ const styles = StyleSheet.create({
   certResetText: {
     fontWeight: '600',
     fontSize: 10,
+  },
+  resetFlowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    marginTop: 2,
+  },
+  resetFlowText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
