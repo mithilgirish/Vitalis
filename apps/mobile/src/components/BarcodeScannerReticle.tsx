@@ -30,6 +30,40 @@ interface BarcodeScannerReticleProps {
   onScanDetected: (code: string) => void;
 }
 
+interface CameraErrorBoundaryProps {
+  fallback: React.ReactNode;
+  children: React.ReactNode;
+}
+
+interface CameraErrorBoundaryState {
+  hasError: boolean;
+}
+
+class CameraErrorBoundary extends React.Component<
+  CameraErrorBoundaryProps,
+  CameraErrorBoundaryState
+> {
+  constructor(props: CameraErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): CameraErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any) {
+    console.warn('CameraView runtime issue caught by boundary:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
   currentStep,
   targetLabel,
@@ -193,27 +227,41 @@ export const BarcodeScannerReticle: React.FC<BarcodeScannerReticleProps> = ({
                 : 'rgba(0, 0, 0, 0.70)',
             },
           ]}>
-          {/* Real CameraView Component */}
+          {/* Real CameraView Component with Safe Boundary */}
           {isCameraReady ? (
-            <CameraView
-              style={StyleSheet.absoluteFill}
-              facing={facing}
-              enableTorch={torchOn}
-              barcodeScannerSettings={{
-                barcodeTypes: [
-                  'qr',
-                  'code128',
-                  'ean13',
-                  'ean8',
-                  'code39',
-                  'upc_a',
-                  'upc_e',
-                  'datamatrix',
-                  'pdf417',
-                ],
-              }}
-              onBarcodeScanned={scannedFeedback ? undefined : handleBarcodeScanned}
-            />
+            <CameraErrorBoundary
+              fallback={
+                <View style={styles.permissionPlaceholder}>
+                  <Camera size={26} color="rgba(255, 255, 255, 0.6)" strokeWidth={2} />
+                  <Text style={styles.permissionTitle}>Camera Initializing</Text>
+                  <Text style={styles.permissionHint}>Camera feed unavailable on this device</Text>
+                  <Pressable
+                    onPress={handleQuickSampleScan}
+                    style={[styles.permissionButton, { marginTop: 6 }]}>
+                    <Text style={styles.permissionButtonText}>Test Scan Code</Text>
+                  </Pressable>
+                </View>
+              }>
+              <CameraView
+                style={StyleSheet.absoluteFill}
+                facing={facing}
+                enableTorch={torchOn}
+                barcodeScannerSettings={{
+                  barcodeTypes: [
+                    'qr',
+                    'code128',
+                    'ean13',
+                    'ean8',
+                    'code39',
+                    'upc_a',
+                    'upc_e',
+                    'datamatrix',
+                    'pdf417',
+                  ],
+                }}
+                onBarcodeScanned={scannedFeedback ? undefined : handleBarcodeScanned}
+              />
+            </CameraErrorBoundary>
           ) : (
             /* Permission Prompt or Virtual Viewfinder */
             <View style={styles.permissionPlaceholder}>

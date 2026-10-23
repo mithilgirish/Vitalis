@@ -1,56 +1,66 @@
-# Welcome to your Expo app 👋
+# Vitalis Mobile — Emergency Blood Transfer Courier
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mission-critical emergency logistics mobile cockpit for blood bank couriers and hospital trauma triage teams.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Expo Go Compatibility (SDK 57 & SDK 58)
 
-   ```bash
-   npm install
-   ```
+Because **Expo Go** enforces a strict 1-to-1 match with the Expo SDK version installed on your device (devices running Expo Go SDK 58 reject SDK 57 bundles, and vice-versa), Vitalis Mobile includes **dual SDK support** and instantaneous 1-step switching.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### Check Current Active SDK Profile
 ```bash
-npm run reset-project
+npm run status:sdk
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Switch to Expo SDK 57 (for Expo Go SDK 57 client)
+```bash
+npm run use:sdk57
+npm install
+npm run start:go
+```
 
-### Other setup steps
+### Switch to Expo SDK 58 (for Expo Go SDK 58 client)
+```bash
+npm run use:sdk58
+npm install
+npm run start:go
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+---
 
-## Learn more
+## 📱 Running on Android and iOS (Expo Go)
 
-To learn more about developing your project with Expo, look at the following resources:
+### Launching Dev Server
+```bash
+# Start explicitly in Expo Go mode
+npm run start:go
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# Or target platform directly
+npm run android:go   # Opens connected Android emulator / USB device
+npm run ios:go       # Opens iOS Simulator / device
+```
 
-## Join the community
+### Connecting Physical Devices
+- **Android**:
+  1. Open the **Expo Go** app on your Android phone.
+  2. Scan the Metro QR code directly within Expo Go.
+  3. Ensure your phone and development machine are connected to the same Wi-Fi network (or pass `--tunnel` via `npx expo start --go --tunnel`).
 
-Join our community of developers creating universal apps.
+- **iOS**:
+  1. Open the default iOS **Camera** app.
+  2. Aim at the QR code; tap the prompt to open in **Expo Go**.
+  3. Sign into the matching Expo account if prompted by your Expo Go client.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🛡️ Cross-Platform Hardware & Permission Features
+1. **Barcode & QR Viewfinder (`CameraView`)**:
+   - Configured with native iOS `NSCameraUsageDescription` & Android `CAMERA` permissions in `app.json`.
+   - Includes graceful `CameraErrorBoundary` and **Virtual Viewfinder / Manual Input Drawer** so scanning can be tested seamlessly on simulators or when hardware permissions are disabled.
+2. **Apple Maps & OpenStreetMap Navigation (`react-native-webview`)**:
+   - Zero-key Leaflet + OpenStreetMap engine configured with proper Android and iOS WebView permissions (`javaScriptEnabled`, `domStorageEnabled`, `originWhitelist`).
+3. **Ergonomic Safe Area Handling**:
+   - Adaptive insets using `react-native-safe-area-context` for Android navigation bars and iOS Dynamic Island / Home Indicator.
+4. **Universal Animations & Worklets**:
+   - Pure `runOnJS` from `react-native-reanimated` (4.x) ensuring consistent execution across SDK 57 and SDK 58 without worklet binding conflicts.

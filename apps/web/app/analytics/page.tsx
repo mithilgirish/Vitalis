@@ -6,7 +6,7 @@ import { BiologicalResourceType } from '../../lib/types';
 import { ProphetForecastChart } from '../../components/analytics/ProphetForecastChart';
 import { XGBoostHeatmap } from '../../components/analytics/XGBoostHeatmap';
 import { AnalyticsSummaryCards } from '../../components/analytics/AnalyticsSummaryCards';
-import { TrendingUp, Filter, Sparkles, Calendar, Building2 } from 'lucide-react';
+import { Filter, Calendar, Building2 } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const { hospitals } = useVitalis();

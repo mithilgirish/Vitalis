@@ -12,7 +12,10 @@ import threading
 from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+try:
+    import xgboost as xgb
+except Exception as _xgb_err:
+    xgb = None
 from datetime import datetime, timedelta
 
 from backend.core.config import settings
@@ -24,7 +27,7 @@ class MLInferenceService:
     _lock = threading.Lock()
 
     def __init__(self):
-        self.xgb_model: Optional[xgb.XGBClassifier] = None
+        self.xgb_model: Optional[Any] = None
         self.prophet_model: Optional[Any] = None
         self.xgb_metadata: Dict[str, Any] = {}
         self.models_loaded: bool = False

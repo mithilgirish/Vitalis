@@ -6,7 +6,6 @@ import { VitalisLogo } from '../common/VitalisLogo';
 import { IngestionSource, JevExtractionResult, BiologicalResourceType, BloodGroup } from '../../lib/types';
 import {
   X,
-  Zap,
   Radio,
   MessageSquare,
   FileText,
@@ -16,14 +15,41 @@ import {
   CheckCircle2,
   Cpu,
   ArrowRight,
-  Terminal,
-  Layers,
   Mic,
-  MicOff,
-  Volume2,
   Square,
-  Play,
 } from 'lucide-react';
+
+interface SpeechRecognitionEventLike {
+  results: {
+    length: number;
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+}
+
+interface SpeechRecognitionErrorLike {
+  error: string;
+}
+
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+interface WindowWithSpeechRecognition {
+  SpeechRecognition?: new () => SpeechRecognitionLike;
+  webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+}
 
 const PRESET_SCENARIOS = [
   {
@@ -112,8 +138,8 @@ export function TriageSimulatorDrawer() {
   // Free & Local Voice Dictation (Speech-to-Text) State
   const [isListening, setIsListening] = useState(false);
   const [audioDuration, setAudioDuration] = useState(0);
-  const recognitionRef = useRef<any>(null);
-  const timerRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -128,8 +154,8 @@ export function TriageSimulatorDrawer() {
 
   const startVoiceDictation = () => {
     if (typeof window === 'undefined') return;
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = window as unknown as WindowWithSpeechRecognition;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       simulateVoiceStream(
@@ -152,7 +178,7 @@ export function TriageSimulatorDrawer() {
         }, 1000);
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEventLike) => {
         let transcript = '';
         for (let i = 0; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript + ' ';
@@ -162,7 +188,7 @@ export function TriageSimulatorDrawer() {
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorLike) => {
         console.warn('Speech recognition warning/error:', event.error);
         stopVoiceDictation();
       };
