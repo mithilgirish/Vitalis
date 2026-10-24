@@ -75,7 +75,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     }
     return 'dark';
   });
-  const [hospitals, setHospitals] = useState<Hospital[]>(CHENNAI_HOSPITALS);
+  const [hospitals] = useState<Hospital[]>(CHENNAI_HOSPITALS);
   const [requests, setRequests] = useState<TransferRequest[]>(INITIAL_REQUESTS);
   const [telemetry, setTelemetry] = useState<TransitTelemetry[]>(INITIAL_TRANSIT_TELEMETRY);
   const [inventory, setInventory] = useState<InventoryBatch[]>(INVENTORY_LEDGER);
@@ -142,7 +142,19 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       // Backend offline fallback handled gracefully
     });
 
-    const chosenCandidate = req.candidates.find((c) => c.id === (candidateId || req.selectedCandidateId)) || req.candidates[0];
+    const chosenCandidate =
+      req.candidates.find((c) => c.id === (candidateId || req.selectedCandidateId)) ||
+      req.candidates[0] ||
+      null;
+
+    if (!chosenCandidate) {
+      addToast({
+        type: 'error',
+        title: 'Dispatch Failed',
+        message: 'No candidate donor facility is available for this request.',
+      });
+      return;
+    }
 
     // Transition request status
     setRequests((prev) =>

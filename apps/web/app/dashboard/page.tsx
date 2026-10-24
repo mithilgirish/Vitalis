@@ -4,7 +4,6 @@ import React from 'react';
 import { KpiOverlayCards } from '../../components/dashboard/KpiOverlayCards';
 import { ChennaiCommandMap } from '../../components/dashboard/ChennaiCommandMap';
 import { CourierDetailModal } from '../../components/dashboard/CourierDetailModal';
-import { Activity, ShieldCheck, MapPin, Truck } from 'lucide-react';
 
 export default function DashboardPage() {
   return (

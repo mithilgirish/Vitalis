@@ -285,7 +285,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const logManualTemperature = (temp: number, checkpoint: string): boolean => {
     const newLog: ManualLog = {
-      id: `LOG-00${manualLogs.length + 1}`,
+      id: `LOG-${String(manualLogs.length + 1).padStart(3, '0')}`,
       checkpoint,
       temp,
       timestamp: getRealTimeIST(0),

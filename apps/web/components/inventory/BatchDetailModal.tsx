@@ -7,10 +7,7 @@ import {
   Boxes,
   Thermometer,
   Clock,
-  ShieldCheck,
-  AlertTriangle,
   X,
-  FileCheck,
   Cpu,
 } from 'lucide-react';
 

@@ -4,7 +4,7 @@ import React from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
 import { PendingRequestsList } from '../../components/approvals/PendingRequestsList';
 import { RequestInspector } from '../../components/approvals/RequestInspector';
-import { ShieldCheck, CheckSquare, AlertCircle } from 'lucide-react';
+import { ShieldCheck, CheckSquare } from 'lucide-react';
 
 export default function ApprovalsPage() {
   const { requests, selectedRequest, setSelectedRequest } = useVitalis();

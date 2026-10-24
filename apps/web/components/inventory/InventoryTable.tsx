@@ -2,19 +2,14 @@
 
 import React, { useState } from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
-import { InventoryBatch, BiologicalResourceType, BloodGroup } from '../../lib/types';
+import { InventoryBatch } from '../../lib/types';
 import { formatHoursRemaining } from '../../lib/utils';
 import { BatchDetailModal } from './BatchDetailModal';
 import {
   Search,
-  Filter,
   Thermometer,
   Clock,
-  AlertTriangle,
-  ShieldAlert,
-  Boxes,
   ArrowUpDown,
-  CheckCircle,
   Eye,
 } from 'lucide-react';
 

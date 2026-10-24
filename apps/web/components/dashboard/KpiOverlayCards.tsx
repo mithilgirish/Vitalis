@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
-import { AlertCircle, AlertTriangle, Truck, Clock, ShieldCheck, Thermometer } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Truck, Clock } from 'lucide-react';
 
 export function KpiOverlayCards() {
   const { requests, hospitals, telemetry } = useVitalis();

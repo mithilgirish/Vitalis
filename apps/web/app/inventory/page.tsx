@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { InventoryTable } from '../../components/inventory/InventoryTable';
-import { Boxes, ShieldAlert, Clock, Thermometer } from 'lucide-react';
+import { Boxes, Clock, Thermometer } from 'lucide-react';
 
 export default function InventoryPage() {
   return (

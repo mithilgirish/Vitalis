@@ -5,14 +5,9 @@ import { useVitalis } from '../../lib/store/vitalisContext';
 import { TransferRequest } from '../../lib/types';
 import { formatUrgencyTier } from '../../lib/utils';
 import {
-  AlertCircle,
   Clock,
-  ArrowRight,
-  ShieldCheck,
   CheckCircle,
-  XCircle,
   CheckSquare,
-  Search,
 } from 'lucide-react';
 
 interface PendingRequestsListProps {
@@ -102,7 +97,6 @@ export function PendingRequestsList({
           filteredRequests.map((req) => {
             const isSelected = selectedRequestId === req.id;
             const { color, badgeBg } = formatUrgencyTier(req.esiUrgencyTier);
-            const isPending = req.status === 'pending_approval';
 
             return (
               <div

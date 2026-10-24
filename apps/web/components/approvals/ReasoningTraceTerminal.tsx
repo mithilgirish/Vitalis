@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ReActTrace } from '../../lib/types';
-import { Terminal, Bot, Sparkles, Copy, Check, ChevronRight } from 'lucide-react';
+import { Sparkles, Copy, Check } from 'lucide-react';
 
 interface ReasoningTraceTerminalProps {
   trace: ReActTrace;
