@@ -7,6 +7,9 @@ import {
   TransitTelemetry,
   InventoryBatch,
   JevExtractionResult,
+  BiologicalResourceType,
+  BloodGroup,
+  TraumaLevel,
 } from '../types';
 import {
   CHENNAI_HOSPITALS,
@@ -40,7 +43,7 @@ interface VitalisContextType {
   closeTriage: () => void;
   
   // Actions
-  approveRequest: (requestId: string, candidateId?: string) => void;
+  approveRequest: (requestId: string, candidateId?: string, approverName?: string) => void;
   rejectRequest: (requestId: string, reason: string) => void;
   selectCandidateForRequest: (requestId: string, candidateId: string) => void;
   addRequestFromTriage: (result: JevExtractionResult) => void;
@@ -49,6 +52,21 @@ interface VitalisContextType {
   resolveExcursion: (transferId: string) => void;
   toggleExcursionSimulator: (transferId: string) => void;
   
+  // Inventory Actions
+  addInventoryBatch: (batch: {
+    facilityId: string;
+    facilityName: string;
+    traumaLevel: TraumaLevel;
+    resourceType: BiologicalResourceType;
+    bloodGroup: BloodGroup;
+    unitsAvailable: number;
+    liveStorageTempC?: number;
+    storageChamberId?: string;
+    anticoagulant?: string;
+    hoursUntilExpiry?: number;
+  }) => void;
+  calibrateBatchTemp: (batchUuid: string, newTemp?: number) => void;
+
   // Theme Mode
   theme: 'dark' | 'light';
   toggleTheme: () => void;
@@ -82,7 +100,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
   
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<TransferRequest | null>(INITIAL_REQUESTS[0]);
-  const [selectedCourier, setSelectedCourier] = useState<TransitTelemetry | null>(INITIAL_TRANSIT_TELEMETRY[0]);
+  const [selectedCourier, setSelectedCourier] = useState<TransitTelemetry | null>(null);
   const [isTriageOpen, setIsTriageOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -124,7 +142,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
   const closeTriage = () => setIsTriageOpen(false);
 
   // Approve a request in HITL Queue
-  const approveRequest = (requestId: string, candidateId?: string) => {
+  const approveRequest = (requestId: string, candidateId?: string, approverName?: string) => {
     const req = requests.find((r) => r.id === requestId);
     if (!req) return;
 
@@ -136,7 +154,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'approve',
-        approved_by_user_id: 'admin-coordinator-chennai',
+        approved_by_user_id: approverName || 'Dr. Aishwarya Raman',
       }),
     }).catch(() => {
       // Backend offline fallback handled gracefully
@@ -202,8 +220,8 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
 
     addToast({
       type: 'success',
-      title: 'HITL Transfer Approved & Dispatched',
-      message: `Courier dispatched from ${chosenCandidate.facilityName} to ${destHosp.shortName} for ${req.unitsRequested} units of ${req.bloodGroup} ${req.resourceType}.`,
+      title: 'Doctor Transfer Approved',
+      message: `Authorized by ${approverName || 'Dr. Aishwarya Raman'}. Delivery driver dispatched from ${chosenCandidate.facilityName} to ${destHosp.shortName} for ${req.unitsRequested} units of ${req.bloodGroup} ${req.resourceType}.`,
     });
 
     // Update selected request to the next pending one if available
@@ -395,6 +413,79 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // Add new inventory batch from donor intake
+  const addInventoryBatch = (batchData: {
+    facilityId: string;
+    facilityName: string;
+    traumaLevel: TraumaLevel;
+    resourceType: BiologicalResourceType;
+    bloodGroup: BloodGroup;
+    unitsAvailable: number;
+    liveStorageTempC?: number;
+    storageChamberId?: string;
+    anticoagulant?: string;
+    hoursUntilExpiry?: number;
+  }) => {
+    const randomHex = Math.random().toString(16).substring(2, 6);
+    const randomHex2 = Math.random().toString(16).substring(2, 6);
+    const targetTemp = batchData.liveStorageTempC ?? 3.8;
+    const newBatch: InventoryBatch = {
+      batchUuid: `${batchData.resourceType.toUpperCase().substring(0, 4)}-${randomHex}-${randomHex2}`,
+      facilityId: batchData.facilityId,
+      facilityName: batchData.facilityName,
+      traumaLevel: batchData.traumaLevel,
+      resourceType: batchData.resourceType,
+      bloodGroup: batchData.bloodGroup,
+      unitsAvailable: batchData.unitsAvailable,
+      liveStorageTempC: targetTemp,
+      tempStatus: targetTemp > 6.0 ? 'critical' : targetTemp > 5.0 ? 'warning' : 'safe',
+      collectedDate: '2026-10-18',
+      expiryDate: '2026-11-20',
+      hoursUntilExpiry: batchData.hoursUntilExpiry ?? 720,
+      donorHash: `SHA256:${randomHex}...${randomHex2}`,
+      anticoagulant: batchData.anticoagulant || 'CPDA-1',
+      storageChamberId: batchData.storageChamberId || `VAULT-CHAMBER-${batchData.facilityId.split('-')[1] || 'A1'}`,
+      viabilityScore: 98.5,
+    };
+
+    setInventory((prev) => [newBatch, ...prev]);
+
+    // Update hospital stock units
+    setHospitals((prev) =>
+      prev.map((h) =>
+        h.id === batchData.facilityId
+          ? { ...h, currentStockUnits: h.currentStockUnits + batchData.unitsAvailable }
+          : h
+      )
+    );
+
+    addToast({
+      type: 'success',
+      title: 'Biological Batch Logged',
+      message: `Added ${batchData.unitsAvailable} units of ${batchData.bloodGroup} ${batchData.resourceType} to ${batchData.facilityName}. RFID tag generated.`,
+    });
+  };
+
+  // Calibrate storage chamber temperature
+  const calibrateBatchTemp = (batchUuid: string, newTemp = 3.6) => {
+    setInventory((prev) =>
+      prev.map((b) =>
+        b.batchUuid === batchUuid
+          ? {
+              ...b,
+              liveStorageTempC: newTemp,
+              tempStatus: newTemp > 6.0 ? 'critical' : newTemp > 5.0 ? 'warning' : 'safe',
+            }
+          : b
+      )
+    );
+    addToast({
+      type: 'success',
+      title: 'Chamber Recalibrated',
+      message: `Batch ${batchUuid} cooling calibrated to ${newTemp.toFixed(1)}°C. Storage vault temperature safe.`,
+    });
+  };
+
   return (
     <VitalisContext.Provider
       value={{
@@ -418,6 +509,8 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
         addRequestFromTriage,
         resolveExcursion,
         toggleExcursionSimulator,
+        addInventoryBatch,
+        calibrateBatchTemp,
         theme,
         toggleTheme,
         toasts,

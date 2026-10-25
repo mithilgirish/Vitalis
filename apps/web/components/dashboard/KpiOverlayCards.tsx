@@ -71,7 +71,7 @@ export function KpiOverlayCards() {
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1.5">
             <Truck className="w-3.5 h-3.5 text-blue-500" />
-            Active Medical Couriers
+            Active Delivery Drivers
           </span>
           <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-medium">
             {complianceRate.toFixed(0)}% Temp Safe
@@ -81,7 +81,7 @@ export function KpiOverlayCards() {
           <span className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
             {couriersInTransit}
           </span>
-          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Transfers En Route</span>
+          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Deliveries On The Way</span>
         </div>
         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
           Refrigeration: 100% within 1.0°C–6.0°C limit

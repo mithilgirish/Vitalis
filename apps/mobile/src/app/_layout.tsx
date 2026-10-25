@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { MissionProvider, useMission } from '@/context/MissionContext';
 import { HeaderCockpit } from '@/components/HeaderCockpit';
 import { BottomCockpitNav } from '@/components/BottomCockpitNav';
+import { AuthRoleModal } from '@/components/AuthRoleModal';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -67,6 +68,7 @@ function CockpitLayoutInner() {
           <Slot />
         </View>
         <BottomCockpitNav />
+        <AuthRoleModal />
       </Animated.View>
     </SafeAreaView>
   );

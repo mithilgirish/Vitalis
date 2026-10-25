@@ -3,33 +3,43 @@
 import React from 'react';
 import { InventoryBatch } from '../../lib/types';
 import { formatHoursRemaining } from '../../lib/utils';
+import { useVitalis } from '../../lib/store/vitalisContext';
 import {
   Boxes,
   Thermometer,
   Clock,
   X,
   Cpu,
+  RefreshCw,
+  Send,
 } from 'lucide-react';
 
 interface BatchDetailModalProps {
   batch: InventoryBatch | null;
   onClose: () => void;
+  onRequestTransfer?: (batch: InventoryBatch) => void;
 }
 
-export function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
+export function BatchDetailModal({ batch, onClose, onRequestTransfer }: BatchDetailModalProps) {
+  const { calibrateBatchTemp } = useVitalis();
+
   if (!batch) return null;
 
   const isTempCritical = batch.tempStatus === 'critical';
   const isTempWarning = batch.tempStatus === 'warning';
   const isExpiringSoon = batch.hoursUntilExpiry < 24;
 
+  const handleRecalibrate = () => {
+    calibrateBatchTemp(batch.batchUuid, 3.6);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#222329]/95 backdrop-blur-2xl p-6 shadow-[0_24px_64px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg rounded-3xl border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#222329]/95 backdrop-blur-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-[#0071E3]/10 text-[#0071E3] dark:bg-[#0A84FF]/15 dark:text-[#0A84FF] border border-[#0071E3]/20">
+            <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
               <Boxes className="w-5 h-5" />
             </div>
             <div>
@@ -80,9 +90,20 @@ export function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
               <Thermometer className="w-3.5 h-3.5" />
               {batch.liveStorageTempC.toFixed(1)}°C
             </span>
-            <span className="text-[11px] block mt-1 font-semibold uppercase">
-              Status: {batch.tempStatus}
-            </span>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[10px] font-semibold uppercase">
+                Status: {batch.tempStatus}
+              </span>
+              {(isTempCritical || isTempWarning) && (
+                <button
+                  onClick={handleRecalibrate}
+                  className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Calibrate</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div
@@ -116,7 +137,7 @@ export function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
         {/* Cryptographic Traceability */}
         <div className="mt-4 p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.07] font-mono text-[11px] space-y-1.5">
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-sans">
-            <Cpu className="w-3.5 h-3.5 text-[#0071E3] dark:text-[#0A84FF]" />
+            <Cpu className="w-3.5 h-3.5 text-blue-500" />
             <span className="font-semibold text-slate-900 dark:text-slate-100">IoT RFID Smart Vault Verification</span>
           </div>
           <div className="text-slate-500 dark:text-slate-400">
@@ -128,13 +149,40 @@ export function BatchDetailModal({ batch, onClose }: BatchDetailModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 text-xs font-semibold rounded-full border border-black/[0.1] dark:border-white/[0.15] bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
-          >
-            Close Inspector
-          </button>
+        <div className="mt-5 flex items-center justify-between gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+          {onRequestTransfer ? (
+            <button
+              onClick={() => {
+                onRequestTransfer(batch);
+                onClose();
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer shadow-sm"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Mark for Transfer</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2">
+            {(isTempCritical || isTempWarning) && (
+              <button
+                onClick={handleRecalibrate}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-all cursor-pointer shadow-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Recalibrate Temp (3.6°C)</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="px-5 py-2 text-xs font-semibold rounded-full border border-black/[0.1] dark:border-white/[0.15] bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
+            >
+              Close Inspector
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -2,25 +2,54 @@
 
 import React, { useState } from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
+import { useAuth } from '../../lib/store/authContext';
 import { InventoryBatch } from '../../lib/types';
 import { formatHoursRemaining } from '../../lib/utils';
 import { BatchDetailModal } from './BatchDetailModal';
+import { AddBatchModal } from './AddBatchModal';
 import {
   Search,
   Thermometer,
   Clock,
   ArrowUpDown,
   Eye,
+  ShieldCheck,
+  Building2,
+  PlusCircle,
+  Lock,
+  Boxes,
 } from 'lucide-react';
 
-export function InventoryTable() {
-  const { inventory } = useVitalis();
+interface InventoryTableProps {
+  externalAlertFilter?: 'all' | 'expiring' | 'thermal';
+  onFilterChange?: (filter: 'all' | 'expiring' | 'thermal') => void;
+  selectedFacilityFilter?: string;
+  onFacilityChange?: (facility: string) => void;
+}
+
+export function InventoryTable({
+  externalAlertFilter = 'all',
+  onFilterChange,
+  selectedFacilityFilter = 'all',
+  onFacilityChange,
+}: InventoryTableProps) {
+  const { inventory, hospitals, openTriage } = useVitalis();
+  const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFacility, setSelectedFacility] = useState<string>(selectedFacilityFilter);
   const [selectedResource, setSelectedResource] = useState<string>('all');
   const [selectedBloodGroup, setSelectedBloodGroup] = useState<string>('all');
-  const [selectedAlertFilter, setSelectedAlertFilter] = useState<'all' | 'expiring' | 'thermal'>('all');
+  const [localAlertFilter, setLocalAlertFilter] = useState<'all' | 'expiring' | 'thermal'>(externalAlertFilter);
+
+  const activeAlertFilter = onFilterChange ? externalAlertFilter : localAlertFilter;
+  const setAlertFilter = (filter: 'all' | 'expiring' | 'thermal') => {
+    if (onFilterChange) onFilterChange(filter);
+    setLocalAlertFilter(filter);
+  };
+
   const [inspectedBatch, setInspectedBatch] = useState<InventoryBatch | null>(null);
+  const [isAddBatchOpen, setIsAddBatchOpen] = useState(false);
 
   // Sorting
   const [sortField, setSortField] = useState<keyof InventoryBatch>('hoursUntilExpiry');
@@ -35,20 +64,32 @@ export function InventoryTable() {
     }
   };
 
+  // Role permissions: Custodian and Coordinator can log intake
+  const canLogIntake = user?.role === 'coordinator' || user?.role === 'inventory_officer';
+
+  // Synchronize facility filter if controlled externally
+  const currentFacility = onFacilityChange ? selectedFacilityFilter : selectedFacility;
+  const handleFacilitySelect = (val: string) => {
+    setSelectedFacility(val);
+    if (onFacilityChange) onFacilityChange(val);
+  };
+
   // Filter batches
   const filteredBatches = inventory.filter((b) => {
     const searchMatch =
       b.batchUuid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.facilityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.bloodGroup.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.resourceType.toLowerCase().includes(searchTerm.toLowerCase());
+      b.resourceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.storageChamberId.toLowerCase().includes(searchTerm.toLowerCase());
     if (!searchMatch) return false;
 
+    if (currentFacility !== 'all' && b.facilityId !== currentFacility) return false;
     if (selectedResource !== 'all' && b.resourceType !== selectedResource) return false;
     if (selectedBloodGroup !== 'all' && b.bloodGroup !== selectedBloodGroup) return false;
 
-    if (selectedAlertFilter === 'expiring' && b.hoursUntilExpiry >= 24) return false;
-    if (selectedAlertFilter === 'thermal' && b.tempStatus === 'safe') return false;
+    if (activeAlertFilter === 'expiring' && b.hoursUntilExpiry >= 24) return false;
+    if (activeAlertFilter === 'thermal' && b.tempStatus === 'safe') return false;
 
     return true;
   });
@@ -69,27 +110,80 @@ export function InventoryTable() {
 
   return (
     <div className="space-y-4">
-      {/* Search and Filters Bar - Apple / Google Clean Pill Bar */}
-      <div className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#222329]/80 backdrop-blur-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-[0_4px_24px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
-        {/* Search Input - Apple Spotlight Style */}
+      {/* Officer in Charge Banner with Action Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#222329]/90 backdrop-blur-xl text-xs shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-900 dark:text-white">
+                {user ? user.name : 'Dr. K. Sundaramoorthy'}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 font-semibold">
+                {user ? user.roleTitle : 'Blood Bank Custodian'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" />
+              <span>{user ? user.facilityName : 'Regional Blood Transfusion Center, Egmore'}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Action: Log New Biological Intake */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsAddBatchOpen(true)}
+            disabled={!canLogIntake}
+            title={!canLogIntake ? 'Blood Bank Custodian or Physician role required to log intake' : undefined}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold transition-all cursor-pointer shadow-md shadow-blue-500/20 active:scale-98 font-sans text-xs"
+          >
+            {!canLogIntake ? <Lock className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
+            <span>Log Blood Intake / Add Batch</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Search and Filters Bar */}
+      <div className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#222329]/80 backdrop-blur-xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shadow-xs">
+        {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search Batch ID, Hospital, Blood Type..."
-            className="w-full rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] pl-10 pr-4 py-2 text-xs font-sans text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-[#0071E3] dark:focus:border-[#0A84FF] focus:outline-none focus:ring-2 focus:ring-[#0071E3]/20 transition-all shadow-inner-xs"
+            placeholder="Search Batch ID, Hospital, Blood Group..."
+            className="w-full rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] pl-10 pr-4 py-2 text-xs font-sans text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-blue-500 focus:outline-none transition-all"
           />
         </div>
 
-        {/* Dropdown Filters & Segmented Pills */}
+        {/* Dropdown Filters & Alert Pills */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Hospital Facility Selector */}
+          <div className="flex items-center gap-1.5">
+            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={currentFacility}
+              onChange={(e) => handleFacilitySelect(e.target.value)}
+              className="rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer"
+            >
+              <option value="all">All 8 Chennai Facilities</option>
+              {hospitals.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.shortName}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Resource Filter */}
           <select
             value={selectedResource}
             onChange={(e) => setSelectedResource(e.target.value)}
-            className="rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:border-[#0071E3] focus:outline-none cursor-pointer transition-colors shadow-2xs"
+            className="rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer"
           >
             <option value="all">All Resources</option>
             <option value="PRBC">PRBC (Packed Red Cells)</option>
@@ -98,13 +192,15 @@ export function InventoryTable() {
             <option value="FFP">FFP (Fresh Frozen Plasma)</option>
             <option value="Cryoprecipitate">Cryoprecipitate</option>
             <option value="Kidney">Kidney</option>
+            <option value="Liver">Liver</option>
+            <option value="Heart">Heart</option>
           </select>
 
           {/* Blood Group Filter */}
           <select
             value={selectedBloodGroup}
             onChange={(e) => setSelectedBloodGroup(e.target.value)}
-            className="rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:border-[#0071E3] focus:outline-none cursor-pointer transition-colors shadow-2xs"
+            className="rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 focus:border-blue-500 focus:outline-none cursor-pointer"
           >
             <option value="all">All Blood Groups</option>
             <option value="O-">O- Universal Donor</option>
@@ -119,11 +215,9 @@ export function InventoryTable() {
 
           {/* Quick Alert Filter Pills */}
           <button
-            onClick={() =>
-              setSelectedAlertFilter(selectedAlertFilter === 'expiring' ? 'all' : 'expiring')
-            }
+            onClick={() => setAlertFilter(activeAlertFilter === 'expiring' ? 'all' : 'expiring')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-              selectedAlertFilter === 'expiring'
+              activeAlertFilter === 'expiring'
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold shadow-xs ring-1 ring-amber-500/20'
                 : 'border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
@@ -133,11 +227,9 @@ export function InventoryTable() {
           </button>
 
           <button
-            onClick={() =>
-              setSelectedAlertFilter(selectedAlertFilter === 'thermal' ? 'all' : 'thermal')
-            }
+            onClick={() => setAlertFilter(activeAlertFilter === 'thermal' ? 'all' : 'thermal')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
-              selectedAlertFilter === 'thermal'
+              activeAlertFilter === 'thermal'
                 ? 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 font-semibold shadow-xs ring-1 ring-rose-500/20'
                 : 'border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
@@ -148,8 +240,8 @@ export function InventoryTable() {
         </div>
       </div>
 
-      {/* Main Ledger Table - Apple Numbers / Google Cloud Minimalist Aesthetic */}
-      <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#222329]/90 backdrop-blur-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+      {/* Main Ledger Table */}
+      <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#222329]/90 backdrop-blur-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs text-left">
             <thead>
@@ -168,7 +260,7 @@ export function InventoryTable() {
                   className="p-3.5 cursor-pointer hover:text-slate-900 dark:hover:text-slate-200"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span>Hospital</span>
+                    <span>Hospital Vault</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
@@ -208,8 +300,9 @@ export function InventoryTable() {
             <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.05]">
               {sortedBatches.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-10 text-center text-slate-400 font-mono text-xs">
-                    No biological inventory batches match the specified criteria.
+                  <td colSpan={9} className="p-12 text-center text-slate-400 font-mono text-xs">
+                    <Boxes className="w-8 h-8 text-slate-400/40 mx-auto mb-2" />
+                    <span>No biological inventory batches match your filters.</span>
                   </td>
                 </tr>
               ) : (
@@ -241,7 +334,13 @@ export function InventoryTable() {
 
                       {/* Facility Name */}
                       <td className="p-3.5 font-medium text-slate-900 dark:text-slate-100">
-                        {batch.facilityName}
+                        <div className="flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{batch.facilityName}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono ml-5 block">
+                          Chamber: {batch.storageChamberId}
+                        </span>
                       </td>
 
                       {/* Trauma Level */}
@@ -333,7 +432,7 @@ export function InventoryTable() {
           </table>
         </div>
 
-        {/* Table Footer - Clean Apple Ledger Status Bar */}
+        {/* Table Footer */}
         <div className="px-4 py-3 bg-black/[0.015] dark:bg-white/[0.02] border-t border-black/[0.05] dark:border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
           <span className="font-sans">Showing {sortedBatches.length} of {inventory.length} biological batches</span>
           <div className="flex items-center gap-1.5 font-sans">
@@ -347,6 +446,13 @@ export function InventoryTable() {
       <BatchDetailModal
         batch={inspectedBatch}
         onClose={() => setInspectedBatch(null)}
+        onRequestTransfer={() => openTriage()}
+      />
+
+      {/* Add Batch Modal */}
+      <AddBatchModal
+        isOpen={isAddBatchOpen}
+        onClose={() => setIsAddBatchOpen(false)}
       />
     </div>
   );

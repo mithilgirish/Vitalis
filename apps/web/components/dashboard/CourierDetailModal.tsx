@@ -63,7 +63,7 @@ export function CourierDetailModal() {
             <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedCourier.originFacilityName}</span>
           </div>
           <div className="flex flex-col items-center px-4">
-            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{selectedCourier.progressPercent}% En Route</span>
+            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">{selectedCourier.progressPercent}% Completed (On the Way)</span>
             <div className="w-24 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
               <div
                 className={`h-full ${isExcursion ? 'bg-rose-500' : 'bg-blue-600 dark:bg-blue-500'}`}

@@ -3,17 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useVitalis } from '../../lib/store/vitalisContext';
+import { useAuth } from '../../lib/store/authContext';
 import { VitalisLogo } from '../common/VitalisLogo';
 import {
   Zap,
   Clock,
   Sun,
   Moon,
+  ChevronDown,
 } from 'lucide-react';
 
 export function Header() {
   const pathname = usePathname();
   const { openTriage, telemetry, theme, toggleTheme } = useVitalis();
+  const { user, setIsAuthModalOpen } = useAuth();
   const [timeStr, setTimeStr] = useState<string>('');
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export function Header() {
     if (pathname.includes('/approvals')) {
       return {
         title: 'Doctor Dispatch Authorizations',
-        subtitle: 'Review & approve urgent hospital transfer requests before couriers dispatch',
+        subtitle: 'Review & approve urgent hospital transfer requests before drivers depart',
         badge: 'Physician Sign-Off Required',
       };
     }
@@ -103,7 +106,7 @@ export function Header() {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <span className="text-[11px] font-mono font-medium">
-            {inTransitCount} Active Couriers
+            {inTransitCount} Active Drivers
           </span>
         </div>
 
@@ -133,20 +136,39 @@ export function Header() {
           </span>
         </button>
 
-        {/* Operator Badge */}
-        <div className="flex items-center gap-2.5 pl-2 border-l border-black/[0.06] dark:border-white/[0.08]">
-          <div className="h-8 w-8 rounded-full border border-rose-500/30 bg-rose-500/10 flex items-center justify-center text-xs font-mono font-bold text-rose-600 dark:text-rose-400">
-            VT
-          </div>
-          <div className="hidden xl:flex flex-col text-left">
-            <span className="text-xs font-semibold text-slate-900 dark:text-white">
-              Dr. R. Menon
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">
-              Chief Dispatch Officer
-            </span>
-          </div>
-        </div>
+        {/* Operator / User Role Profile Pill */}
+        {user && (
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            title="Click to view profile, permissions or switch roles"
+            className="flex items-center gap-2.5 pl-2.5 py-1 pr-2 rounded-xl border border-black/[0.06] dark:border-white/[0.08] hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-all cursor-pointer group"
+          >
+            <div
+              className={`h-8 w-8 rounded-full border flex items-center justify-center text-xs font-mono font-bold shrink-0 transition-transform group-hover:scale-105 ${
+                user.badgeColor === 'rose'
+                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  : user.badgeColor === 'amber'
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  : user.badgeColor === 'emerald'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400'
+              }`}
+            >
+              {user.avatarInitials}
+            </div>
+            <div className="hidden xl:flex flex-col text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-slate-900 dark:text-white truncate max-w-[130px]">
+                  {user.name}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform group-hover:translate-y-0.5" />
+              </div>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
+                {user.roleTitle}
+              </span>
+            </div>
+          </button>
+        )}
       </div>
     </header>
   );

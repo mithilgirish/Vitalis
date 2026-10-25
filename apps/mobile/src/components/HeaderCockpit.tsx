@@ -17,6 +17,8 @@ export const HeaderCockpit: React.FC = () => {
     colors,
     isDark,
     toggleTheme,
+    currentUser,
+    setAuthModalVisible,
   } = useMission();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -108,6 +110,40 @@ export const HeaderCockpit: React.FC = () => {
           <Text style={styles.esiBadgeText}>{urgencyLabel}</Text>
         </View>
 
+        {/* User Identity / Role Pill */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Switch Operator Role"
+          onPress={() => setAuthModalVisible(true)}
+          style={({ pressed }) => [
+            styles.userPill,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.08)',
+            },
+            pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+          ]}>
+          <View
+            style={[
+              styles.userAvatarMini,
+              {
+                backgroundColor:
+                  currentUser.role === 'courier'
+                    ? '#FFB300'
+                    : currentUser.role === 'coordinator'
+                    ? '#FF3B30'
+                    : currentUser.role === 'inventory_officer'
+                    ? '#34C759'
+                    : '#0A84FF',
+              },
+            ]}>
+            <Text style={styles.userAvatarMiniText}>{currentUser.avatarInitials}</Text>
+          </View>
+          <Text style={[styles.userDriverIdText, { color: colors.textPrimary }]}>
+            {currentUser.name.split(' ')[0]}
+          </Text>
+        </Pressable>
+
         {/* Circular Theme Toggle */}
         <Pressable
           accessibilityRole="button"
@@ -185,5 +221,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  userPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 7,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  userAvatarMini: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarMiniText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+  },
+  userDriverIdText: {
+    fontSize: 10.5,
+    fontWeight: '700',
   },
 });

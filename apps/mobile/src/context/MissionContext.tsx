@@ -4,6 +4,73 @@ import { ThemeMode, ThemeColors, THEME_PALETTE } from '@/theme/vitalis-theme';
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';
 export type CargoType = 'PRBC' | 'Platelets';
 
+export type MobileUserRole = 'courier' | 'coordinator' | 'inventory_officer' | 'auditor';
+
+export interface MobileAuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: MobileUserRole;
+  roleTitle: string;
+  facilityName: string;
+  avatarInitials: string;
+  driverId: string;
+  vehiclePlate: string;
+  badgeLabel: string;
+}
+
+export const MOBILE_DEMO_USERS: Record<MobileUserRole, MobileAuthUser> = {
+  courier: {
+    id: 'USR-COUR-02',
+    name: 'Vikramaditya Rao',
+    email: 'vikram.rao@vitalis.health',
+    role: 'courier',
+    roleTitle: 'ALS Rapid Response Paramedic',
+    facilityName: 'Regional Blood Transfusion Center',
+    avatarInitials: 'VR',
+    driverId: 'VTL-DRV-784',
+    vehiclePlate: 'TN-07-ALS-104',
+    badgeLabel: 'Primary ALS Courier',
+  },
+  coordinator: {
+    id: 'USR-COORD-01',
+    name: 'Dr. Aishwarya Raman',
+    email: 'aishwarya.raman@vitalis.health',
+    role: 'coordinator',
+    roleTitle: 'Chief Clinical Logistics Officer',
+    facilityName: 'Apollo Hospitals, Greams Rd',
+    avatarInitials: 'AR',
+    driverId: 'VTL-DOC-001',
+    vehiclePlate: 'TN-01-MD-99',
+    badgeLabel: 'Command Dispatch Officer',
+  },
+  inventory_officer: {
+    id: 'USR-INV-03',
+    name: 'Dr. K. Sundaramoorthy',
+    email: 'k.sundar@vitalis.health',
+    role: 'inventory_officer',
+    roleTitle: 'Regional Blood Bank Director',
+    facilityName: 'RBTC Egmore Reserve',
+    avatarInitials: 'KS',
+    driverId: 'VTL-BB-302',
+    vehiclePlate: 'TN-02-BB-44',
+    badgeLabel: 'Blood Reserve Custodian',
+  },
+  auditor: {
+    id: 'USR-AUD-04',
+    name: 'Director Santhosh Kumar',
+    email: 'santhosh.kumar@tnhealth.gov.in',
+    role: 'auditor',
+    roleTitle: 'Healthcare Compliance Auditor',
+    facilityName: 'Tamil Nadu Medical Council',
+    avatarInitials: 'SK',
+    driverId: 'VTL-AUD-901',
+    vehiclePlate: 'TN-09-GOV-01',
+    badgeLabel: 'State Logistics Auditor',
+  },
+};
+
+
 export interface ManualLog {
   id: string;
   checkpoint: string;
@@ -72,6 +139,13 @@ export interface MissionState {
   step2: CustodyStepState;
   step3: CustodyStepState;
 
+  // User Identity & Role Auth
+  currentUser: MobileAuthUser;
+  switchUserRole: (role: MobileUserRole) => void;
+  isAuthModalVisible: boolean;
+  setAuthModalVisible: (visible: boolean) => void;
+  logoutUser: () => void;
+
   // Actions
   acceptMission: () => void;
   toggleExcursion: (override?: boolean) => void;
@@ -132,7 +206,21 @@ const MissionContext = createContext<MissionState | null>(null);
 
 export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
-  const [status, setStatus] = useState<MissionStatus>('pending_dispatch');
+  const [currentUser, setCurrentUser] = useState<MobileAuthUser>(MOBILE_DEMO_USERS.courier);
+  const [isAuthModalVisible, setAuthModalVisible] = useState<boolean>(false);
+
+  const switchUserRole = (role: MobileUserRole) => {
+    if (MOBILE_DEMO_USERS[role]) {
+      setCurrentUser(MOBILE_DEMO_USERS[role]);
+      setAuthModalVisible(false);
+    }
+  };
+
+  const logoutUser = () => {
+    setCurrentUser(MOBILE_DEMO_USERS.courier);
+    setAuthModalVisible(false);
+  };
+  const [status, setStatus] = useState<MissionStatus>('in_transit');
   const [cargoType, setCargoTypeState] = useState<CargoType>('PRBC');
   const [isExcursionSimulated, setIsExcursionSimulated] = useState<boolean>(false);
   const [temperature, setTemperature] = useState<number>(3.8);
@@ -164,7 +252,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       temp: 3.8,
       timestamp: getRealTimeIST(12),
       location: 'Kilpauk Transfusion Depot',
-      driverId: 'VTL-DRV-784',
+      driverId: currentUser.driverId || 'VTL-DRV-784',
     },
   ]);
 
@@ -289,8 +377,8 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       checkpoint,
       temp,
       timestamp: getRealTimeIST(0),
-      location: checkpoint.includes('Destination') ? 'Apollo Greams Rd Entry' : 'Anna Salai En Route',
-      driverId: 'VTL-DRV-784',
+      location: checkpoint.includes('Destination') ? 'Apollo Greams Rd Entry' : 'Anna Salai (On The Way)',
+      driverId: currentUser.driverId || 'VTL-DRV-784',
     };
     setManualLogs((prev) => [newLog, ...prev]);
     return true;
@@ -408,6 +496,11 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     resetCustodySteps,
     completeHandoff,
     resetToDispatchModal,
+    currentUser,
+    switchUserRole,
+    isAuthModalVisible,
+    setAuthModalVisible,
+    logoutUser,
   };
 
   return <MissionContext.Provider value={value}>{children}</MissionContext.Provider>;

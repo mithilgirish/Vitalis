@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useVitalis } from '../../lib/store/vitalisContext';
+import { useAuth } from '../../lib/store/authContext';
 import { VitalisLogo } from '../common/VitalisLogo';
 import {
   MapPin,
@@ -13,11 +14,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Lock,
 } from 'lucide-react';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { requests, telemetry, openTriage } = useVitalis();
+  const { requests, telemetry, openTriage, addToast } = useVitalis();
+  const { user, setIsAuthModalOpen } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   const pendingRequestsCount = requests.filter((r) => r.status === 'pending_approval').length;
@@ -100,7 +103,17 @@ export function Sidebar() {
       {/* Quick Emergency Intake Action (Apple Intelligence style) */}
       <div className="p-3">
         <button
-          onClick={openTriage}
+          onClick={() => {
+            if (user && !user.permissions.canTriggerTriage) {
+              addToast({
+                type: 'warning',
+                title: 'Access Restricted by Role',
+                message: `Your current role (${user.roleTitle}) does not have Triage Ingestion permissions. Login as Clinical Coordinator.`,
+              });
+              return;
+            }
+            openTriage();
+          }}
           className={`w-full group relative flex items-center rounded-xl border border-rose-500/15 dark:border-rose-500/20 bg-rose-500/[0.05] hover:bg-rose-500/[0.10] dark:bg-rose-500/[0.08] dark:hover:bg-rose-500/[0.14] transition-all duration-200 cursor-pointer ${
             collapsed ? 'h-10 w-10 mx-auto justify-center p-0' : 'justify-between px-3 py-2'
           }`}
@@ -108,7 +121,11 @@ export function Sidebar() {
         >
           <div className="flex items-center gap-2.5">
             <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-rose-600 to-rose-400 text-white shadow-xs">
-              <Zap className="h-3.5 w-3.5 fill-white/20" />
+              {user && !user.permissions.canTriggerTriage ? (
+                <Lock className="h-3.5 w-3.5 text-white/80" />
+              ) : (
+                <Zap className="h-3.5 w-3.5 fill-white/20" />
+              )}
             </div>
             {!collapsed && (
               <div className="flex flex-col text-left">
@@ -116,7 +133,7 @@ export function Sidebar() {
                   Emergency Intake
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  AI Triage Assistant
+                  {user && !user.permissions.canTriggerTriage ? 'Restricted' : 'AI Triage Assistant'}
                 </span>
               </div>
             )}
@@ -192,6 +209,43 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* User Identity / Role Pill */}
+      {user && (
+        <div className="p-2 border-t border-black/[0.04] dark:border-white/[0.05]">
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className={`w-full flex items-center rounded-xl p-2 transition-all cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06] ${
+              collapsed ? 'justify-center' : 'gap-2.5 text-left'
+            }`}
+            title={`Logged in as ${user.name} (${user.roleTitle}). Click to switch role.`}
+          >
+            <div
+              className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs border shrink-0 ${
+                user.badgeColor === 'rose'
+                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  : user.badgeColor === 'amber'
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  : user.badgeColor === 'emerald'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400'
+              }`}
+            >
+              {user.avatarInitials}
+            </div>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block truncate">
+                  {user.name}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 block truncate">
+                  {user.badgeLabel.split('(')[0]}
+                </span>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Bottom Sidebar Collapse/Expand Toggle */}
       <div className="p-2.5 border-t border-black/[0.04] dark:border-white/[0.05]">

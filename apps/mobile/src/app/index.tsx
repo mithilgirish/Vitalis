@@ -11,7 +11,7 @@ export default function MissionScreen() {
   const { status, acceptMission, excursionFlag, colors } = useMission();
   const [showSimulatedPushModal, setShowSimulatedPushModal] = useState(false);
 
-  const isModalVisible = status === 'pending_dispatch' || showSimulatedPushModal;
+  const isModalVisible = showSimulatedPushModal;
 
   const handleAccept = () => {
     acceptMission();
