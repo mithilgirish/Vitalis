@@ -85,6 +85,20 @@ export const CHENNAI_GRAPH_NODES: Record<string, HospitalNode> = {
     lat: 12.9056,
     lng: 80.1982,
   },
+  'FAC-KAUVERY': {
+    id: 'FAC-KAUVERY',
+    name: 'Kauvery Hospital, Alwarpet',
+    shortName: 'Kauvery Hospital',
+    lat: 13.0337,
+    lng: 80.2526,
+  },
+  'FAC-SIMS': {
+    id: 'FAC-SIMS',
+    name: 'SIMS Hospital, Vadapalani',
+    shortName: 'SIMS Hospital',
+    lat: 13.0519,
+    lng: 80.2117,
+  },
   // Junction Nodes
   'JNC-EGMORE': { id: 'JNC-EGMORE', name: 'Egmore Roundabout', shortName: 'Egmore Roundabout', lat: 13.073, lng: 80.2615 },
   'JNC-CHETPET': { id: 'JNC-CHETPET', name: 'Chetpet Signal', shortName: 'Chetpet Signal', lat: 13.071, lng: 80.246 },
@@ -158,6 +172,8 @@ export function normalizeFacilityId(id: string): string {
   if (lower.includes('srmc') || lower.includes('ramachandra') || lower.includes('d4e5f6a1')) return 'FAC-SRMC';
   if (lower.includes('miot') || lower.includes('e5f6a1b2')) return 'FAC-MIOT';
   if (lower.includes('gleneagles') || lower.includes('global') || lower.includes('f6a1b2c3')) return 'FAC-GLENEAGLES';
+  if (lower.includes('kauvery')) return 'FAC-KAUVERY';
+  if (lower.includes('sims')) return 'FAC-SIMS';
   return 'FAC-RBTC';
 }
 

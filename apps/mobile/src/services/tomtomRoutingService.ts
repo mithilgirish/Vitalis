@@ -129,15 +129,56 @@ export const REGISTERED_CHENNAI_HOSPITALS: MobileHospitalSearchItem[] = [
     traumaLevel: 1,
     isRegisteredHospital: true,
   },
+  {
+    id: 'FAC-KAUVERY',
+    name: 'Kauvery Hospital, Alwarpet',
+    shortName: 'Kauvery Hospital',
+    address: '199 Luz Church Rd, Mylapore',
+    area: 'Central Chennai',
+    lat: 13.0337,
+    lng: 80.2526,
+    traumaLevel: 1,
+    isRegisteredHospital: true,
+  },
+  {
+    id: 'FAC-SIMS',
+    name: 'SIMS Hospital, Vadapalani',
+    shortName: 'SIMS Hospital',
+    address: '1 Jawaharlal Nehru Salai, Vadapalani',
+    area: 'West Central Hub',
+    lat: 13.0519,
+    lng: 80.2117,
+    traumaLevel: 1,
+    isRegisteredHospital: true,
+  },
 ];
 
 export function getTomTomApiKey(): string {
-  return (
-    process.env.EXPO_PUBLIC_TOMTOM_API_KEY ||
-    process.env.NEXT_PUBLIC_TOMTOM_API_KEY ||
-    process.env.TOMTOM_API_KEY ||
-    ''
-  );
+  // 1. Check EXPO_PUBLIC env vars (Expo Babel inlines these at build time)
+  if (process.env.EXPO_PUBLIC_TOMTOM_API_KEY && process.env.EXPO_PUBLIC_TOMTOM_API_KEY.trim().length > 0) {
+    return process.env.EXPO_PUBLIC_TOMTOM_API_KEY.trim();
+  }
+  if (process.env.NEXT_PUBLIC_TOMTOM_API_KEY && process.env.NEXT_PUBLIC_TOMTOM_API_KEY.trim().length > 0) {
+    return process.env.NEXT_PUBLIC_TOMTOM_API_KEY.trim();
+  }
+  if (process.env.TOMTOM_API_KEY && process.env.TOMTOM_API_KEY.trim().length > 0) {
+    return process.env.TOMTOM_API_KEY.trim();
+  }
+
+  // 2. Check Expo Constants extra if configured in app.json
+  try {
+    const Constants = require('expo-constants').default;
+    const extraKey =
+      Constants?.expoConfig?.extra?.tomtomApiKey ||
+      Constants?.manifest?.extra?.tomtomApiKey;
+    if (extraKey && typeof extraKey === 'string' && extraKey.trim().length > 0) {
+      return extraKey.trim();
+    }
+  } catch {
+    // Ignore in non-Expo or mock environments
+  }
+
+  return '';
 }
 
 /**

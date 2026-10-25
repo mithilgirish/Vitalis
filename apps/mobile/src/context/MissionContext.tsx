@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { ThemeMode, ThemeColors, THEME_PALETTE } from '@/theme/vitalis-theme';
-import { solveDijkstraLocal, normalizeFacilityId } from '../services/dijkstraRouting';
+import { solveDijkstraLocal, normalizeFacilityId, CHENNAI_GRAPH_NODES } from '../services/dijkstraRouting';
+import { calculateTomTomRoute } from '../services/tomtomRoutingService';
 import { getMobileBackendUrl, getMobileWsUrl } from '../services/apiConfig';
 
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';
@@ -432,6 +433,29 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const lastProcessedMissionIdRef = useRef<string | null>(null);
   const isInitialMountRef = useRef<boolean>(true);
 
+  // Live TomTom road route resolution on mobile boot
+  useEffect(() => {
+    calculateTomTomRoute(
+      [13.0784, 80.2604],
+      [13.0567, 80.2505],
+      'Regional Blood Transfusion Center',
+      'Apollo Greams Rd',
+      'FAC-RBTC',
+      'FAC-APOLLO'
+    )
+      .then((res) => {
+        if (res?.waypoints?.length > 1) {
+          setRouteCoords(res.waypoints);
+          setDistanceKm(res.totalDistanceKm);
+          setEtaSeconds(res.estimatedMinutes * 60);
+          setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
+          const lastPoint = res.waypoints[res.waypoints.length - 1];
+          setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Synchronize state and date with FastAPI / SQLite Database
   useEffect(() => {
     const backendUrl = getMobileBackendUrl();
@@ -475,6 +499,33 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
         const last = waypoints[waypoints.length - 1];
         setDestinationCoords({ lat: last[0], lng: last[1] });
+      }
+
+      // Dynamic asynchronous TomTom road navigation query
+      const oId = m.origin_facility_id || normalizeFacilityId(origName);
+      const dId = m.destination_facility_id || normalizeFacilityId(destName);
+      const origNode = CHENNAI_GRAPH_NODES[oId];
+      const destNode = CHENNAI_GRAPH_NODES[dId];
+      if (origNode && destNode) {
+        calculateTomTomRoute(
+          [origNode.lat, origNode.lng],
+          [destNode.lat, destNode.lng],
+          origName,
+          destName,
+          oId,
+          dId
+        )
+          .then((res) => {
+            if (res?.waypoints?.length > 1) {
+              setRouteCoords(res.waypoints);
+              setDistanceKm(res.totalDistanceKm);
+              setEtaSeconds(res.estimatedMinutes * 60);
+              setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
+              const lastPoint = res.waypoints[res.waypoints.length - 1];
+              setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
+            }
+          })
+          .catch(() => {});
       }
 
       setDistanceKm(dist || 3.56);
@@ -840,6 +891,33 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
       const last = waypoints[waypoints.length - 1];
       setDestinationCoords({ lat: last[0], lng: last[1] });
+    }
+
+    // Dynamic asynchronous TomTom road navigation query
+    const oId = task.origin_facility_id || normalizeFacilityId(origName);
+    const dId = task.destination_facility_id || normalizeFacilityId(destName);
+    const origNode = CHENNAI_GRAPH_NODES[oId];
+    const destNode = CHENNAI_GRAPH_NODES[dId];
+    if (origNode && destNode) {
+      calculateTomTomRoute(
+        [origNode.lat, origNode.lng],
+        [destNode.lat, destNode.lng],
+        origName,
+        destName,
+        oId,
+        dId
+      )
+        .then((res) => {
+          if (res?.waypoints?.length > 1) {
+            setRouteCoords(res.waypoints);
+            setDistanceKm(res.totalDistanceKm);
+            setEtaSeconds(res.estimatedMinutes * 60);
+            setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
+            const lastPoint = res.waypoints[res.waypoints.length - 1];
+            setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
+          }
+        })
+        .catch(() => {});
     }
   };
 
