@@ -86,6 +86,14 @@ class DispatchActionRequest(BaseModel):
     vehicle_type: Optional[str] = Field(default="Refrigerated EV Van #104", description="Transport vehicle specifications")
     origin_facility_id: Optional[str] = Field(None, description="Origin hospital ID")
     destination_facility_id: Optional[str] = Field(None, description="Destination hospital ID")
+    origin_facility_name: Optional[str] = Field(None, description="Origin hospital name")
+    destination_facility_name: Optional[str] = Field(None, description="Destination hospital name")
+    distance_km: Optional[float] = Field(None, description="Total route distance in km")
+    estimated_minutes: Optional[int] = Field(None, description="Estimated transit duration in minutes")
+    route_waypoints: Optional[List[List[float]]] = Field(None, description="Route waypoints coordinates")
+    resource_type: Optional[str] = Field(default="PRBC", description="Resource type")
+    blood_group: Optional[str] = Field(default="O-", description="Blood group")
+    units_requested: Optional[int] = Field(default=4, description="Units requested")
 
 class DispatchActionResponse(BaseModel):
     transfer_id: str

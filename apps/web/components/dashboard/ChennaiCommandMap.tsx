@@ -43,6 +43,7 @@ export function ChennaiCommandMap() {
     selectedCourier,
     setSelectedCourier,
     theme,
+    dispatchRouteMission,
   } = useVitalis();
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'emergency' | 'stockout' | 'surplus'>('all');
@@ -85,6 +86,7 @@ export function ChennaiCommandMap() {
           selectedHospital={selectedHospital}
           onSelectHospital={setSelectedHospital}
           onRouteCalculated={(route) => setPlannedRoute(route)}
+          onDispatchRoute={(originId, destId, route) => dispatchRouteMission(originId, destId, route)}
         />
 
         {/* Node Filters & Layer Pill Bar */}

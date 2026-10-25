@@ -53,6 +53,16 @@ interface VitalisContextType {
     approverName?: string,
     driverInfo?: { driverId: string; name: string; courierId: string; vehicleType: string }
   ) => void;
+  dispatchRouteMission: (
+    originId: string,
+    destId: string,
+    route: {
+      totalDistanceKm: number;
+      estimatedMinutes: number;
+      waypoints: [number, number][];
+      instructions?: { instruction: string }[];
+    }
+  ) => void;
   rejectRequest: (requestId: string, reason: string) => void;
   selectCandidateForRequest: (requestId: string, candidateId: string) => void;
   addRequestFromTriage: (result: JevExtractionResult) => void;
@@ -301,7 +311,15 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
         courier_id: assignedDriver.courierId,
         vehicle_type: assignedDriver.vehicleType,
         origin_facility_id: originHosp.id,
+        origin_facility_name: originHosp.name,
         destination_facility_id: destHosp.id,
+        destination_facility_name: destHosp.name,
+        distance_km: dijkstraRoute.totalDistanceKm,
+        estimated_minutes: dijkstraRoute.estimatedMinutes,
+        route_waypoints: dijkstraRoute.waypoints,
+        resource_type: req.resourceType,
+        blood_group: req.bloodGroup,
+        units_requested: req.unitsRequested,
       }),
     }).catch(() => {
       // Backend offline fallback handled gracefully
@@ -372,6 +390,94 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     if (remainingPending.length > 0) {
       setSelectedRequest(remainingPending[0]);
     }
+  };
+
+  // Dispatch an emergency route from Hospital Search Route Planner directly to mobile driver
+  const dispatchRouteMission = (
+    originId: string,
+    destId: string,
+    route: {
+      totalDistanceKm: number;
+      estimatedMinutes: number;
+      waypoints: [number, number][];
+      instructions?: { instruction: string }[];
+    }
+  ) => {
+    const originHosp = hospitals.find((h) => h.id === originId) || hospitals[0];
+    const destHosp = hospitals.find((h) => h.id === destId) || hospitals[1];
+    const assignedDriver = AVAILABLE_COURIER_DRIVERS[0] || {
+      driverId: 'VTL-DRV-784',
+      name: 'Vikramaditya Rao',
+      courierId: 'COU-CH-104',
+      vehicleType: 'Refrigerated EV Van #104',
+    };
+
+    const transferId = `rt-${Date.now().toString(36).slice(-6)}`;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+    fetch(`${backendUrl}/api/v1/dispatch/${transferId}/action`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'approve',
+        approved_by_user_id: 'Dr. Aishwarya Raman',
+        assigned_driver_id: assignedDriver.driverId,
+        assigned_driver_name: assignedDriver.name,
+        courier_id: assignedDriver.courierId,
+        vehicle_type: assignedDriver.vehicleType,
+        origin_facility_id: originHosp.id,
+        origin_facility_name: originHosp.name,
+        destination_facility_id: destHosp.id,
+        destination_facility_name: destHosp.name,
+        distance_km: route.totalDistanceKm,
+        estimated_minutes: route.estimatedMinutes,
+        route_waypoints: route.waypoints,
+        resource_type: 'PRBC',
+        blood_group: 'O-',
+        units_requested: 4,
+      }),
+    }).catch(() => {});
+
+    // Add toast
+    addToast({
+      type: 'success',
+      title: 'Vehicle Dispatched to Route! 🚀',
+      message: `${assignedDriver.name} (#${assignedDriver.courierId}) deployed from ${originHosp.shortName} to ${destHosp.shortName}. Route synchronized to mobile phone.`,
+    });
+
+    // Create telemetry marker on map
+    const newTelem: TransitTelemetry = {
+      transferId,
+      courierId: assignedDriver.courierId,
+      courierName: `${assignedDriver.name} (#${assignedDriver.courierId})`,
+      vehicleType: 'Refrigerated EV Van',
+      originFacilityId: originHosp.id,
+      originFacilityName: originHosp.shortName,
+      destinationFacilityId: destHosp.id,
+      destinationFacilityName: destHosp.shortName,
+      resource: 'PRBC',
+      bloodGroup: 'O-',
+      units: 4,
+      currentCoordinates: { lat: originHosp.lat, lng: originHosp.lng },
+      mapX: originHosp.mapX,
+      mapY: originHosp.mapY,
+      originX: originHosp.mapX,
+      originY: originHosp.mapY,
+      destX: destHosp.mapX,
+      destY: destHosp.mapY,
+      progressPercent: 12,
+      velocityKmH: 42,
+      currentTemperatureC: 3.8,
+      tempThresholdMaxC: 6.0,
+      excursionFlag: false,
+      etaMinutes: route.estimatedMinutes,
+      departureTime: 'Just now',
+      routeHistory: [
+        { time: 'Just now', tempC: 3.8, lat: originHosp.lat, lng: originHosp.lng }
+      ],
+    };
+
+    setTelemetry((prev) => [newTelem, ...prev]);
   };
 
   // Reject a request with reason modal
@@ -648,6 +754,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
         openTriage,
         closeTriage,
         approveRequest,
+        dispatchRouteMission,
         rejectRequest,
         selectCandidateForRequest,
         addRequestFromTriage,

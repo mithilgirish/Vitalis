@@ -19,13 +19,16 @@ export default function MissionScreen() {
     dismissAssignmentAlert,
     assignedDriverName,
     courierId,
+    isDispatchModalOpen,
+    setIsDispatchModalOpen,
   } = useMission();
   const [showSimulatedPushModal, setShowSimulatedPushModal] = useState(false);
 
-  const isModalVisible = showSimulatedPushModal || status === 'pending_dispatch';
+  const isModalVisible = isDispatchModalOpen || showSimulatedPushModal || status === 'pending_dispatch';
 
   const handleAccept = () => {
     acceptMission();
+    setIsDispatchModalOpen(false);
     setShowSimulatedPushModal(false);
   };
 
@@ -45,7 +48,9 @@ export default function MissionScreen() {
             <View style={[styles.bannerIcon, { backgroundColor: colors.cobaltBlue }]}>
               <Truck size={18} color="#FFFFFF" />
             </View>
-            <View style={{ flex: 1, paddingRight: 8 }}>
+            <Pressable
+              onPress={() => setIsDispatchModalOpen(true)}
+              style={{ flex: 1, paddingRight: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={[styles.bannerTitle, { color: colors.textPrimary }]}>
                   {incomingAssignmentAlert.title}
@@ -61,7 +66,7 @@ export default function MissionScreen() {
                 Payload: {incomingAssignmentAlert.units} Units {incomingAssignmentAlert.resource} &bull; Dijkstra:{' '}
                 {incomingAssignmentAlert.distanceKm} km (~{incomingAssignmentAlert.etaMinutes} mins)
               </Text>
-            </View>
+            </Pressable>
             <Pressable
               onPress={dismissAssignmentAlert}
               style={({ pressed }) => [

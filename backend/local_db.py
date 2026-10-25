@@ -160,7 +160,7 @@ def get_system_sync_metadata() -> Dict[str, Any]:
     now = datetime.now()
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM transfer_requests ORDER BY created_at DESC")
+        cursor.execute("SELECT * FROM transfer_requests ORDER BY updated_at DESC, created_at DESC")
         transfers = []
         for row in cursor.fetchall():
             d = dict(row)
@@ -182,6 +182,11 @@ def get_system_sync_metadata() -> Dict[str, Any]:
                     d["location"] = d["location_json"]
             telemetry.append(d)
 
+    # Prioritize active in-transit missions, then pending approval
+    active = next((t for t in transfers if t.get("status") == "in_transit"), None)
+    if not active:
+        active = next((t for t in transfers if t.get("status") == "pending_approval"), transfers[0] if transfers else None)
+
     return {
         "server_date": now.strftime("%Y-%m-%d"),
         "server_date_formatted": now.strftime("%a, %b %d, %Y"),
@@ -189,7 +194,7 @@ def get_system_sync_metadata() -> Dict[str, Any]:
         "server_timestamp": now.isoformat(),
         "transfers": transfers,
         "telemetry": telemetry,
-        "active_mission": transfers[0] if transfers else None,
+        "active_mission": active,
         "database_engine": "SQLite 3 (Local-First Synchronized)"
     }
 

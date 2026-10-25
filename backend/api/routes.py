@@ -172,15 +172,40 @@ async def dispatch_action(
         origin_id = body.origin_facility_id or transfer.get("origin_facility_id") or "FAC-RBTC"
         dest_id = body.destination_facility_id or transfer.get("destination_facility_id") or "FAC-APOLLO"
 
-        # Compute Dijkstra Shortest Path along Chennai road network
-        route_solution = dijkstra_router.solve_shortest_path(origin_id, dest_id)
-        transfer["route_waypoints"] = route_solution.get("waypoints", [])
-        transfer["distance_km"] = route_solution.get("total_distance_km", 6.4)
-        transfer["estimated_minutes"] = route_solution.get("estimated_minutes", 14)
-        if not transfer.get("origin_facility_name"):
-            transfer["origin_facility_name"] = route_solution.get("origin_name")
-        if not transfer.get("destination_facility_name"):
-            transfer["destination_facility_name"] = route_solution.get("destination_name")
+        if body.route_waypoints and len(body.route_waypoints) > 1:
+            # Custom TomTom or client-calculated road route provided
+            transfer["route_waypoints"] = body.route_waypoints
+            transfer["distance_km"] = body.distance_km or transfer.get("distance_km") or 6.4
+            transfer["estimated_minutes"] = body.estimated_minutes or transfer.get("estimated_minutes") or 14
+            road_segs = ["Traffic-Optimized Active Transit Corridor"]
+            origin_name_fallback = origin_id
+            destination_name_fallback = dest_id
+        else:
+            # Compute Dijkstra Shortest Path along Chennai road network
+            route_solution = dijkstra_router.solve_shortest_path(origin_id, dest_id)
+            transfer["route_waypoints"] = route_solution.get("waypoints", [])
+            transfer["distance_km"] = route_solution.get("total_distance_km", 6.4)
+            transfer["estimated_minutes"] = route_solution.get("estimated_minutes", 14)
+            road_segs = route_solution.get("road_segments", [])
+            origin_name_fallback = route_solution.get("origin_name")
+            destination_name_fallback = route_solution.get("destination_name")
+
+        if body.origin_facility_name:
+            transfer["origin_facility_name"] = body.origin_facility_name
+        elif not transfer.get("origin_facility_name"):
+            transfer["origin_facility_name"] = origin_name_fallback
+
+        if body.destination_facility_name:
+            transfer["destination_facility_name"] = body.destination_facility_name
+        elif not transfer.get("destination_facility_name"):
+            transfer["destination_facility_name"] = destination_name_fallback
+
+        if body.resource_type:
+            transfer["resource_type"] = body.resource_type
+        if body.blood_group:
+            transfer["blood_group"] = body.blood_group
+        if body.units_requested:
+            transfer["units_requested"] = body.units_requested
         
         # Broadcast real-time dispatch update to connected Command Center and Mobile Couriers
         broadcast_payload = {
@@ -198,7 +223,7 @@ async def dispatch_action(
             "distance_km": transfer["distance_km"],
             "estimated_minutes": transfer["estimated_minutes"],
             "route_waypoints": transfer["route_waypoints"],
-            "road_segments": route_solution.get("road_segments", []),
+            "road_segments": road_segs,
             "approved_by": transfer["approved_by"]
         }
         await ws_manager.broadcast_event("DISPATCH_APPROVED", broadcast_payload)

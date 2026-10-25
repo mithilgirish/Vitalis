@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { ThemeMode, ThemeColors, THEME_PALETTE } from '@/theme/vitalis-theme';
 import { solveDijkstraLocal } from '../services/dijkstraRouting';
+import { getMobileBackendUrl, getMobileWsUrl } from '../services/apiConfig';
 
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';
 export type CargoType = 'PRBC' | 'Platelets';
@@ -168,6 +169,10 @@ export interface MissionState {
   setAuthModalVisible: (visible: boolean) => void;
   logoutUser: () => void;
 
+  // Dispatch Modal Visibility
+  isDispatchModalOpen: boolean;
+  setIsDispatchModalOpen: (open: boolean) => void;
+
   // Actions
   acceptMission: () => void;
   toggleExcursion: (override?: boolean) => void;
@@ -301,52 +306,107 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [sparklineHistory, setSparklineHistory] = useState<SparklinePoint[]>(INITIAL_SPARKLINE);
   const [syncedDate, setSyncedDate] = useState<string>('2026-10-25');
   const [syncedTime, setSyncedTime] = useState<string>('');
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState<boolean>(false);
+
+  const lastProcessedMissionIdRef = useRef<string | null>(null);
+  const isInitialMountRef = useRef<boolean>(true);
 
   // Synchronize state and date with FastAPI / SQLite Database
   useEffect(() => {
-    const backendUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+    const backendUrl = getMobileBackendUrl();
+    const wsUrl = getMobileWsUrl();
+
+    // Helper to apply mission payload from server
+    const applyMissionData = (m: any, triggerPopup = false) => {
+      if (m.status === 'in_transit' || m.status === 'pending_approval' || m.status === 'delivered') {
+        setStatus(m.status);
+      }
+      const origName = m.origin_facility_name || m.origin || 'Regional Blood Transfusion Center';
+      const destName = m.destination_facility_name || m.destination || 'Apollo Greams Rd';
+      const cargoStr = `${m.units_requested || m.units || 4} Units ${m.blood_group || 'O-'} ${m.resource_type || m.resource || 'PRBC'}`;
+
+      setOrigin(origName);
+      setDestination(destName);
+      setCargo(cargoStr);
+
+      if (m.assigned_driver_id) setAssignedDriverId(m.assigned_driver_id);
+      if (m.assigned_driver_name) setAssignedDriverName(m.assigned_driver_name);
+      if (m.courier_id) setCourierId(m.courier_id);
+
+      let waypoints = m.route_waypoints;
+      let dist = m.distance_km;
+      let eta = m.estimated_minutes;
+
+      if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
+        const solved = solveDijkstraLocal(
+          m.origin_facility_id || 'FAC-RBTC',
+          m.destination_facility_id || 'FAC-APOLLO'
+        );
+        waypoints = solved.waypoints;
+        dist = solved.totalDistanceKm;
+        eta = solved.estimatedMinutes;
+      }
+
+      if (waypoints && waypoints.length > 0) {
+        setRouteCoords(waypoints);
+        setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
+        const last = waypoints[waypoints.length - 1];
+        setDestinationCoords({ lat: last[0], lng: last[1] });
+      }
+
+      if (dist) setDistanceKm(dist);
+      if (eta) setEtaSeconds(eta * 60);
+
+      if (triggerPopup) {
+        setIsDispatchModalOpen(true);
+        setIncomingAssignmentAlert({
+          title: 'New Emergency Transfer Assigned',
+          message: `Assigned to ${m.assigned_driver_name || 'Vikramaditya Rao'} (${m.courier_id || 'COU-CH-104'}). Turn-by-turn route loaded.`,
+          origin: origName,
+          destination: destName,
+          distanceKm: dist || 3.56,
+          etaMinutes: eta || 6,
+          units: m.units_requested || m.units || 4,
+          resource: `${m.blood_group || 'O-'} ${m.resource_type || m.resource || 'PRBC'}`,
+        });
+      }
+    };
 
     // 1. Initial snapshot sync from SQLite database
-    fetch(`${backendUrl}/api/v1/system/sync`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.server_date) setSyncedDate(data.server_date);
-        if (data.server_time_ist) setSyncedTime(data.server_time_ist);
-        if (data.active_mission) {
-          const m = data.active_mission;
-          if (m.status === 'in_transit' || m.status === 'pending_approval' || m.status === 'delivered') {
-            setStatus(m.status);
+    const fetchSync = (isPolling = false) => {
+      fetch(`${backendUrl}/api/v1/system/sync`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.server_date) setSyncedDate(data.server_date);
+          if (data.server_time_ist) setSyncedTime(data.server_time_ist);
+          if (data.active_mission) {
+            const m = data.active_mission;
+            const missionId = m.id || m.transfer_id;
+            const hasChanged = missionId && missionId !== lastProcessedMissionIdRef.current;
+            
+            if (hasChanged) {
+              const shouldPopup = isPolling && !isInitialMountRef.current && (m.status === 'in_transit' || m.status === 'pending_approval');
+              lastProcessedMissionIdRef.current = missionId;
+              applyMissionData(m, shouldPopup);
+            }
           }
-          if (m.origin_facility_name) setOrigin(m.origin_facility_name);
-          if (m.destination_facility_name) setDestination(m.destination_facility_name);
-          if (m.resource_type || m.blood_group) {
-            setCargo(`${m.units_requested || 4} Units ${m.blood_group || 'O-'} ${m.resource_type || 'PRBC'}`);
+          if (!isPolling) {
+            isInitialMountRef.current = false;
           }
-          if (m.distance_km) setDistanceKm(m.distance_km);
-          if (m.estimated_minutes) setEtaSeconds(m.estimated_minutes * 60);
-          if (m.assigned_driver_id) setAssignedDriverId(m.assigned_driver_id);
-          if (m.assigned_driver_name) setAssignedDriverName(m.assigned_driver_name);
-          if (m.courier_id) setCourierId(m.courier_id);
+        })
+        .catch(() => {
+          // Fallback to local offline simulation
+        });
+    };
 
-          if (m.route_waypoints && Array.isArray(m.route_waypoints) && m.route_waypoints.length > 0) {
-            setRouteCoords(m.route_waypoints);
-            setOriginCoords({ lat: m.route_waypoints[0][0], lng: m.route_waypoints[0][1] });
-            const last = m.route_waypoints[m.route_waypoints.length - 1];
-            setDestinationCoords({ lat: last[0], lng: last[1] });
-          } else if (m.origin_facility_id && m.destination_facility_id) {
-            const dijkstra = solveDijkstraLocal(m.origin_facility_id, m.destination_facility_id);
-            setRouteCoords(dijkstra.waypoints);
-            setDistanceKm(dijkstra.totalDistanceKm);
-            setEtaSeconds(dijkstra.estimatedMinutes * 60);
-          }
-        }
-      })
-      .catch(() => {
-        // Fallback to local offline simulation
-      });
+    fetchSync(false);
+
+    // Periodic sync polling every 2.5s to ensure dispatches are caught even if WebSocket is disconnected
+    const pollInterval = setInterval(() => {
+      fetchSync(true);
+    }, 2500);
 
     // 2. Real-time WebSocket event subscription
-    const wsUrl = backendUrl.replace(/^http/, 'ws');
     let ws: WebSocket | null = null;
     try {
       ws = new WebSocket(`${wsUrl}/api/v1/ws/telemetry`);
@@ -361,53 +421,8 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
               currentUser.role === 'courier';
 
             if (isAssignedToThisDriver) {
-              setStatus('in_transit');
-              const origName = m.origin || 'Regional Blood Transfusion Center';
-              const destName = m.destination || 'Apollo Greams Rd';
-              const cargoStr = `${m.units || 4} Units ${m.blood_group || 'O-'} ${m.resource || 'PRBC'}`;
-
-              setOrigin(origName);
-              setDestination(destName);
-              setCargo(cargoStr);
-              if (m.assigned_driver_id) setAssignedDriverId(m.assigned_driver_id);
-              if (m.assigned_driver_name) setAssignedDriverName(m.assigned_driver_name);
-              if (m.courier_id) setCourierId(m.courier_id);
-
-              let waypoints = m.route_waypoints;
-              let dist = m.distance_km;
-              let eta = m.estimated_minutes;
-
-              if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
-                const solved = solveDijkstraLocal(
-                  m.origin_facility_id || 'FAC-RBTC',
-                  m.destination_facility_id || 'FAC-APOLLO'
-                );
-                waypoints = solved.waypoints;
-                dist = solved.totalDistanceKm;
-                eta = solved.estimatedMinutes;
-              }
-
-              if (waypoints && waypoints.length > 0) {
-                setRouteCoords(waypoints);
-                setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
-                const last = waypoints[waypoints.length - 1];
-                setDestinationCoords({ lat: last[0], lng: last[1] });
-              }
-
-              if (dist) setDistanceKm(dist);
-              if (eta) setEtaSeconds(eta * 60);
-
-              // Push assignment alert to driver screen
-              setIncomingAssignmentAlert({
-                title: 'New Emergency Transfer Assigned',
-                message: `Assigned to ${m.assigned_driver_name || 'Vikramaditya Rao'} (${m.courier_id || 'COU-CH-104'}). Turn-by-turn route loaded.`,
-                origin: origName,
-                destination: destName,
-                distanceKm: dist || 3.56,
-                etaMinutes: eta || 6,
-                units: m.units || 4,
-                resource: `${m.blood_group || 'O-'} ${m.resource || 'PRBC'}`,
-              });
+              lastProcessedMissionIdRef.current = m.transfer_id || m.id;
+              applyMissionData(m, true);
             }
           } else if (payload.event === 'DISPATCH_REJECTED') {
             setStatus('pending_dispatch');
@@ -421,6 +436,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     return () => {
+      clearInterval(pollInterval);
       if (ws) {
         ws.close();
       }
@@ -523,7 +539,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       // Stream cold-chain telemetry immediately to FastAPI backend
-      const backendUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      const backendUrl = getMobileBackendUrl();
       fetch(`${backendUrl}/api/v1/telemetry/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -704,6 +720,9 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     step3,
     syncedDate,
     syncedTime,
+
+    isDispatchModalOpen,
+    setIsDispatchModalOpen,
 
     acceptMission,
     toggleExcursion,

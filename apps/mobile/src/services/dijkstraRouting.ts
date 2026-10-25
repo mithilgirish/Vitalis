@@ -3,6 +3,8 @@
  * Runs offline in React Native / Expo environment and synchronizes with FastAPI gateway.
  */
 
+import { getMobileBackendUrl } from './apiConfig';
+
 export interface DijkstraRouteResult {
   algorithm: string;
   originId: string;
@@ -280,7 +282,7 @@ export function solveDijkstraLocal(originId: string, destId: string): DijkstraRo
  * Resolves route either via FastAPI backend or fallback to local Dijkstra.
  */
 export async function solveDijkstraRoute(originId: string, destId: string): Promise<DijkstraRouteResult> {
-  const backendUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  const backendUrl = getMobileBackendUrl();
   const normOrigin = normalizeFacilityId(originId);
   const normDest = normalizeFacilityId(destId);
 
