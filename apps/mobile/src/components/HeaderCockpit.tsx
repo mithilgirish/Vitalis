@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import {
-  ShieldAlert,
   Sun,
   Moon,
   Thermometer,
@@ -11,7 +10,6 @@ import { VitalisLogo } from './VitalisLogo';
 
 export const HeaderCockpit: React.FC = () => {
   const {
-    urgencyLabel,
     excursionFlag,
     temperature,
     colors,
@@ -104,12 +102,6 @@ export const HeaderCockpit: React.FC = () => {
           </Text>
         </View>
 
-        {/* ESI TIER 1 Badge */}
-        <View style={[styles.esiBadge, { backgroundColor: colors.esiCrimson }]}>
-          <ShieldAlert size={11} color="#FFFFFF" strokeWidth={2.4} />
-          <Text style={styles.esiBadgeText}>{urgencyLabel}</Text>
-        </View>
-
         {/* User Identity / Role Pill */}
         <Pressable
           accessibilityRole="button"
@@ -199,20 +191,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'monospace',
     fontWeight: '700',
-  },
-  esiBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4.5,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    gap: 4,
-  },
-  esiBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 0.3,
   },
   themeToggleButton: {
     width: 30,

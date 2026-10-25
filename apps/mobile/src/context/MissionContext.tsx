@@ -6,6 +6,107 @@ import { getMobileBackendUrl, getMobileWsUrl } from '../services/apiConfig';
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';
 export type CargoType = 'PRBC' | 'Platelets';
 
+export interface TransferTask {
+  id: string;
+  origin_facility_name: string;
+  origin_facility_id?: string;
+  destination_facility_name: string;
+  destination_facility_id?: string;
+  resource_type: string;
+  blood_group: string;
+  units_requested: number;
+  urgency_tier: number;
+  status: 'in_transit' | 'pending_approval' | 'pending_dispatch' | 'delivered';
+  assigned_driver_id?: string;
+  assigned_driver_name?: string;
+  courier_id?: string;
+  vehicle_type?: string;
+  distance_km?: number;
+  estimated_minutes?: number;
+  route_waypoints?: [number, number][];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const DEFAULT_TASKS: TransferTask[] = [
+  {
+    id: 'REQ-84D5-9A58',
+    origin_facility_name: 'Regional Blood Transfusion Center, Egmore',
+    origin_facility_id: 'FAC-RBTC',
+    destination_facility_name: 'Apollo Hospitals, Greams Road',
+    destination_facility_id: 'FAC-APOLLO',
+    resource_type: 'PRBC',
+    blood_group: 'O-',
+    units_requested: 4,
+    urgency_tier: 1,
+    status: 'in_transit',
+    assigned_driver_id: 'VTL-DRV-784',
+    assigned_driver_name: 'Vikramaditya Rao',
+    courier_id: 'COU-CH-104',
+    vehicle_type: 'Refrigerated EV Van #104',
+    distance_km: 3.56,
+    estimated_minutes: 6,
+    created_at: '10 mins ago',
+  },
+  {
+    id: 'REQ-55E2-11C8',
+    origin_facility_name: 'Gleneagles Health City, Perumbakkam',
+    origin_facility_id: 'FAC-GLENEAGLES',
+    destination_facility_name: 'Fortis Malar Hospital, Adyar',
+    destination_facility_id: 'FAC-FORTIS',
+    resource_type: 'Platelets',
+    blood_group: 'AB+',
+    units_requested: 2,
+    urgency_tier: 1,
+    status: 'in_transit',
+    assigned_driver_id: 'VTL-DRV-784',
+    assigned_driver_name: 'Vikramaditya Rao',
+    courier_id: 'COU-CH-104',
+    vehicle_type: 'Refrigerated EV Van #104',
+    distance_km: 17.12,
+    estimated_minutes: 24,
+    created_at: '25 mins ago',
+  },
+  {
+    id: 'REQ-28F4-00A9',
+    origin_facility_name: 'MIOT International, Manapakkam',
+    origin_facility_id: 'FAC-MIOT',
+    destination_facility_name: 'Sri Ramachandra (SRMC), Porur',
+    destination_facility_id: 'FAC-SRMC',
+    resource_type: 'PRBC',
+    blood_group: 'A-',
+    units_requested: 4,
+    urgency_tier: 2,
+    status: 'pending_approval',
+    assigned_driver_id: 'VTL-DRV-785',
+    assigned_driver_name: 'Sundar Rajan',
+    courier_id: 'COU-CH-108',
+    vehicle_type: 'ALS Rapid Unit #108',
+    distance_km: 6.6,
+    estimated_minutes: 12,
+    created_at: '38 mins ago',
+  },
+  {
+    id: 'REQ-99C1-4B22',
+    origin_facility_name: 'Kauvery Hospital, Alwarpet',
+    origin_facility_id: 'FAC-KAUVERY',
+    destination_facility_name: 'Stanley Medical College, George Town',
+    destination_facility_id: 'FAC-STANLEY',
+    resource_type: 'Whole Blood',
+    blood_group: 'B+',
+    units_requested: 3,
+    urgency_tier: 1,
+    status: 'delivered',
+    assigned_driver_id: 'VTL-DRV-786',
+    assigned_driver_name: 'Meenakshi Sundaram',
+    courier_id: 'COU-CH-112',
+    vehicle_type: 'Refrigerated EV Van #112',
+    distance_km: 8.4,
+    estimated_minutes: 16,
+    created_at: '1 hour ago',
+  },
+];
+
 export type MobileUserRole = 'courier' | 'coordinator' | 'inventory_officer' | 'auditor';
 
 export interface MobileAuthUser {
@@ -173,6 +274,11 @@ export interface MissionState {
   isDispatchModalOpen: boolean;
   setIsDispatchModalOpen: (open: boolean) => void;
 
+  // Delivery Tasks Ledger
+  allTasks: TransferTask[];
+  switchToTask: (task: TransferTask) => void;
+  refreshTasks: () => Promise<void>;
+
   // Actions
   acceptMission: () => void;
   toggleExcursion: (override?: boolean) => void;
@@ -307,6 +413,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [syncedDate, setSyncedDate] = useState<string>('2026-10-25');
   const [syncedTime, setSyncedTime] = useState<string>('');
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState<boolean>(false);
+  const [allTasks, setAllTasks] = useState<TransferTask[]>(DEFAULT_TASKS);
 
   const lastProcessedMissionIdRef = useRef<string | null>(null);
   const isInitialMountRef = useRef<boolean>(true);
@@ -379,6 +486,9 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .then((data) => {
           if (data.server_date) setSyncedDate(data.server_date);
           if (data.server_time_ist) setSyncedTime(data.server_time_ist);
+          if (data.transfers && Array.isArray(data.transfers) && data.transfers.length > 0) {
+            setAllTasks(data.transfers);
+          }
           if (data.active_mission) {
             const m = data.active_mission;
             const missionId = m.id || m.transfer_id;
@@ -664,6 +774,49 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const refreshTasks = async () => {
+    try {
+      const backendUrl = getMobileBackendUrl();
+      const res = await fetch(`${backendUrl}/api/v1/system/sync`);
+      const data = await res.json();
+      if (data.transfers && Array.isArray(data.transfers) && data.transfers.length > 0) {
+        setAllTasks(data.transfers);
+      }
+    } catch {
+      // offline fallback
+    }
+  };
+
+  const switchToTask = (task: TransferTask) => {
+    const s = task.status === 'delivered' ? 'delivered' : 'in_transit';
+    setStatus(s);
+    const origName = task.origin_facility_name || 'Regional Blood Transfusion Center';
+    const destName = task.destination_facility_name || 'Apollo Greams Rd';
+    const cargoStr = `${task.units_requested || 4} Units ${task.blood_group || 'O-'} ${task.resource_type || 'PRBC'}`;
+    setOrigin(origName);
+    setDestination(destName);
+    setCargo(cargoStr);
+    if (task.distance_km) setDistanceKm(task.distance_km);
+    if (task.estimated_minutes) setEtaSeconds(task.estimated_minutes * 60);
+    if (task.assigned_driver_id) setAssignedDriverId(task.assigned_driver_id);
+    if (task.assigned_driver_name) setAssignedDriverName(task.assigned_driver_name);
+    if (task.courier_id) setCourierId(task.courier_id);
+
+    let waypoints = task.route_waypoints;
+    if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
+      if (task.origin_facility_id && task.destination_facility_id) {
+        const solved = solveDijkstraLocal(task.origin_facility_id, task.destination_facility_id);
+        waypoints = solved.waypoints;
+      }
+    }
+    if (waypoints && waypoints.length > 0) {
+      setRouteCoords(waypoints);
+      setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
+      const last = waypoints[waypoints.length - 1];
+      setDestinationCoords({ lat: last[0], lng: last[1] });
+    }
+  };
+
   const value: MissionState = {
     themeMode,
     isDark,
@@ -723,6 +876,10 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     isDispatchModalOpen,
     setIsDispatchModalOpen,
+
+    allTasks,
+    switchToTask,
+    refreshTasks,
 
     acceptMission,
     toggleExcursion,

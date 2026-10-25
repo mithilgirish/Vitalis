@@ -1,18 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Navigation, Thermometer, QrCode, AlertTriangle } from 'lucide-react-native';
+import { Navigation, Thermometer, QrCode, AlertTriangle, Truck } from 'lucide-react-native';
 import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 
 export const BottomCockpitNav: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { excursionFlag, temperature, step3, colors, isDark } = useMission();
+  const { excursionFlag, temperature, step3, allTasks, colors, isDark } = useMission();
 
   const isMissionActive = pathname === '/' || pathname === '';
+  const isTasksActive = pathname === '/tasks';
   const isTelemetryActive = pathname === '/telemetry';
   const isScannerActive = pathname === '/scanner';
+
+  const activeTasksCount = allTasks ? allTasks.filter((t) => t.status !== 'delivered').length : 0;
 
   return (
     <View style={styles.dockWrapper}>
@@ -60,6 +63,50 @@ export const BottomCockpitNav: React.FC = () => {
               },
             ]}>
             Mission
+          </Text>
+        </Pressable>
+
+        {/* TAB 2: Delivery Tasks */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Delivery Tasks Tab"
+          onPress={() => router.push('/tasks')}
+          style={({ pressed }) => [
+            styles.tabItem,
+            isTasksActive && {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 122, 255, 0.08)',
+            },
+            pressed && styles.tabPressed,
+          ]}>
+          <View style={styles.iconContainer}>
+            <Truck
+              size={20}
+              color={isTasksActive ? colors.cobaltBlue : colors.textMuted}
+              strokeWidth={isTasksActive ? 2.4 : 1.9}
+            />
+            {activeTasksCount > 0 && (
+              <View
+                style={[
+                  styles.miniBadge,
+                  {
+                    backgroundColor: colors.cobaltBlue,
+                  },
+                ]}>
+                <Text style={[styles.miniBadgeText, { color: '#FFFFFF' }]}>
+                  {activeTasksCount}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text
+            style={[
+              styles.tabLabel,
+              {
+                color: isTasksActive ? colors.cobaltBlue : colors.textMuted,
+                fontWeight: isTasksActive ? '700' : '500',
+              },
+            ]}>
+            Tasks
           </Text>
         </Pressable>
 
