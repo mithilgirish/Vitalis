@@ -78,14 +78,45 @@ DispatchAction = Literal['approve', 'reject']
 
 class DispatchActionRequest(BaseModel):
     action: DispatchAction = Field(..., description="'approve' transitions to in_transit; 'reject' transitions to rejected")
-    approved_by_user_id: Optional[str] = Field(None, description="UUID of authorized clinical operator")
+    approved_by_user_id: Optional[str] = Field(None, description="UUID or name of authorized clinical operator")
     rejection_reason: Optional[str] = Field(None, description="Clinical reason if transfer was rejected")
+    assigned_driver_id: Optional[str] = Field(default="VTL-DRV-784", description="Identifier of assigned courier driver")
+    assigned_driver_name: Optional[str] = Field(default="Vikramaditya Rao", description="Full name of assigned courier")
+    courier_id: Optional[str] = Field(default="COU-CH-104", description="Vehicle/Cooler fleet tag")
+    vehicle_type: Optional[str] = Field(default="Refrigerated EV Van #104", description="Transport vehicle specifications")
+    origin_facility_id: Optional[str] = Field(None, description="Origin hospital ID")
+    destination_facility_id: Optional[str] = Field(None, description="Destination hospital ID")
 
 class DispatchActionResponse(BaseModel):
     transfer_id: str
     status: Literal['in_transit', 'rejected']
     courier_dispatch_broadcast: bool = Field(..., description="True if dispatched to courier fleet")
+    assigned_driver_id: Optional[str] = None
+    assigned_driver_name: Optional[str] = None
+    courier_id: Optional[str] = None
+    distance_km: Optional[float] = None
+    estimated_minutes: Optional[int] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+# ------------------------------------------------------------------------------
+# 4. Dijkstra Routing Schemas
+# ------------------------------------------------------------------------------
+class RoutingSolveRequest(BaseModel):
+    origin_id: str = Field(..., description="Origin hospital ID or name")
+    destination_id: str = Field(..., description="Destination hospital ID or name")
+
+class RoutingSolveResponse(BaseModel):
+    algorithm: str
+    origin_id: str
+    origin_name: str
+    destination_id: str
+    destination_name: str
+    total_distance_km: float
+    estimated_minutes: int
+    node_sequence: Optional[List[str]] = None
+    road_segments: Optional[List[str]] = None
+    waypoints: List[List[float]]
+    congestion_level: Optional[str] = "low"
 
 # ------------------------------------------------------------------------------
 # 4. Courier Telemetry Schemas (FR-5)

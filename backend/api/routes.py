@@ -19,11 +19,14 @@ from backend.api.schemas import (
     DispatchActionRequest,
     DispatchActionResponse,
     TelemetryLogRequest,
-    TelemetryLogResponse
+    TelemetryLogResponse,
+    RoutingSolveRequest,
+    RoutingSolveResponse
 )
 from backend.agent.triage_client import JevTriageExtractor
 from backend.agent.orchestrator import ReActDispatchOrchestrator
 from backend.agent.tools import MOCK_CHENNAI_FACILITIES
+from backend.routing_engine import dijkstra_router, HOSPITAL_NODES
 from backend.local_db import (
     get_system_sync_metadata,
     upsert_transfer,
@@ -151,16 +154,54 @@ async def dispatch_action(
 
     if body.action == "approve":
         transfer["status"] = "in_transit"
-        transfer["approved_by"] = body.approved_by_user_id or "admin-user-e6a2dc90"
+        transfer["approved_by"] = body.approved_by_user_id or "Dr. Aishwarya Raman"
         transfer["updated_at"] = datetime.utcnow().isoformat()
+
+        # Update driver assignment details
+        driver_id = body.assigned_driver_id or "VTL-DRV-784"
+        driver_name = body.assigned_driver_name or "Vikramaditya Rao"
+        courier_id = body.courier_id or "COU-CH-104"
+        vehicle_type = body.vehicle_type or "Refrigerated EV Van #104"
+
+        transfer["assigned_driver_id"] = driver_id
+        transfer["assigned_driver_name"] = driver_name
+        transfer["courier_id"] = courier_id
+        transfer["vehicle_type"] = vehicle_type
+
+        # Origin & Destination normalization for Dijkstra router
+        origin_id = body.origin_facility_id or transfer.get("origin_facility_id") or "FAC-RBTC"
+        dest_id = body.destination_facility_id or transfer.get("destination_facility_id") or "FAC-APOLLO"
+
+        # Compute Dijkstra Shortest Path along Chennai road network
+        route_solution = dijkstra_router.solve_shortest_path(origin_id, dest_id)
+        transfer["route_waypoints"] = route_solution.get("waypoints", [])
+        transfer["distance_km"] = route_solution.get("total_distance_km", 6.4)
+        transfer["estimated_minutes"] = route_solution.get("estimated_minutes", 14)
+        if not transfer.get("origin_facility_name"):
+            transfer["origin_facility_name"] = route_solution.get("origin_name")
+        if not transfer.get("destination_facility_name"):
+            transfer["destination_facility_name"] = route_solution.get("destination_name")
         
         # Broadcast real-time dispatch update to connected Command Center and Mobile Couriers
-        await ws_manager.broadcast_event("DISPATCH_APPROVED", {
+        broadcast_payload = {
             "transfer_id": transfer_id,
             "status": "in_transit",
             "destination": transfer.get("destination_facility_name"),
-            "resource": transfer.get("resource_type")
-        })
+            "origin": transfer.get("origin_facility_name"),
+            "resource": transfer.get("resource_type", "PRBC"),
+            "blood_group": transfer.get("blood_group", "O-"),
+            "units": transfer.get("units_requested", 4),
+            "assigned_driver_id": driver_id,
+            "assigned_driver_name": driver_name,
+            "courier_id": courier_id,
+            "vehicle_type": vehicle_type,
+            "distance_km": transfer["distance_km"],
+            "estimated_minutes": transfer["estimated_minutes"],
+            "route_waypoints": transfer["route_waypoints"],
+            "road_segments": route_solution.get("road_segments", []),
+            "approved_by": transfer["approved_by"]
+        }
+        await ws_manager.broadcast_event("DISPATCH_APPROVED", broadcast_payload)
 
         # Persist to local SQLite database
         upsert_transfer(transfer)
@@ -169,6 +210,11 @@ async def dispatch_action(
             transfer_id=transfer_id,
             status="in_transit",
             courier_dispatch_broadcast=True,
+            assigned_driver_id=driver_id,
+            assigned_driver_name=driver_name,
+            courier_id=courier_id,
+            distance_km=transfer["distance_km"],
+            estimated_minutes=transfer["estimated_minutes"],
             updated_at=datetime.utcnow()
         )
     elif body.action == "reject":
@@ -320,3 +366,82 @@ async def get_transfer(transfer_id: str):
     if not transfer:
         raise HTTPException(status_code=404, detail="Transfer order not found")
     return transfer
+
+# ------------------------------------------------------------------------------
+# 7. Dijkstra Routing & Courier Fleet Assignment Endpoints
+# ------------------------------------------------------------------------------
+MOCK_COURIER_DRIVERS: List[Dict[str, Any]] = [
+    {
+        "driver_id": "VTL-DRV-784",
+        "name": "Vikramaditya Rao",
+        "courier_id": "COU-CH-104",
+        "vehicle_type": "Refrigerated EV Van #104",
+        "vehicle_plate": "TN-07-ALS-104",
+        "status": "ready",
+        "base_facility": "Regional Blood Transfusion Center",
+        "phone": "+91 98401 22849",
+        "is_mobile_app_driver": True
+    },
+    {
+        "driver_id": "VTL-DRV-412",
+        "name": "Kavitha Selvam",
+        "courier_id": "COU-CH-202",
+        "vehicle_type": "Cryo-Carrier Alpha-2",
+        "vehicle_plate": "TN-09-EV-412",
+        "status": "ready",
+        "base_facility": "Apollo Hospitals, Greams Road",
+        "phone": "+91 98410 77312",
+        "is_mobile_app_driver": False
+    },
+    {
+        "driver_id": "VTL-DRV-509",
+        "name": "Rajesh Kannan",
+        "courier_id": "COU-CH-305",
+        "vehicle_type": "Rapid Platelet Courier",
+        "vehicle_plate": "TN-01-RC-509",
+        "status": "ready",
+        "base_facility": "Rajiv Gandhi Govt General Hospital",
+        "phone": "+91 97909 33201",
+        "is_mobile_app_driver": False
+    }
+]
+
+@router.get("/couriers", summary="List registered emergency couriers and ALS fleet")
+async def list_couriers():
+    """Returns active couriers available for hospital transfer assignment."""
+    return {"couriers": MOCK_COURIER_DRIVERS}
+
+@router.post(
+    "/routing/solve",
+    response_model=RoutingSolveResponse,
+    summary="Compute Dijkstra shortest path between any two Chennai hospitals"
+)
+async def solve_routing(payload: RoutingSolveRequest):
+    """
+    Executes Dijkstra algorithm to compute the shortest road path,
+    turn-by-turn coordinate waypoints, distance, and transit time.
+    """
+    try:
+        solution = dijkstra_router.solve_shortest_path(payload.origin_id, payload.destination_id)
+        return RoutingSolveResponse(**solution)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Dijkstra routing failed: {str(e)}"
+        )
+
+@router.get(
+    "/routing/route/{origin_id}/{dest_id}",
+    response_model=RoutingSolveResponse,
+    summary="Direct GET endpoint for Dijkstra shortest path between hospitals"
+)
+async def get_route(origin_id: str, dest_id: str):
+    """Computes Dijkstra route between origin and destination hospital IDs."""
+    try:
+        solution = dijkstra_router.solve_shortest_path(origin_id, dest_id)
+        return RoutingSolveResponse(**solution)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Dijkstra routing failed: {str(e)}"
+        )

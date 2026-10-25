@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useVitalis } from '../../lib/store/vitalisContext';
 import { useAuth } from '../../lib/store/authContext';
 import { TransferRequest } from '../../lib/types';
@@ -8,6 +8,7 @@ import { CandidateComparison } from './CandidateComparison';
 import { PriorityIndexWidget } from './PriorityIndexWidget';
 import { ReasoningTraceTerminal } from './ReasoningTraceTerminal';
 import { RejectReasonModal } from './RejectReasonModal';
+import { solveDijkstraLocal } from '../../lib/services/dijkstraRouting';
 import {
   XCircle,
   Truck,
@@ -18,6 +19,9 @@ import {
   ArrowRight,
   Droplet,
   Lock,
+  Navigation,
+  Smartphone,
+  Route,
 } from 'lucide-react';
 
 interface RequestInspectorProps {
@@ -29,10 +33,14 @@ export function RequestInspector({ request }: RequestInspectorProps) {
     approveRequest,
     rejectRequest,
     selectCandidateForRequest,
+    availableDrivers,
   } = useVitalis();
   const { user } = useAuth();
 
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string>(
+    request.assignedDriverId || 'VTL-DRV-784'
+  );
 
   const selectedCandidate =
     request.candidates.find((c) => c.id === request.selectedCandidateId) ||
@@ -42,8 +50,32 @@ export function RequestInspector({ request }: RequestInspectorProps) {
   const isLevel1 = request.esiUrgencyTier === 1;
   const canApprove = user ? user.permissions.canApproveTransfers : true;
 
+  // Real-time Dijkstra shortest path calculation between chosen donor and receiving hospital
+  const dijkstraRoute = useMemo(() => {
+    return solveDijkstraLocal(
+      selectedCandidate?.facilityId || 'FAC-RBTC',
+      request.destinationFacilityId || 'FAC-APOLLO'
+    );
+  }, [selectedCandidate?.facilityId, request.destinationFacilityId]);
+
+  const activeDriver =
+    availableDrivers?.find((d) => d.driverId === selectedDriverId) ||
+    availableDrivers?.[0] || {
+      driverId: 'VTL-DRV-784',
+      name: 'Vikramaditya Rao',
+      courierId: 'COU-CH-104',
+      vehicleType: 'Refrigerated EV Van #104',
+      vehiclePlate: 'TN-07-ALS-104',
+      isMobileAppDriver: true,
+    };
+
   const handleApprove = () => {
-    approveRequest(request.id, selectedCandidate.id, user ? user.name : undefined);
+    approveRequest(request.id, selectedCandidate.id, user ? user.name : undefined, {
+      driverId: activeDriver.driverId,
+      name: activeDriver.name,
+      courierId: activeDriver.courierId,
+      vehicleType: activeDriver.vehicleType,
+    });
   };
 
   const handleRejectConfirm = (reason: string) => {
@@ -169,7 +201,100 @@ export function RequestInspector({ request }: RequestInspectorProps) {
           viabilityMinutes={request.viabilityWindowMinutes}
         />
 
-        {/* Step C: Plain-English AI Explanation */}
+        {/* Step C: Mobile Courier Assignment & Dijkstra Shortest Path Road Route */}
+        <div className="rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white/60 dark:bg-black/30 p-4 space-y-3.5 backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Assigned Courier & Dijkstra Road Route
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Dynamic routing & instant dispatch synchronization with mobile driver
+                </p>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <Route className="w-3 h-3" />
+              Dijkstra Shortest Path
+            </span>
+          </div>
+
+          {/* Driver Selection & Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-blue-500" />
+                <span>Select Emergency Courier Driver:</span>
+              </label>
+              <select
+                value={selectedDriverId}
+                onChange={(e) => setSelectedDriverId(e.target.value)}
+                disabled={!isPending || !canApprove}
+                className="w-full text-xs font-medium rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-[#15161A] text-slate-900 dark:text-slate-100 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {availableDrivers?.map((driver) => (
+                  <option key={driver.driverId} value={driver.driverId}>
+                    {driver.name} ({driver.courierId}) &bull; {driver.vehicleType}
+                    {driver.isMobileAppDriver ? ' [Mobile Cockpit]' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-2.5 rounded-lg border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400">Designated Vehicle</p>
+                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {activeDriver.vehicleType}
+                </p>
+                <p className="text-[10px] text-slate-500 font-mono">{activeDriver.vehiclePlate}</p>
+              </div>
+              <div className="text-right">
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  {activeDriver.isMobileAppDriver ? '📱 Mobile Synced' : 'Ready'}
+                </span>
+                <p className="text-[10px] text-slate-400 mt-1">{activeDriver.phone}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Dijkstra Road Metrics Bar */}
+          <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-blue-500/[0.04] dark:bg-blue-500/[0.07] border border-blue-500/15">
+            <div>
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Road Distance</p>
+              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                {dijkstraRoute.totalDistanceKm} km
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Transit ETA</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                ~{dijkstraRoute.estimatedMinutes} mins
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">GPS Waypoints</p>
+              <p className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                <Navigation className="w-3.5 h-3.5 text-emerald-500" />
+                {dijkstraRoute.waypoints.length} pts
+              </p>
+            </div>
+          </div>
+
+          {/* Road Corridors */}
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pt-0.5">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Corridor:</span>
+            <span>{dijkstraRoute.roadSegments.join(' ➔ ') || 'Direct Transit Corridor'}</span>
+          </div>
+        </div>
+
+        {/* Step D: Plain-English AI Explanation */}
         <ReasoningTraceTerminal trace={request.reactTrace} />
       </div>
 
@@ -211,10 +336,10 @@ export function RequestInspector({ request }: RequestInspectorProps) {
             {!canApprove ? <Lock className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
             <span>
               {!isPending
-                ? 'Driver Dispatched ✓'
+                ? `${request.assignedDriverName || 'Vikramaditya Rao'} Dispatched ✓`
                 : !canApprove
                 ? 'Sign-Off Restricted'
-                : 'Approve & Send Driver'}
+                : `Approve & Send ${activeDriver.name.split(' ')[0]}`}
             </span>
           </button>
         </div>

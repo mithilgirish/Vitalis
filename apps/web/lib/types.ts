@@ -86,9 +86,28 @@ export interface TransferRequest {
   status: 'pending_approval' | 'in_transit' | 'delivered' | 'rejected';
   rejectionReason?: string;
   approvedBy?: string;
+  assignedDriverId?: string;
+  assignedDriverName?: string;
+  courierId?: string;
+  vehicleType?: string;
+  routeWaypoints?: [number, number][];
+  distanceKm?: number;
+  estimatedMinutes?: number;
   candidates: DonorCandidate[];
   selectedCandidateId: string;
   reactTrace: ReActTrace;
+}
+
+export interface CourierDriver {
+  driverId: string;
+  name: string;
+  courierId: string;
+  vehicleType: string;
+  vehiclePlate: string;
+  status: 'ready' | 'en_route' | 'offline';
+  baseFacility: string;
+  phone: string;
+  isMobileAppDriver?: boolean;
 }
 
 export interface TransitTelemetry {

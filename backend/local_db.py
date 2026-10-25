@@ -50,9 +50,31 @@ def init_db():
                 rejection_reason TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT,
-                reasoning_trace TEXT
+                reasoning_trace TEXT,
+                assigned_driver_id TEXT,
+                assigned_driver_name TEXT,
+                courier_id TEXT,
+                vehicle_type TEXT,
+                route_waypoints_json TEXT,
+                distance_km REAL,
+                estimated_minutes INTEGER
             )
         """)
+
+        # Dynamically ensure all driver assignment & routing columns exist
+        for col, col_type in [
+            ("assigned_driver_id", "TEXT"),
+            ("assigned_driver_name", "TEXT"),
+            ("courier_id", "TEXT"),
+            ("vehicle_type", "TEXT"),
+            ("route_waypoints_json", "TEXT"),
+            ("distance_km", "REAL"),
+            ("estimated_minutes", "INTEGER"),
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE transfer_requests ADD COLUMN {col} {col_type}")
+            except sqlite3.OperationalError:
+                pass
 
         # 3. Transit Telemetry Table
         cursor.execute("""
@@ -139,7 +161,15 @@ def get_system_sync_metadata() -> Dict[str, Any]:
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM transfer_requests ORDER BY created_at DESC")
-        transfers = [dict(row) for row in cursor.fetchall()]
+        transfers = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            if d.get("route_waypoints_json"):
+                try:
+                    d["route_waypoints"] = json.loads(d["route_waypoints_json"])
+                except Exception:
+                    d["route_waypoints"] = None
+            transfers.append(d)
 
         cursor.execute("SELECT * FROM transit_telemetry ORDER BY recorded_at DESC LIMIT 15")
         telemetry = []
@@ -167,6 +197,9 @@ def upsert_transfer(transfer: Dict[str, Any]):
     """Inserts or updates a transfer request in SQLite."""
     init_db()
     now_iso = datetime.now().isoformat()
+    route_pts = transfer.get("route_waypoints")
+    route_json = json.dumps(route_pts) if isinstance(route_pts, list) else transfer.get("route_waypoints_json")
+
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -175,13 +208,22 @@ def upsert_transfer(transfer: Dict[str, Any]):
                 destination_facility_id, destination_facility_name,
                 resource_type, blood_group, units_requested,
                 urgency_tier, priority_score, status, approved_by,
-                rejection_reason, created_at, updated_at, reasoning_trace
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                rejection_reason, created_at, updated_at, reasoning_trace,
+                assigned_driver_id, assigned_driver_name, courier_id,
+                vehicle_type, route_waypoints_json, distance_km, estimated_minutes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 status = excluded.status,
                 approved_by = excluded.approved_by,
                 rejection_reason = excluded.rejection_reason,
-                updated_at = excluded.updated_at
+                updated_at = excluded.updated_at,
+                assigned_driver_id = COALESCE(excluded.assigned_driver_id, transfer_requests.assigned_driver_id),
+                assigned_driver_name = COALESCE(excluded.assigned_driver_name, transfer_requests.assigned_driver_name),
+                courier_id = COALESCE(excluded.courier_id, transfer_requests.courier_id),
+                vehicle_type = COALESCE(excluded.vehicle_type, transfer_requests.vehicle_type),
+                route_waypoints_json = COALESCE(excluded.route_waypoints_json, transfer_requests.route_waypoints_json),
+                distance_km = COALESCE(excluded.distance_km, transfer_requests.distance_km),
+                estimated_minutes = COALESCE(excluded.estimated_minutes, transfer_requests.estimated_minutes)
         """, (
             transfer["id"],
             transfer.get("origin_facility_id"),
@@ -198,7 +240,14 @@ def upsert_transfer(transfer: Dict[str, Any]):
             transfer.get("rejection_reason"),
             transfer.get("created_at", now_iso),
             now_iso,
-            transfer.get("reasoning_trace")
+            transfer.get("reasoning_trace"),
+            transfer.get("assigned_driver_id"),
+            transfer.get("assigned_driver_name"),
+            transfer.get("courier_id"),
+            transfer.get("vehicle_type"),
+            route_json,
+            transfer.get("distance_km"),
+            transfer.get("estimated_minutes")
         ))
         conn.commit()
 

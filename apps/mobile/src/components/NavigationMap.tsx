@@ -19,8 +19,20 @@ const CHENNAI_ROUTE_COORDS: [number, number][] = [
 ];
 
 export const NavigationMap: React.FC = () => {
-  const { currentLocation, colors, isDark } = useMission();
+  const {
+    currentLocation,
+    colors,
+    isDark,
+    routeCoords,
+    originCoords,
+    destinationCoords,
+    origin,
+    destination,
+    distanceKm,
+  } = useMission();
   const [mapKey, setMapKey] = useState(0);
+
+  const activeWaypoints = routeCoords && routeCoords.length > 0 ? routeCoords : CHENNAI_ROUTE_COORDS;
 
   const handleRecenter = () => {
     setMapKey((k) => k + 1);
@@ -30,15 +42,15 @@ export const NavigationMap: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 100% REAL OPENSTREETMAP ROADMAP VIEWPORT */}
       <RealRoadmapView
-        key={`map-${mapKey}-${isDark}`}
+        key={`map-${mapKey}-${isDark}-${origin}-${destination}`}
         isDark={isDark}
         vehicleLat={currentLocation.lat}
         vehicleLng={currentLocation.lng}
-        routeCoords={CHENNAI_ROUTE_COORDS}
-        originCoord={[13.0827, 80.2450]}
-        destCoord={[13.0569, 80.2525]}
-        originName="Regional Blood Bank"
-        destName="Apollo Greams ER"
+        routeCoords={activeWaypoints}
+        originCoord={[originCoords.lat, originCoords.lng]}
+        destCoord={[destinationCoords.lat, destinationCoords.lng]}
+        originName={origin}
+        destName={destination}
       />
 
       {/* TOP OVERLAY: Apple Maps Turn-by-Turn Guidance Banner */}
@@ -54,12 +66,14 @@ export const NavigationMap: React.FC = () => {
           <CornerUpRight size={22} color="#FFFFFF" strokeWidth={2.8} />
         </View>
         <View style={styles.turnDetails}>
-          <Text style={[styles.turnDistance, { color: colors.cobaltBlue }]}>IN 450 METERS</Text>
-          <Text style={[styles.turnStreet, { color: colors.textPrimary }]} numberOfLines={1}>
-            Turn right onto Anna Salai / Greams Rd
+          <Text style={[styles.turnDistance, { color: colors.cobaltBlue }]}>
+            DIJKSTRA ROUTE &bull; {distanceKm} KM
           </Text>
-          <Text style={[styles.turnTarget, { color: colors.textMuted }]}>
-            Towards Apollo Greams Emergency Bay
+          <Text style={[styles.turnStreet, { color: colors.textPrimary }]} numberOfLines={1}>
+            Corridor to {destination}
+          </Text>
+          <Text style={[styles.turnTarget, { color: colors.textMuted }]} numberOfLines={1}>
+            From {origin} &bull; Emergency Transit Priority
           </Text>
         </View>
       </View>

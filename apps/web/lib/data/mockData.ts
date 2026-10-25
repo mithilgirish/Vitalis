@@ -5,6 +5,7 @@ import {
   InventoryBatch,
   ProphetForecastPoint,
   XGBoostRiskCell,
+  CourierDriver,
 } from '../types';
 
 export const CHENNAI_HOSPITALS: Hospital[] = [
@@ -784,4 +785,40 @@ export const XGBOOST_HEATMAP_DATA: XGBoostRiskCell[] = [
   { facilityId: 'FAC-SRMC', facilityName: 'Sri Ramachandra (SRMC)', bloodGroup: 'AB-', riskProbability: 0.52, currentStock: 2, baselineDemand: 4, shapValues: [{ feature: 'Single Batch Remaining', impact: +52 }] },
   { facilityId: 'FAC-SRMC', facilityName: 'Sri Ramachandra (SRMC)', bloodGroup: 'O+', riskProbability: 0.29, currentStock: 30, baselineDemand: 25, shapValues: [{ feature: 'High Turnover', impact: +22 }] },
   { facilityId: 'FAC-SRMC', facilityName: 'Sri Ramachandra (SRMC)', bloodGroup: 'O-', riskProbability: 0.46, currentStock: 5, baselineDemand: 9, shapValues: [{ feature: 'Active Stockout Risk > 40%', impact: +46 }] },
+];
+
+export const AVAILABLE_COURIER_DRIVERS: CourierDriver[] = [
+  {
+    driverId: 'VTL-DRV-784',
+    name: 'Vikramaditya Rao',
+    courierId: 'COU-CH-104',
+    vehicleType: 'Refrigerated EV Van #104',
+    vehiclePlate: 'TN-07-ALS-104',
+    status: 'ready',
+    baseFacility: 'Regional Blood Transfusion Center',
+    phone: '+91 98401 22849',
+    isMobileAppDriver: true,
+  },
+  {
+    driverId: 'VTL-DRV-412',
+    name: 'Kavitha Selvam',
+    courierId: 'COU-CH-202',
+    vehicleType: 'Cryo-Carrier Alpha-2',
+    vehiclePlate: 'TN-09-EV-412',
+    status: 'ready',
+    baseFacility: 'Apollo Hospitals, Greams Road',
+    phone: '+91 98410 77312',
+    isMobileAppDriver: false,
+  },
+  {
+    driverId: 'VTL-DRV-509',
+    name: 'Rajesh Kannan',
+    courierId: 'COU-CH-305',
+    vehicleType: 'Rapid Platelet Courier',
+    vehiclePlate: 'TN-01-RC-509',
+    status: 'ready',
+    baseFacility: 'Rajiv Gandhi Govt General Hospital',
+    phone: '+91 97909 33201',
+    isMobileAppDriver: false,
+  },
 ];

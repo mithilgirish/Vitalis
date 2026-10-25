@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeMode, ThemeColors, THEME_PALETTE } from '@/theme/vitalis-theme';
+import { solveDijkstraLocal } from '../services/dijkstraRouting';
 
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';
 export type CargoType = 'PRBC' | 'Platelets';
@@ -120,6 +121,23 @@ export interface MissionState {
   acceptedAt: string | null;
   deliveredAt: string | null;
 
+  // Dijkstra Route & Assigned Driver
+  routeCoords: [number, number][];
+  assignedDriverId?: string;
+  assignedDriverName?: string;
+  courierId?: string;
+  incomingAssignmentAlert: {
+    title: string;
+    message: string;
+    origin: string;
+    destination: string;
+    distanceKm: number;
+    etaMinutes: number;
+    units: number;
+    resource: string;
+  } | null;
+  dismissAssignmentAlert: () => void;
+
   // Telemetry
   temperature: number;
   isExcursionSimulated: boolean;
@@ -226,10 +244,37 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
   const [status, setStatus] = useState<MissionStatus>('in_transit');
   const [cargoType, setCargoTypeState] = useState<CargoType>('PRBC');
+  const [cargo, setCargo] = useState<string>('4 Units O- PRBC');
+  const [origin, setOrigin] = useState<string>('Regional Blood Transfusion Center');
+  const [originSub, setOriginSub] = useState<string>('Pantheon Road, Egmore, Chennai');
+  const [originCoords, setOriginCoords] = useState<{ lat: number; lng: number }>({ lat: 13.0784, lng: 80.2604 });
+  const [destination, setDestination] = useState<string>('Apollo Greams Rd');
+  const [destinationSub, setDestinationSub] = useState<string>('21 Greams Lane, Thousand Lights, Chennai');
+  const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number }>({ lat: 13.0567, lng: 80.2505 });
+  const [distanceKm, setDistanceKm] = useState<number>(3.56);
+  const [routeCoords, setRouteCoords] = useState<[number, number][]>(() => {
+    return solveDijkstraLocal('FAC-RBTC', 'FAC-APOLLO').waypoints;
+  });
+  const [assignedDriverId, setAssignedDriverId] = useState<string>('VTL-DRV-784');
+  const [assignedDriverName, setAssignedDriverName] = useState<string>('Vikramaditya Rao');
+  const [courierId, setCourierId] = useState<string>('COU-CH-104');
+  const [incomingAssignmentAlert, setIncomingAssignmentAlert] = useState<{
+    title: string;
+    message: string;
+    origin: string;
+    destination: string;
+    distanceKm: number;
+    etaMinutes: number;
+    units: number;
+    resource: string;
+  } | null>(null);
+
+  const dismissAssignmentAlert = () => setIncomingAssignmentAlert(null);
+
   const [isExcursionSimulated, setIsExcursionSimulated] = useState<boolean>(false);
   const [temperature, setTemperature] = useState<number>(3.8);
   const [gpsPulseCountdown, setGpsPulseCountdown] = useState<number>(15);
-  const [etaSeconds, setEtaSeconds] = useState<number>(18 * 60); // 18 minutes = 1080s
+  const [etaSeconds, setEtaSeconds] = useState<number>(6 * 60); // 6 mins from Dijkstra
   const [viabilityLimitSeconds, setViabilityLimitSeconds] = useState<number>(45 * 60); // 45 minutes = 2700s
   const [acceptedAt, setAcceptedAt] = useState<string | null>(null);
   const [deliveredAt, setDeliveredAt] = useState<string | null>(null);
@@ -265,6 +310,28 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (m.status === 'in_transit' || m.status === 'pending_approval' || m.status === 'delivered') {
             setStatus(m.status);
           }
+          if (m.origin_facility_name) setOrigin(m.origin_facility_name);
+          if (m.destination_facility_name) setDestination(m.destination_facility_name);
+          if (m.resource_type || m.blood_group) {
+            setCargo(`${m.units_requested || 4} Units ${m.blood_group || 'O-'} ${m.resource_type || 'PRBC'}`);
+          }
+          if (m.distance_km) setDistanceKm(m.distance_km);
+          if (m.estimated_minutes) setEtaSeconds(m.estimated_minutes * 60);
+          if (m.assigned_driver_id) setAssignedDriverId(m.assigned_driver_id);
+          if (m.assigned_driver_name) setAssignedDriverName(m.assigned_driver_name);
+          if (m.courier_id) setCourierId(m.courier_id);
+
+          if (m.route_waypoints && Array.isArray(m.route_waypoints) && m.route_waypoints.length > 0) {
+            setRouteCoords(m.route_waypoints);
+            setOriginCoords({ lat: m.route_waypoints[0][0], lng: m.route_waypoints[0][1] });
+            const last = m.route_waypoints[m.route_waypoints.length - 1];
+            setDestinationCoords({ lat: last[0], lng: last[1] });
+          } else if (m.origin_facility_id && m.destination_facility_id) {
+            const dijkstra = solveDijkstraLocal(m.origin_facility_id, m.destination_facility_id);
+            setRouteCoords(dijkstra.waypoints);
+            setDistanceKm(dijkstra.totalDistanceKm);
+            setEtaSeconds(dijkstra.estimatedMinutes * 60);
+          }
         }
       })
       .catch(() => {
@@ -280,7 +347,61 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         try {
           const payload = JSON.parse(event.data);
           if (payload.event === 'DISPATCH_APPROVED') {
-            setStatus('in_transit');
+            const m = payload.payload;
+            const isAssignedToThisDriver =
+              !m.assigned_driver_id ||
+              m.assigned_driver_id === currentUser.driverId ||
+              currentUser.role === 'courier';
+
+            if (isAssignedToThisDriver) {
+              setStatus('in_transit');
+              const origName = m.origin || 'Regional Blood Transfusion Center';
+              const destName = m.destination || 'Apollo Greams Rd';
+              const cargoStr = `${m.units || 4} Units ${m.blood_group || 'O-'} ${m.resource || 'PRBC'}`;
+
+              setOrigin(origName);
+              setDestination(destName);
+              setCargo(cargoStr);
+              if (m.assigned_driver_id) setAssignedDriverId(m.assigned_driver_id);
+              if (m.assigned_driver_name) setAssignedDriverName(m.assigned_driver_name);
+              if (m.courier_id) setCourierId(m.courier_id);
+
+              let waypoints = m.route_waypoints;
+              let dist = m.distance_km;
+              let eta = m.estimated_minutes;
+
+              if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
+                const solved = solveDijkstraLocal(
+                  m.origin_facility_id || 'FAC-RBTC',
+                  m.destination_facility_id || 'FAC-APOLLO'
+                );
+                waypoints = solved.waypoints;
+                dist = solved.totalDistanceKm;
+                eta = solved.estimatedMinutes;
+              }
+
+              if (waypoints && waypoints.length > 0) {
+                setRouteCoords(waypoints);
+                setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
+                const last = waypoints[waypoints.length - 1];
+                setDestinationCoords({ lat: last[0], lng: last[1] });
+              }
+
+              if (dist) setDistanceKm(dist);
+              if (eta) setEtaSeconds(eta * 60);
+
+              // Push assignment alert to driver screen
+              setIncomingAssignmentAlert({
+                title: 'New Emergency Transfer Assigned',
+                message: `Assigned to ${m.assigned_driver_name || 'Vikramaditya Rao'} (${m.courier_id || 'COU-CH-104'}). Turn-by-turn route loaded.`,
+                origin: origName,
+                destination: destName,
+                distanceKm: dist || 3.56,
+                etaMinutes: eta || 6,
+                units: m.units || 4,
+                resource: `${m.blood_group || 'O-'} ${m.resource || 'PRBC'}`,
+              });
+            }
           } else if (payload.event === 'DISPATCH_REJECTED') {
             setStatus('pending_dispatch');
           }
@@ -297,7 +418,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ws.close();
       }
     };
-  }, []);
+  }, [currentUser.driverId, currentUser.role]);
 
   // Initial audit log with dynamic real time (12 minutes ago)
   const [manualLogs, setManualLogs] = useState<ManualLog[]>(() => [
@@ -510,21 +631,33 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     status,
     esiTier: 1,
     urgencyLabel: 'ESI TIER 1 - IMMEDIATE',
-    cargo: cargoType === 'PRBC' ? '4 Units O- PRBC' : '2 Apheresis Platelet Units',
+    cargo,
     cargoType,
     units: 4,
-    origin: 'Regional Blood Transfusion Center',
-    originSub: '144 Mount Road, Kilpauk, Chennai',
-    originCoords: { lat: 13.0827, lng: 80.2707 },
-    destination: 'Apollo Greams Rd',
-    destinationSub: '21 Greams Lane, Thousand Lights, Chennai',
-    destinationCoords: { lat: 13.0569, lng: 80.2525 },
-    currentLocation: { lat: 13.0645, lng: 80.2598, heading: 242, speedKmH: 68 },
-    distanceKm: 6.4,
+    origin,
+    originSub,
+    originCoords,
+    destination,
+    destinationSub,
+    destinationCoords,
+    currentLocation: {
+      lat: routeCoords.length > 2 ? routeCoords[Math.floor(routeCoords.length / 2)][0] : 13.0645,
+      lng: routeCoords.length > 2 ? routeCoords[Math.floor(routeCoords.length / 2)][1] : 80.2598,
+      heading: 242,
+      speedKmH: 48,
+    },
+    distanceKm,
     etaSeconds,
     viabilityLimitSeconds,
     acceptedAt,
     deliveredAt,
+
+    routeCoords,
+    assignedDriverId,
+    assignedDriverName,
+    courierId,
+    incomingAssignmentAlert,
+    dismissAssignmentAlert,
 
     temperature,
     isExcursionSimulated,

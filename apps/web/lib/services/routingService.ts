@@ -1,4 +1,5 @@
 import { PRECOMPUTED_ROAD_ROUTES } from '../data/precomputedRoadRoutes';
+import { solveDijkstraLocal } from './dijkstraRouting';
 
 // In-memory runtime cache for dynamically resolved OSRM road routes
 const routeCache: Map<string, [number, number][]> = new Map();
@@ -37,6 +38,17 @@ export function getRoadSnappedRouteSync(
   }
   if (routeCache.has(reverseKey)) {
     return [...routeCache.get(reverseKey)!].reverse();
+  }
+
+  // 3. Fallback to client-side Dijkstra algorithm over Chennai road graph
+  try {
+    const dijkstra = solveDijkstraLocal(originId, destId);
+    if (dijkstra?.waypoints?.length > 0) {
+      routeCache.set(forwardKey, dijkstra.waypoints);
+      return dijkstra.waypoints;
+    }
+  } catch {
+    // Ignore and proceed
   }
 
   return null;

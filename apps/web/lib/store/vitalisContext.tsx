@@ -10,13 +10,16 @@ import {
   BiologicalResourceType,
   BloodGroup,
   TraumaLevel,
+  CourierDriver,
 } from '../types';
 import {
   CHENNAI_HOSPITALS,
   INITIAL_REQUESTS,
   INITIAL_TRANSIT_TELEMETRY,
   INVENTORY_LEDGER,
+  AVAILABLE_COURIER_DRIVERS,
 } from '../data/mockData';
+import { solveDijkstraLocal } from '../services/dijkstraRouting';
 
 export interface ToastMessage {
   id: string;
@@ -31,6 +34,7 @@ interface VitalisContextType {
   requests: TransferRequest[];
   telemetry: TransitTelemetry[];
   inventory: InventoryBatch[];
+  availableDrivers: CourierDriver[];
   selectedHospital: Hospital | null;
   setSelectedHospital: (h: Hospital | null) => void;
   selectedRequest: TransferRequest | null;
@@ -43,7 +47,12 @@ interface VitalisContextType {
   closeTriage: () => void;
   
   // Actions
-  approveRequest: (requestId: string, candidateId?: string, approverName?: string) => void;
+  approveRequest: (
+    requestId: string,
+    candidateId?: string,
+    approverName?: string,
+    driverInfo?: { driverId: string; name: string; courierId: string; vehicleType: string }
+  ) => void;
   rejectRequest: (requestId: string, reason: string) => void;
   selectCandidateForRequest: (requestId: string, candidateId: string) => void;
   addRequestFromTriage: (result: JevExtractionResult) => void;
@@ -151,9 +160,25 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
         try {
           const payload = JSON.parse(event.data);
           if (payload.event === 'DISPATCH_APPROVED') {
-            const transferId = payload.payload?.transfer_id;
+            const data = payload.payload;
+            const transferId = data?.transfer_id;
             setRequests((prev) =>
-              prev.map((r) => (r.id === transferId ? { ...r, status: 'in_transit' } : r))
+              prev.map((r) =>
+                r.id === transferId
+                  ? {
+                      ...r,
+                      status: 'in_transit',
+                      assignedDriverId: data?.assigned_driver_id || r.assignedDriverId,
+                      assignedDriverName: data?.assigned_driver_name || r.assignedDriverName,
+                      courierId: data?.courier_id || r.courierId,
+                      vehicleType: data?.vehicle_type || r.vehicleType,
+                      routeWaypoints: data?.route_waypoints || r.routeWaypoints,
+                      distanceKm: data?.distance_km || r.distanceKm,
+                      estimatedMinutes: data?.estimated_minutes || r.estimatedMinutes,
+                      approvedBy: data?.approved_by || r.approvedBy,
+                    }
+                  : r
+              )
             );
           } else if (payload.event === 'TELEMETRY_LOG') {
             const reading = payload.payload;
@@ -224,24 +249,15 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
   const openTriage = () => setIsTriageOpen(true);
   const closeTriage = () => setIsTriageOpen(false);
 
-  // Approve a request in HITL Queue
-  const approveRequest = (requestId: string, candidateId?: string, approverName?: string) => {
+  // Approve a request in HITL Queue with driver assignment & Dijkstra shortest path routing
+  const approveRequest = (
+    requestId: string,
+    candidateId?: string,
+    approverName?: string,
+    driverInfo?: { driverId: string; name: string; courierId: string; vehicleType: string }
+  ) => {
     const req = requests.find((r) => r.id === requestId);
     if (!req) return;
-
-    // Dispatch background PATCH request to FastAPI gateway enforcing HITL gate
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const cleanId = requestId.replace('REQ-', '').toLowerCase();
-    fetch(`${backendUrl}/api/v1/dispatch/${cleanId}/action`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'approve',
-        approved_by_user_id: approverName || 'Dr. Aishwarya Raman',
-      }),
-    }).catch(() => {
-      // Backend offline fallback handled gracefully
-    });
 
     const chosenCandidate =
       req.candidates.find((c) => c.id === (candidateId || req.selectedCandidateId)) ||
@@ -257,22 +273,66 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Transition request status
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === requestId ? { ...r, status: 'in_transit' as const } : r
-      )
-    );
-
-    // Create a new active courier dispatch
     const originHosp = hospitals.find((h) => h.id === chosenCandidate.facilityId) || hospitals[0];
     const destHosp = hospitals.find((h) => h.id === req.destinationFacilityId) || hospitals[1];
 
+    // Assigned driver details (defaults to Vikramaditya Rao - mobile response unit #104)
+    const assignedDriver = driverInfo || {
+      driverId: 'VTL-DRV-784',
+      name: 'Vikramaditya Rao',
+      courierId: 'COU-CH-104',
+      vehicleType: 'Refrigerated EV Van #104',
+    };
+
+    // Calculate optimal Dijkstra Shortest Path along Chennai road graph
+    const dijkstraRoute = solveDijkstraLocal(originHosp.id, destHosp.id);
+
+    // Dispatch background PATCH request to FastAPI gateway enforcing HITL gate & driver sync
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const cleanId = requestId.replace('REQ-', '').toLowerCase();
+    fetch(`${backendUrl}/api/v1/dispatch/${cleanId}/action`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'approve',
+        approved_by_user_id: approverName || 'Dr. Aishwarya Raman',
+        assigned_driver_id: assignedDriver.driverId,
+        assigned_driver_name: assignedDriver.name,
+        courier_id: assignedDriver.courierId,
+        vehicle_type: assignedDriver.vehicleType,
+        origin_facility_id: originHosp.id,
+        destination_facility_id: destHosp.id,
+      }),
+    }).catch(() => {
+      // Backend offline fallback handled gracefully
+    });
+
+    // Transition request status with driver and Dijkstra route data
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === requestId
+          ? {
+              ...r,
+              status: 'in_transit' as const,
+              approvedBy: approverName || 'Dr. Aishwarya Raman',
+              assignedDriverId: assignedDriver.driverId,
+              assignedDriverName: assignedDriver.name,
+              courierId: assignedDriver.courierId,
+              vehicleType: assignedDriver.vehicleType,
+              routeWaypoints: dijkstraRoute.waypoints,
+              distanceKm: dijkstraRoute.totalDistanceKm,
+              estimatedMinutes: dijkstraRoute.estimatedMinutes,
+            }
+          : r
+      )
+    );
+
+    // Create a new active courier dispatch with assigned driver & Dijkstra ETA
     const newTelemetry: TransitTelemetry = {
       transferId: req.id.replace('REQ-', '').toLowerCase(),
-      courierId: `COU-AUTO-${Math.floor(100 + Math.random() * 900)}`,
-      courierName: `Vitalis ALS Courier (${originHosp.shortName} -> ${destHosp.shortName})`,
-      vehicleType: 'ALS Medical Transit',
+      courierId: assignedDriver.courierId,
+      courierName: `${assignedDriver.name} (#${assignedDriver.courierId})`,
+      vehicleType: 'Refrigerated EV Van',
       originFacilityId: originHosp.id,
       originFacilityName: originHosp.shortName,
       destinationFacilityId: destHosp.id,
@@ -292,7 +352,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       currentTemperatureC: 3.6,
       tempThresholdMaxC: 6.0,
       excursionFlag: false,
-      etaMinutes: chosenCandidate.transitMinutes,
+      etaMinutes: dijkstraRoute.estimatedMinutes,
       departureTime: 'Just now',
       routeHistory: [
         { time: 'Just now', tempC: 3.6, lat: originHosp.lat, lng: originHosp.lng }
@@ -304,7 +364,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     addToast({
       type: 'success',
       title: 'Doctor Transfer Approved',
-      message: `Authorized by ${approverName || 'Dr. Aishwarya Raman'}. Delivery driver dispatched from ${chosenCandidate.facilityName} to ${destHosp.shortName} for ${req.unitsRequested} units of ${req.bloodGroup} ${req.resourceType}.`,
+      message: `Authorized by ${approverName || 'Dr. Aishwarya Raman'}. Assigned driver ${assignedDriver.name} (${assignedDriver.courierId}) dispatched via Dijkstra Shortest Path (${dijkstraRoute.totalDistanceKm} km, ~${dijkstraRoute.estimatedMinutes} mins) from ${chosenCandidate.facilityName} to ${destHosp.shortName}.`,
     });
 
     // Update selected request to the next pending one if available
@@ -576,6 +636,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
         requests,
         telemetry,
         inventory,
+        availableDrivers: AVAILABLE_COURIER_DRIVERS,
         selectedHospital,
         setSelectedHospital,
         selectedRequest,
