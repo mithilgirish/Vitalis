@@ -23,15 +23,32 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
   originName,
   destName,
 }) => {
-  // Official OpenStreetMap tile server: 100% free, open-source, and NEVER requires an API key
-  const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors';
+  // Google Maps / Apple Maps style vector raster tiles via CartoDB
+  const tileUrl = isDark
+    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+  const tileAttribution =
+    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>';
 
   const htmlContent = useMemo(() => {
-    const routeJson = JSON.stringify(routeCoords);
+    // If route has only 2 points or is empty, create realistic intermediate curve
+    let safeRoute = routeCoords && routeCoords.length >= 2 ? [...routeCoords] : [];
+    if (safeRoute.length === 2) {
+      const p1 = safeRoute[0];
+      const p2 = safeRoute[1];
+      const midLat = (p1[0] + p2[0]) / 2 + (p1[1] > p2[1] ? 0.003 : -0.003);
+      const midLng = (p1[1] + p2[1]) / 2 + 0.003;
+      safeRoute = [p1, [midLat, midLng], p2];
+    }
+
+    const routeJson = JSON.stringify(safeRoute);
     const originJson = JSON.stringify(originCoord);
     const destJson = JSON.stringify(destCoord);
     const vehicleJson = JSON.stringify([vehicleLat, vehicleLng]);
+
+    const cleanOriginName = (originName || 'Donor Blood Center').replace(/'/g, "\\'");
+    const cleanDestName = (destName || 'Receiving Hospital').replace(/'/g, "\\'");
 
     return `
 <!DOCTYPE html>
@@ -42,111 +59,195 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
     html, body, #map {
       width: 100%;
       height: 100%;
       margin: 0;
       padding: 0;
-      background-color: ${isDark ? '#121418' : '#F8FAFC'};
+      background-color: ${isDark ? '#121418' : '#F1F5F9'};
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    
-    /* OpenStreetMap Dark Mode: Automotive Charcoal Filter (No API Key Required) */
-    ${
-      isDark
-        ? `
-    .leaflet-tile-pane {
-      filter: brightness(0.65) invert(1) contrast(1.6) hue-rotate(200deg) saturate(0.35) brightness(0.85);
-    }
-    `
-        : `
-    .leaflet-tile-pane {
-      filter: contrast(1.05) brightness(1.02);
-    }
-    `
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     }
 
+    /* Google Maps / Apple Maps flowing animated corridor */
+    @keyframes flowDash {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -32; }
+    }
+    .flowing-corridor-dash {
+      animation: flowDash 1.4s linear infinite;
+    }
+
+    /* Attribution Bar */
     .leaflet-control-attribution {
       font-size: 8px !important;
-      background: ${isDark ? 'rgba(18, 20, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)'} !important;
-      color: ${isDark ? '#9CA3AF' : '#64748B'} !important;
+      background: ${isDark ? 'rgba(18, 20, 24, 0.75)' : 'rgba(255, 255, 255, 0.75)'} !important;
+      color: ${isDark ? '#94A3B8' : '#64748B'} !important;
       padding: 2px 6px !important;
       border-radius: 4px !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
     }
+
+    /* Apple-Style Frosted Zoom Controls */
     .leaflet-control-zoom {
-      border: 1px solid ${isDark ? '#282C37' : '#CBD5E1'} !important;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
-      border-radius: 8px !important;
-      overflow: hidden;
+      border: 1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'} !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+      border-radius: 12px !important;
+      overflow: hidden !important;
+      background: ${isDark ? 'rgba(28, 30, 36, 0.88)' : 'rgba(255, 255, 255, 0.90)'} !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      margin-right: 14px !important;
+      margin-bottom: 24px !important;
     }
     .leaflet-control-zoom a {
-      background-color: ${isDark ? '#1A1D24' : '#FFFFFF'} !important;
-      color: ${isDark ? '#F9FAFB' : '#0F172A'} !important;
-      border-bottom: 1px solid ${isDark ? '#282C37' : '#E2E8F0'} !important;
-      width: 28px !important;
-      height: 28px !important;
-      line-height: 28px !important;
-      font-size: 14px !important;
+      background: transparent !important;
+      color: ${isDark ? '#F8FAFC' : '#0F172A'} !important;
+      border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'} !important;
+      width: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
     }
-    .vehicle-marker {
+
+    /* --- GOOGLE MAPS STYLE PINS --- */
+
+    /* Origin Hospital Pin */
+    .origin-pin-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      transform: translate(-50%, -100%);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .origin-pin-label {
+      background: ${isDark ? 'rgba(24, 25, 30, 0.92)' : 'rgba(255, 255, 255, 0.95)'};
+      border: 1px solid ${isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.3)'};
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: ${isDark ? '#F1F5F9' : '#0F172A'};
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 3px;
+    }
+    .origin-pin-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+    }
+    .origin-pin-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #10B981;
+      border: 2.5px solid #FFFFFF;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    /* Destination Hospital Pin with Emergency Radar Beacon */
+    .dest-pin-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translate(-50%, -100%);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .dest-pin-label {
+      background: ${isDark ? 'rgba(24, 25, 30, 0.94)' : 'rgba(255, 255, 255, 0.96)'};
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #EF4444;
+      box-shadow: 0 2px 10px rgba(239, 68, 68, 0.25);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 3px;
+    }
+    .dest-pin-circle {
       position: relative;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #EF4444;
+      border: 2.5px solid #FFFFFF;
+      box-shadow: 0 2px 10px rgba(239, 68, 68, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 900;
     }
-    .vehicle-pulse {
+    .dest-pulse-ring {
       position: absolute;
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background: rgba(37, 99, 235, 0.25);
-      border: 1.5px solid #3B82F6;
-      animation: pulse 2s infinite ease-out;
+      background: rgba(239, 68, 68, 0.25);
+      border: 1.5px solid #EF4444;
+      animation: destPulse 1.8s infinite ease-out;
+      pointer-events: none;
     }
-    .vehicle-core {
-      width: 14px;
-      height: 14px;
+    @keyframes destPulse {
+      0% { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2.0); opacity: 0; }
+    }
+
+    /* ALS Courier EV Van Vehicle Marker */
+    .vehicle-marker-box {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vehicle-radar-ring {
+      position: absolute;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      background: #2563EB;
-      border: 2px solid #FFFFFF;
-      box-shadow: 0 0 10px rgba(37, 99, 235, 0.8);
+      background: rgba(10, 132, 255, 0.22);
+      border: 1.5px solid #0A84FF;
+      animation: vehicleRadar 2s infinite ease-out;
+    }
+    .vehicle-center-puck {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #007AFF;
+      border: 2.5px solid #FFFFFF;
+      box-shadow: 0 0 12px rgba(0, 122, 255, 0.85);
       z-index: 2;
     }
-    @keyframes pulse {
+    @keyframes vehicleRadar {
       0% { transform: scale(0.6); opacity: 1; }
-      100% { transform: scale(2.2); opacity: 0; }
-    }
-    .facility-badge {
-      display: flex;
-      align-items: center;
-      background: ${isDark ? '#1A1D24' : '#FFFFFF'};
-      border: 1.5px solid ${isDark ? '#3B404F' : '#94A3B8'};
-      border-radius: 6px;
-      padding: 3px 7px;
-      font-size: 9px;
-      font-weight: 800;
-      color: ${isDark ? '#F9FAFB' : '#0F172A'};
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-      white-space: nowrap;
-    }
-    .badge-dest {
-      border-color: #E11D48;
-      color: #E11D48;
-    }
-    .dot-origin {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #2563EB;
-      margin-right: 5px;
-    }
-    .dot-dest {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #E11D48;
-      margin-right: 5px;
+      100% { transform: scale(2.3); opacity: 0; }
     }
   </style>
 </head>
@@ -159,9 +260,10 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
       attributionControl: true
     });
 
-    // Official OpenStreetMap tile layer (No API key needed)
+    // Vector-style raster tiles (CartoDB Voyager in light, CartoDB Dark Matter in dark)
     L.tileLayer('${tileUrl}', {
       maxZoom: 19,
+      subdomains: 'abcd',
       attribution: '${tileAttribution}',
       crossOrigin: true
     }).addTo(map);
@@ -171,58 +273,87 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
     var dest = ${destJson};
     var vehicle = ${vehicleJson};
 
-    // Route Outer Glow Polyline
+    // 1. Luminous Cyan Outer Route Halo (Google/Apple Maps Style)
     L.polyline(route, {
-      color: '#2563EB',
-      weight: 8,
-      opacity: 0.35,
+      color: '#06B6D4',
+      weight: 10,
+      opacity: ${isDark ? '0.45' : '0.35'},
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
 
-    // Route Core Polyline
-    var mainRoute = L.polyline(route, {
-      color: '#3B82F6',
-      weight: 4.5,
+    // 2. Solid Vibrant Blue Route Core
+    var coreRoute = L.polyline(route, {
+      color: '#0284C7',
+      weight: 5,
       opacity: 0.95,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
 
-    // Origin Marker (Regional Blood Bank)
+    // 3. Flowing Animated Corridor Dash (Live Navigation Pulse)
+    L.polyline(route, {
+      color: '#38BDF8',
+      weight: 2.5,
+      dashArray: '6, 12',
+      className: 'flowing-corridor-dash',
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+
+    // 4. Origin Medical Pin
+    var originHtml = '<div class="origin-pin-container">' +
+      '<div class="origin-pin-label"><div class="origin-pin-dot"></div>' + '${cleanOriginName}' + '</div>' +
+      '<div class="origin-pin-circle">&#9868;</div>' +
+      '</div>';
     var originIcon = L.divIcon({
-      className: 'origin-marker',
-      html: '<div class="facility-badge"><div class="dot-origin"></div>${originName}</div>',
-      iconSize: [120, 24],
-      iconAnchor: [60, 24]
+      className: 'custom-origin-pin',
+      html: originHtml,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
     });
     L.marker(origin, { icon: originIcon }).addTo(map);
 
-    // Destination Marker (Apollo Greams ER)
+    // 5. Destination Emergency Pin with Radar Beacon
+    var destHtml = '<div class="dest-pin-container">' +
+      '<div class="dest-pin-label">&#9888; ' + '${cleanDestName}' + '</div>' +
+      '<div class="dest-pulse-ring"></div>' +
+      '<div class="dest-pin-circle">&#10010;</div>' +
+      '</div>';
     var destIcon = L.divIcon({
-      className: 'dest-marker',
-      html: '<div class="facility-badge badge-dest"><div class="dot-dest"></div>${destName}</div>',
-      iconSize: [120, 24],
-      iconAnchor: [60, 24]
+      className: 'custom-dest-pin',
+      html: destHtml,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
     });
     L.marker(dest, { icon: destIcon }).addTo(map);
 
-    // Vehicle Location Marker
+    // 6. Active Courier Vehicle Marker with Radar Pulse
+    var vehicleHtml = '<div class="vehicle-marker-box">' +
+      '<div class="vehicle-radar-ring"></div>' +
+      '<div class="vehicle-center-puck"></div>' +
+      '</div>';
     var vehicleIcon = L.divIcon({
-      className: 'vehicle-marker',
-      html: '<div class="vehicle-pulse"></div><div class="vehicle-core"></div>',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      className: 'custom-vehicle-marker',
+      html: vehicleHtml,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
     });
     L.marker(vehicle, { icon: vehicleIcon }).addTo(map);
 
-    // Fit map bounds to show route cleanly with padding
-    map.fitBounds(mainRoute.getBounds(), {
-      padding: [40, 40],
-      maxZoom: 15
-    });
+    // 7. Auto-fit bounds to show entire route with comfortable edge padding
+    try {
+      var bounds = coreRoute.getBounds();
+      map.fitBounds(bounds, {
+        padding: [50, 50],
+        maxZoom: 15,
+        animate: true
+      });
+    } catch(e) {
+      map.setView(origin, 13);
+    }
 
-    // Zoom control at bottom right
+    // 8. Frosted Glass Zoom Controls at bottom-right
     L.control.zoom({ position: 'bottomright' }).addTo(map);
   </script>
 </body>

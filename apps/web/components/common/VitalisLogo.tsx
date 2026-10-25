@@ -20,7 +20,7 @@ export function VitalisLogo({ size = 'md', showText = true, className = '' }: Vi
   return (
     <div className={`flex items-center ${showText ? 'gap-3' : 'justify-center'} ${className}`}>
       {/* Interlocking Crimson & Cobalt Ribbon Logo */}
-      <div className="relative flex items-center justify-center p-1 rounded-xl border border-slate-400/40 dark:border-slate-500/40 bg-slate-400/10 dark:bg-slate-500/10">
+      <div className="relative flex items-center justify-center p-1.5 rounded-xl bg-slate-400/20 dark:bg-slate-500/25">
         <svg
           width={box}
           height={box}
