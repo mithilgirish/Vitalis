@@ -3,6 +3,8 @@
  * Runs both client-side (100% offline, 0ms latency) and integrates with FastAPI routing gateway.
  */
 
+import { REAL_ROAD_CORRIDORS } from './realRoadCorridors';
+
 export interface DijkstraRouteResult {
   algorithm: string;
   originId: string;
@@ -165,6 +167,43 @@ export function normalizeFacilityId(id: string): string {
 export function solveDijkstraLocal(originId: string, destId: string): DijkstraRouteResult {
   const normOrigin = normalizeFacilityId(originId);
   const normDest = normalizeFacilityId(destId);
+
+  // 1. Check curated high-resolution real road corridor cache
+  const forwardKey = `${normOrigin}->${normDest}`;
+  const reverseKey = `${normDest}->${normOrigin}`;
+  if (REAL_ROAD_CORRIDORS[forwardKey]) {
+    const c = REAL_ROAD_CORRIDORS[forwardKey];
+    return {
+      algorithm: 'Real Road-Snapped Street Navigation (OSRM)',
+      originId: normOrigin,
+      originName: CHENNAI_GRAPH_NODES[normOrigin]?.shortName || normOrigin,
+      destinationId: normDest,
+      destinationName: CHENNAI_GRAPH_NODES[normDest]?.shortName || normDest,
+      totalDistanceKm: c.distanceKm,
+      estimatedMinutes: c.estimatedMinutes,
+      nodeSequence: [normOrigin, normDest],
+      roadSegments: ['Emergency Road Corridor'],
+      waypoints: c.waypoints,
+      congestionLevel: 'low',
+    };
+  }
+  if (REAL_ROAD_CORRIDORS[reverseKey]) {
+    const c = REAL_ROAD_CORRIDORS[reverseKey];
+    const reversedWaypoints = [...c.waypoints].reverse();
+    return {
+      algorithm: 'Real Road-Snapped Street Navigation (OSRM)',
+      originId: normOrigin,
+      originName: CHENNAI_GRAPH_NODES[normOrigin]?.shortName || normOrigin,
+      destinationId: normDest,
+      destinationName: CHENNAI_GRAPH_NODES[normDest]?.shortName || normDest,
+      totalDistanceKm: c.distanceKm,
+      estimatedMinutes: c.estimatedMinutes,
+      nodeSequence: [normOrigin, normDest],
+      roadSegments: ['Emergency Road Corridor'],
+      waypoints: reversedWaypoints,
+      congestionLevel: 'low',
+    };
+  }
 
   // Build adjacency list
   interface Edge {

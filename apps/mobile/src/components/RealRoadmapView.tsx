@@ -45,15 +45,11 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
   }
 
   const htmlContent = useMemo(() => {
-    // If route has only 2 points or is empty, create realistic intermediate curve
-    let safeRoute = routeCoords && routeCoords.length >= 2 ? [...routeCoords] : [];
-    if (safeRoute.length === 2) {
-      const p1 = safeRoute[0];
-      const p2 = safeRoute[1];
-      const midLat = (p1[0] + p2[0]) / 2 + (p1[1] > p2[1] ? 0.003 : -0.003);
-      const midLng = (p1[1] + p2[1]) / 2 + 0.003;
-      safeRoute = [p1, [midLat, midLng], p2];
-    }
+    // Exact road-snapped coordinates: preserve real road curvature without synthetic distortions
+    const safeRoute =
+      routeCoords && routeCoords.length >= 2
+        ? routeCoords
+        : [originCoord, destCoord];
 
     const routeJson = JSON.stringify(safeRoute);
     const originJson = JSON.stringify(originCoord);

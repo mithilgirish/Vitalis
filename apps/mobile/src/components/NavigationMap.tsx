@@ -15,20 +15,18 @@ import type { WebView } from 'react-native-webview';
 import { useMission } from '@/context/MissionContext';
 import { RealRoadmapView, MapTileProvider } from './RealRoadmapView';
 import { HospitalSearchModal } from './HospitalSearchModal';
+import { REAL_ROAD_CORRIDORS } from '../services/realRoadCorridors';
 
-// Real emergency transit route coordinates (Regional Blood Transfusion Center -> Apollo Greams Rd)
-const CHENNAI_ROUTE_COORDS: [number, number][] = [
-  [13.0827, 80.2450], // Regional Blood Transfusion Center, Kilpauk
-  [13.0805, 80.2480], // Poonamallee High Rd
-  [13.0760, 80.2525], // Chetpet junction
-  [13.0715, 80.2560], // EVR Periyar Salai
-  [13.0670, 80.2585], // Spurtank Rd & College Rd
-  [13.0645, 80.2598], // Anna Salai / Thousand Lights (Vehicle Current Location)
-  [13.0610, 80.2580], // Anna Flyover approach
-  [13.0585, 80.2550], // Mount Road / Greams Road intersection
-  [13.0575, 80.2535], // Greams Lane approach
-  [13.0569, 80.2525], // Apollo Greams Rd Emergency Trauma Bay
-];
+// High-precision road-snapped route coordinates (Regional Blood Transfusion Center -> Apollo Greams Rd)
+const CHENNAI_ROUTE_COORDS: [number, number][] =
+  REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO']?.waypoints || [
+    [13.0784, 80.2604],
+    [13.0775, 80.2606],
+    [13.0760, 80.2525],
+    [13.0645, 80.2598],
+    [13.0585, 80.2550],
+    [13.0567, 80.2505],
+  ];
 
 export interface NavigationMapProps {
   isFullscreen?: boolean;

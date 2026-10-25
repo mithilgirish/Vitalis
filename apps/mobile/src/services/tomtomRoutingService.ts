@@ -14,7 +14,7 @@ export interface RouteStepInstruction {
 }
 
 export interface TomTomRouteResult {
-  engine: 'tomtom' | 'dijkstra';
+  engine: 'tomtom' | 'dijkstra' | 'osrm';
   engineLabel: string;
   originId?: string;
   originName: string;
@@ -206,8 +206,47 @@ export async function calculateTomTomRoute(
         }
       }
     } catch {
-      // TomTom failed: fallback to Dijkstra
+      // TomTom failed: proceed to OSRM
     }
+  }
+
+  // 2. High-precision Real Road Routing via OSRM (100% Free, Zero API Key)
+  try {
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full&geometries=geojson`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch(osrmUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      const route = data.routes?.[0];
+      if (route?.geometry?.coordinates?.length > 1) {
+        // Convert OSRM GeoJSON [lng, lat] to [lat, lng]
+        const waypoints: [number, number][] = route.geometry.coordinates.map(
+          (pt: [number, number]) => [pt[1], pt[0]]
+        );
+        const distanceKm = Number((route.distance / 1000).toFixed(2));
+        const travelMinutes = Math.max(1, Math.round(route.duration / 60));
+
+        return {
+          engine: 'osrm',
+          engineLabel: 'OSRM Turn-by-Turn Road Navigation',
+          originId,
+          originName,
+          destinationId,
+          destinationName,
+          totalDistanceKm: distanceKm,
+          estimatedMinutes: travelMinutes,
+          trafficDelayMinutes: 0,
+          waypoints,
+          instructions: [],
+          congestionLevel: 'low',
+        };
+      }
+    }
+  } catch {
+    // OSRM failed or network offline: fallback to cached real road corridor
   }
 
   // Fallback to client-side Dijkstra

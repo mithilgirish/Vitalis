@@ -273,11 +273,57 @@ export async function calculateTomTomRoute(
         }
       }
     } catch (err) {
-      console.warn('[Vitalis TomTom] API query failed, falling back to Dijkstra Shortest Path:', err);
+      console.warn('[Vitalis TomTom] API query failed, falling back to OSRM road routing:', err);
     }
   }
 
-  // 2. Automatic Fallback to Dijkstra Algorithm
+  // 2. High-precision Real Road Routing via OSRM (100% Free, Zero API Key)
+  try {
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full&geometries=geojson`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch(osrmUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      const route = data.routes?.[0];
+      if (route?.geometry?.coordinates?.length > 1) {
+        // Convert OSRM GeoJSON [lng, lat] to [lat, lng]
+        const waypoints: [number, number][] = route.geometry.coordinates.map(
+          (pt: [number, number]) => [pt[1], pt[0]]
+        );
+        const distanceKm = Number((route.distance / 1000).toFixed(2));
+        const travelMinutes = Math.max(1, Math.round(route.duration / 60));
+
+        return {
+          engine: 'osrm',
+          engineLabel: 'OSRM Turn-by-Turn Road Navigation',
+          originId,
+          originName,
+          destinationId: destId,
+          destinationName: destName,
+          destName,
+          totalDistanceKm: distanceKm,
+          estimatedMinutes: travelMinutes,
+          trafficDelayMinutes: 0,
+          waypoints,
+          instructions: [
+            {
+              instruction: `Follow active emergency transit road corridor to ${destName}`,
+              distanceMeters: Math.round(distanceKm * 1000),
+              timeSeconds: travelMinutes * 60,
+            },
+          ],
+          congestionLevel: 'low',
+        };
+      }
+    }
+  } catch {
+    // OSRM failed or network offline: proceed to cached real road corridor
+  }
+
+  // 3. Automatic Fallback to Dijkstra Algorithm (with Cached Road Corridors)
   const oId = originId || normalizeFacilityId(originName);
   const dId = destId || normalizeFacilityId(destName);
   const dijkstra = solveDijkstraLocal(oId, dId);
