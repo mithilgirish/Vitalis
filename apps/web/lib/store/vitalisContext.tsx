@@ -67,6 +67,10 @@ interface VitalisContextType {
   }) => void;
   calibrateBatchTemp: (batchUuid: string, newTemp?: number) => void;
 
+  // Synced Database Time & Date
+  syncedDate: string;
+  syncedTime: string;
+
   // Theme Mode
   theme: 'dark' | 'light';
   toggleTheme: () => void;
@@ -93,7 +97,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     }
     return 'dark';
   });
-  const [hospitals] = useState<Hospital[]>(CHENNAI_HOSPITALS);
+  const [hospitals, setHospitals] = useState<Hospital[]>(CHENNAI_HOSPITALS);
   const [requests, setRequests] = useState<TransferRequest[]>(INITIAL_REQUESTS);
   const [telemetry, setTelemetry] = useState<TransitTelemetry[]>(INITIAL_TRANSIT_TELEMETRY);
   const [inventory, setInventory] = useState<InventoryBatch[]>(INVENTORY_LEDGER);
@@ -103,6 +107,85 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
   const [selectedCourier, setSelectedCourier] = useState<TransitTelemetry | null>(null);
   const [isTriageOpen, setIsTriageOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [syncedDate, setSyncedDate] = useState<string>('2026-10-25');
+  const [syncedTime, setSyncedTime] = useState<string>('');
+
+  // Synchronize state and date with FastAPI / SQLite Database
+  useEffect(() => {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // 1. Initial snapshot sync from SQLite database
+    fetch(`${backendUrl}/api/v1/system/sync`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.server_date) setSyncedDate(data.server_date);
+        if (data.server_time_ist) setSyncedTime(data.server_time_ist);
+        if (data.transfers && Array.isArray(data.transfers) && data.transfers.length > 0) {
+          setRequests((prev) =>
+            prev.map((r) => {
+              const matched = data.transfers.find(
+                (dbT: { id: string; status: TransferRequest['status']; approved_by?: string }) => dbT.id === r.id
+              );
+              if (matched) {
+                return {
+                  ...r,
+                  status: matched.status,
+                  approvedBy: matched.approved_by || r.approvedBy,
+                };
+              }
+              return r;
+            })
+          );
+        }
+      })
+      .catch(() => {
+        // Fallback to local offline simulation
+      });
+
+    // 2. Real-time WebSocket event subscription
+    const wsUrl = backendUrl.replace(/^http/, 'ws');
+    let ws: WebSocket | null = null;
+    try {
+      ws = new WebSocket(`${wsUrl}/api/v1/ws/telemetry`);
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.event === 'DISPATCH_APPROVED') {
+            const transferId = payload.payload?.transfer_id;
+            setRequests((prev) =>
+              prev.map((r) => (r.id === transferId ? { ...r, status: 'in_transit' } : r))
+            );
+          } else if (payload.event === 'TELEMETRY_LOG') {
+            const reading = payload.payload;
+            if (reading && reading.temperature_celsius !== undefined) {
+              setTelemetry((prev) =>
+                prev.map((t) =>
+                  t.courierId === reading.courier_id || t.transferId === reading.transfer_id
+                    ? {
+                        ...t,
+                        currentTemperatureC: reading.temperature_celsius,
+                        excursionFlag: reading.excursion_flag || false,
+                        currentCoordinates: reading.location || t.currentCoordinates,
+                      }
+                    : t
+                )
+              );
+            }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      };
+    } catch {
+      // Ignore ws connection errors
+    }
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -511,6 +594,8 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
         toggleExcursionSimulator,
         addInventoryBatch,
         calibrateBatchTemp,
+        syncedDate,
+        syncedTime,
         theme,
         toggleTheme,
         toasts,

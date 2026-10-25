@@ -85,6 +85,7 @@ export interface TransferRequest {
   viabilityWindowMinutes: number;
   status: 'pending_approval' | 'in_transit' | 'delivered' | 'rejected';
   rejectionReason?: string;
+  approvedBy?: string;
   candidates: DonorCandidate[];
   selectedCandidateId: string;
   reactTrace: ReActTrace;

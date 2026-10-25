@@ -24,6 +24,11 @@ from backend.api.schemas import (
 from backend.agent.triage_client import JevTriageExtractor
 from backend.agent.orchestrator import ReActDispatchOrchestrator
 from backend.agent.tools import MOCK_CHENNAI_FACILITIES
+from backend.local_db import (
+    get_system_sync_metadata,
+    upsert_transfer,
+    log_telemetry_reading
+)
 
 router = APIRouter(prefix="/api/v1", tags=["Vitalis Logistics"])
 
@@ -157,6 +162,9 @@ async def dispatch_action(
             "resource": transfer.get("resource_type")
         })
 
+        # Persist to local SQLite database
+        upsert_transfer(transfer)
+
         return DispatchActionResponse(
             transfer_id=transfer_id,
             status="in_transit",
@@ -167,6 +175,9 @@ async def dispatch_action(
         transfer["status"] = "rejected"
         transfer["rejection_reason"] = body.rejection_reason
         transfer["updated_at"] = datetime.utcnow().isoformat()
+
+        # Persist to local SQLite database
+        upsert_transfer(transfer)
 
         await ws_manager.broadcast_event("DISPATCH_REJECTED", {
             "transfer_id": transfer_id,
@@ -231,6 +242,9 @@ async def telemetry_log(payload: TelemetryLogRequest):
     }
     STATE_TELEMETRY.append(record)
 
+    # Persist IoT reading to local SQLite database
+    log_telemetry_reading(record)
+
     # Broadcast live telemetry update over WebSockets
     await ws_manager.broadcast_event("TELEMETRY_LOG", record)
 
@@ -287,6 +301,14 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
 @router.get("/facilities", summary="List registered hospital nodes")
 async def list_facilities():
     return {"facilities": MOCK_CHENNAI_FACILITIES}
+
+@router.get("/system/sync", summary="Get synchronized network time, calendar date, active mission, and database state")
+async def get_system_sync():
+    """
+    Returns synchronized network time, real calendar date, and active transfer records
+    from the local SQLite database to keep Web and Mobile in 100% lockstep.
+    """
+    return get_system_sync_metadata()
 
 @router.get("/transfers", summary="List all active and historical transfer orders")
 async def list_transfers():

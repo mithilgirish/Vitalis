@@ -139,6 +139,10 @@ export interface MissionState {
   step2: CustodyStepState;
   step3: CustodyStepState;
 
+  // Synced Database Date & Time
+  syncedDate: string;
+  syncedTime: string;
+
   // User Identity & Role Auth
   currentUser: MobileAuthUser;
   switchUserRole: (role: MobileUserRole) => void;
@@ -243,6 +247,57 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const [sparklineHistory, setSparklineHistory] = useState<SparklinePoint[]>(INITIAL_SPARKLINE);
+  const [syncedDate, setSyncedDate] = useState<string>('2026-10-25');
+  const [syncedTime, setSyncedTime] = useState<string>('');
+
+  // Synchronize state and date with FastAPI / SQLite Database
+  useEffect(() => {
+    const backendUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+
+    // 1. Initial snapshot sync from SQLite database
+    fetch(`${backendUrl}/api/v1/system/sync`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.server_date) setSyncedDate(data.server_date);
+        if (data.server_time_ist) setSyncedTime(data.server_time_ist);
+        if (data.active_mission) {
+          const m = data.active_mission;
+          if (m.status === 'in_transit' || m.status === 'pending_approval' || m.status === 'delivered') {
+            setStatus(m.status);
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback to local offline simulation
+      });
+
+    // 2. Real-time WebSocket event subscription
+    const wsUrl = backendUrl.replace(/^http/, 'ws');
+    let ws: WebSocket | null = null;
+    try {
+      ws = new WebSocket(`${wsUrl}/api/v1/ws/telemetry`);
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.event === 'DISPATCH_APPROVED') {
+            setStatus('in_transit');
+          } else if (payload.event === 'DISPATCH_REJECTED') {
+            setStatus('pending_dispatch');
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      };
+    } catch {
+      // Ignore ws connection errors
+    }
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, []);
 
   // Initial audit log with dynamic real time (12 minutes ago)
   const [manualLogs, setManualLogs] = useState<ManualLog[]>(() => [
@@ -487,6 +542,8 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     step1,
     step2,
     step3,
+    syncedDate,
+    syncedTime,
 
     acceptMission,
     toggleExcursion,
