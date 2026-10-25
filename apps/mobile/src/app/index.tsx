@@ -22,14 +22,12 @@ export default function MissionScreen() {
     isDispatchModalOpen,
     setIsDispatchModalOpen,
   } = useMission();
-  const [showSimulatedPushModal, setShowSimulatedPushModal] = useState(false);
 
-  const isModalVisible = isDispatchModalOpen || showSimulatedPushModal || status === 'pending_dispatch';
+  const isModalVisible = isDispatchModalOpen || status === 'pending_dispatch';
 
   const handleAccept = () => {
     acceptMission();
     setIsDispatchModalOpen(false);
-    setShowSimulatedPushModal(false);
   };
 
   return (
@@ -94,9 +92,7 @@ export default function MissionScreen() {
 
       {/* BOTTOM: Ergonomic Apple Maps Biological Viability Sheet */}
       <View style={styles.bottomSheetSection}>
-        <BiologicalViabilityCard
-          onSimulateDispatch={() => setShowSimulatedPushModal(true)}
-        />
+        <BiologicalViabilityCard />
       </View>
 
       {/* Incoming Dispatch Modal (Push State) */}

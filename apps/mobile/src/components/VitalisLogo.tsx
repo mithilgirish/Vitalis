@@ -100,6 +100,11 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 3.5,
+    borderRadius: 9,
+    borderWidth: 1.2,
+    borderColor: 'rgba(148, 163, 184, 0.45)', // Sleek grey border
+    backgroundColor: 'rgba(148, 163, 184, 0.10)', // Subtle grey squircle fill
   },
   textColumn: {
     justifyContent: 'center',

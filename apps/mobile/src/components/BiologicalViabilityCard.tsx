@@ -5,26 +5,18 @@ import {
   QrCode,
   Building2,
   Clock,
-  Thermometer,
   ShieldCheck,
   ChevronRight,
 } from 'lucide-react-native';
 import { useMission } from '@/context/MissionContext';
 
-interface BiologicalViabilityCardProps {
-  onSimulateDispatch?: () => void;
-}
-
-export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = ({
-  onSimulateDispatch,
-}) => {
+export const BiologicalViabilityCard: React.FC = () => {
   const router = useRouter();
   const {
     etaSeconds,
     viabilityLimitSeconds,
     destination,
     cargo,
-    temperature,
     excursionFlag,
     step3,
     distanceKm,
@@ -76,12 +68,9 @@ export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = (
           </Text>
         </View>
 
-        {/* Cold-Chain Status Pill */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open Cold-Chain Telemetry"
-          onPress={() => router.push('/telemetry')}
-          style={({ pressed }) => [
+        {/* Cold-Chain Preservation Badge */}
+        <View
+          style={[
             styles.tempStatusPill,
             excursionFlag
               ? {
@@ -90,15 +79,14 @@ export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = (
                 }
               : {
                   backgroundColor: isDark
-                    ? 'rgba(52, 199, 89, 0.14)'
-                    : 'rgba(52, 199, 89, 0.10)',
+                    ? 'rgba(52, 199, 89, 0.12)'
+                    : 'rgba(52, 199, 89, 0.08)',
                   borderColor: isDark
-                    ? 'rgba(52, 199, 89, 0.32)'
-                    : 'rgba(52, 199, 89, 0.22)',
+                    ? 'rgba(52, 199, 89, 0.28)'
+                    : 'rgba(52, 199, 89, 0.18)',
                 },
-            pressed && { opacity: 0.8 },
           ]}>
-          <Thermometer
+          <ShieldCheck
             size={14}
             color={excursionFlag ? '#FFFFFF' : colors.emeraldSafe}
             strokeWidth={2.4}
@@ -109,17 +97,17 @@ export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = (
                 styles.tempStatusText,
                 { color: excursionFlag ? '#FFFFFF' : colors.emeraldSafe },
               ]}>
-              {temperature.toFixed(1)}°C {excursionFlag ? 'ALARM' : 'SAFE'}
+              {excursionFlag ? 'TEMPERATURE ALARM' : 'Cold-Chain Safe'}
             </Text>
             <Text
               style={[
                 styles.tempEnvelopeSub,
                 { color: excursionFlag ? 'rgba(255,255,255,0.85)' : colors.textMuted },
               ]}>
-              1.0°C – 6.0°C Target
+              2.0°C – 6.0°C Target
             </Text>
           </View>
-        </Pressable>
+        </View>
       </View>
 
       {/* CLINICAL DESTINATION & PAYLOAD CARD */}
@@ -192,22 +180,6 @@ export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = (
         </Text>
         <ChevronRight size={17} color="#FFFFFF" strokeWidth={2.4} />
       </Pressable>
-
-      {/* Discreet Demo Push Trigger */}
-      {onSimulateDispatch && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Test Incoming Dispatch Alert"
-          onPress={onSimulateDispatch}
-          style={({ pressed }) => [
-            styles.demoTrigger,
-            pressed && { opacity: 0.6 },
-          ]}>
-          <Text style={[styles.demoTriggerText, { color: colors.textMuted }]}>
-            Simulate Incoming Push Dispatch
-          </Text>
-        </Pressable>
-      )}
     </View>
   );
 };
@@ -360,15 +332,5 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     fontWeight: '700',
     letterSpacing: -0.2,
-  },
-  demoTrigger: {
-    alignSelf: 'center',
-    paddingVertical: 4,
-    marginTop: 2,
-  },
-  demoTriggerText: {
-    fontSize: 10,
-    fontWeight: '500',
-    letterSpacing: 0.2,
   },
 });

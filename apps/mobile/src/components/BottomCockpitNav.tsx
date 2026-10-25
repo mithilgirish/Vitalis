@@ -1,18 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Navigation, Thermometer, QrCode, AlertTriangle, Truck } from 'lucide-react-native';
+import { Navigation, QrCode, Truck } from 'lucide-react-native';
 import { ERGONOMICS } from '@/theme/vitalis-theme';
 import { useMission } from '@/context/MissionContext';
 
 export const BottomCockpitNav: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { excursionFlag, temperature, step3, allTasks, colors, isDark } = useMission();
+  const { step3, allTasks, colors, isDark } = useMission();
 
   const isMissionActive = pathname === '/' || pathname === '';
   const isTasksActive = pathname === '/tasks';
-  const isTelemetryActive = pathname === '/telemetry';
   const isScannerActive = pathname === '/scanner';
 
   const activeTasksCount = allTasks ? allTasks.filter((t) => t.status !== 'delivered').length : 0;
@@ -107,69 +106,6 @@ export const BottomCockpitNav: React.FC = () => {
               },
             ]}>
             Tasks
-          </Text>
-        </Pressable>
-
-        {/* TAB 2: Cold-Chain Telemetry */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Cold-Chain Telemetry Tab"
-          onPress={() => router.push('/telemetry')}
-          style={({ pressed }) => [
-            styles.tabItem,
-            isTelemetryActive && {
-              backgroundColor: excursionFlag
-                ? colors.redAlarmBg
-                : isDark
-                ? 'rgba(255, 255, 255, 0.10)'
-                : 'rgba(52, 199, 89, 0.08)',
-            },
-            pressed && styles.tabPressed,
-          ]}>
-          <View style={styles.iconContainer}>
-            {excursionFlag ? (
-              <AlertTriangle size={20} color={colors.redAlarm} strokeWidth={2.4} />
-            ) : (
-              <Thermometer
-                size={20}
-                color={isTelemetryActive ? colors.emeraldSafe : colors.textMuted}
-                strokeWidth={isTelemetryActive ? 2.4 : 1.9}
-              />
-            )}
-            {/* Live temp badge */}
-            <View
-              style={[
-                styles.miniBadge,
-                excursionFlag
-                  ? { backgroundColor: colors.redAlarm }
-                  : {
-                      backgroundColor: isDark
-                        ? 'rgba(52, 199, 89, 0.22)'
-                        : 'rgba(52, 199, 89, 0.14)',
-                    },
-              ]}>
-              <Text
-                style={[
-                  styles.miniBadgeText,
-                  { color: excursionFlag ? '#FFFFFF' : colors.emeraldSafe },
-                ]}>
-                {temperature.toFixed(1)}°
-              </Text>
-            </View>
-          </View>
-          <Text
-            style={[
-              styles.tabLabel,
-              {
-                color: excursionFlag
-                  ? colors.redAlarm
-                  : isTelemetryActive
-                  ? colors.emeraldSafe
-                  : colors.textMuted,
-                fontWeight: isTelemetryActive ? '700' : '500',
-              },
-            ]}>
-            Telemetry
           </Text>
         </Pressable>
 

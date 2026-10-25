@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import {
   Sun,
   Moon,
-  Thermometer,
 } from 'lucide-react-native';
 import { useMission } from '@/context/MissionContext';
 import { VitalisLogo } from './VitalisLogo';
@@ -11,7 +10,6 @@ import { VitalisLogo } from './VitalisLogo';
 export const HeaderCockpit: React.FC = () => {
   const {
     excursionFlag,
-    temperature,
     colors,
     isDark,
     toggleTheme,
@@ -68,40 +66,8 @@ export const HeaderCockpit: React.FC = () => {
         />
       </View>
 
-      {/* Right Controls: Live Temp Pill + ESI Pill + Theme Toggle */}
+      {/* Right Controls: User Identity Pill + Theme Toggle */}
       <View style={styles.rightControls}>
-        {/* Live Temperature Quick Pill */}
-        <View
-          style={[
-            styles.tempPill,
-            excursionFlag
-              ? {
-                  backgroundColor: colors.redAlarm,
-                  borderColor: colors.redAlarm,
-                }
-              : {
-                  backgroundColor: isDark
-                    ? 'rgba(52, 199, 89, 0.12)'
-                    : 'rgba(52, 199, 89, 0.08)',
-                  borderColor: isDark
-                    ? 'rgba(52, 199, 89, 0.28)'
-                    : 'rgba(52, 199, 89, 0.20)',
-                },
-          ]}>
-          <Thermometer
-            size={12}
-            color={excursionFlag ? '#FFFFFF' : colors.emeraldSafe}
-            strokeWidth={2.4}
-          />
-          <Text
-            style={[
-              styles.tempPillText,
-              { color: excursionFlag ? '#FFFFFF' : colors.emeraldSafe },
-            ]}>
-            {temperature.toFixed(1)}°C
-          </Text>
-        </View>
-
         {/* User Identity / Role Pill */}
         <Pressable
           accessibilityRole="button"
@@ -177,20 +143,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  tempPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 4,
-  },
-  tempPillText: {
-    fontSize: 11,
-    fontFamily: 'monospace',
-    fontWeight: '700',
   },
   themeToggleButton: {
     width: 30,
