@@ -7,10 +7,17 @@ import {
   Clock,
   ShieldCheck,
   ChevronRight,
+  Maximize2,
 } from 'lucide-react-native';
-import { useMission } from '@/context/MissionContext';
+import { useMission, formatArrivalTime } from '@/context/MissionContext';
 
-export const BiologicalViabilityCard: React.FC = () => {
+interface BiologicalViabilityCardProps {
+  onExpandMap?: () => void;
+}
+
+export const BiologicalViabilityCard: React.FC<BiologicalViabilityCardProps> = ({
+  onExpandMap,
+}) => {
   const router = useRouter();
   const {
     etaSeconds,
@@ -28,14 +35,8 @@ export const BiologicalViabilityCard: React.FC = () => {
   const viabilityHours = Math.floor(viabilityLimitSeconds / 3600);
   const viabilityMins = Math.floor((viabilityLimitSeconds % 3600) / 60);
 
-  // Calculate estimated arrival clock time (e.g., 14:43)
-  const now = new Date();
-  const arrivalTime = new Date(now.getTime() + etaSeconds * 1000);
-  const arrivalFormatted = arrivalTime.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  // Reliable, predictable arrival clock time (e.g., "11:15 PM")
+  const arrivalFormatted = formatArrivalTime(etaMinutes);
 
   return (
     <View
@@ -46,15 +47,21 @@ export const BiologicalViabilityCard: React.FC = () => {
           borderTopColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.08)',
         },
       ]}>
-      {/* Apple Drag Handle Pill */}
-      <View
-        style={[
-          styles.dragHandle,
-          {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)',
-          },
-        ]}
-      />
+      {/* Apple Drag Handle Pill with Fullscreen expand trigger */}
+      <Pressable
+        onPress={onExpandMap}
+        accessibilityRole="button"
+        accessibilityLabel="Expand map to fullscreen"
+        style={styles.dragHandleContainer}>
+        <View
+          style={[
+            styles.dragHandle,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)',
+            },
+          ]}
+        />
+      </Pressable>
 
       {/* TOP ROW: Apple Maps Hero ETA & Live Cold Chain Status */}
       <View style={styles.heroRow}>
@@ -198,6 +205,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 16,
     elevation: 10,
+  },
+  dragHandleContainer: {
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dragHandle: {
     width: 36,

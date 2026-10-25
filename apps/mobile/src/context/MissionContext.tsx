@@ -45,7 +45,7 @@ export const DEFAULT_TASKS: TransferTask[] = [
     courier_id: 'COU-CH-104',
     vehicle_type: 'Refrigerated EV Van #104',
     distance_km: 3.56,
-    estimated_minutes: 6,
+    estimated_minutes: 12,
     created_at: '10 mins ago',
   },
   {
@@ -298,6 +298,20 @@ export interface MissionState {
 }
 
 /**
+ * Formats a predictable, rock-solid arrival clock time string (e.g., "11:15 PM").
+ * Robust against Hermes JavaScript engine quirks on Android and iOS.
+ */
+export const formatArrivalTime = (etaMinutes: number, referenceDate?: Date): string => {
+  const base = referenceDate ? new Date(referenceDate.getTime()) : new Date();
+  const arrival = new Date(base.getTime() + Math.max(1, Math.round(etaMinutes)) * 60 * 1000);
+  let hours = arrival.getHours();
+  const minutes = String(arrival.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes} ${ampm}`;
+};
+
+/**
  * Returns dynamic real local time string with optional minute offset.
  */
 export const getRealTimeIST = (offsetMinutes = 0): string => {
@@ -392,7 +406,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isExcursionSimulated, setIsExcursionSimulated] = useState<boolean>(false);
   const [temperature, setTemperature] = useState<number>(3.8);
   const [gpsPulseCountdown, setGpsPulseCountdown] = useState<number>(15);
-  const [etaSeconds, setEtaSeconds] = useState<number>(6 * 60); // 6 mins from Dijkstra
+  const [etaSeconds, setEtaSeconds] = useState<number>(12 * 60); // 12 mins realistic city transit
   const [viabilityLimitSeconds, setViabilityLimitSeconds] = useState<number>(45 * 60); // 45 minutes = 2700s
   const [acceptedAt, setAcceptedAt] = useState<string | null>(null);
   const [deliveredAt, setDeliveredAt] = useState<string | null>(null);
@@ -444,14 +458,16 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       let dist = m.distance_km;
       let eta = m.estimated_minutes;
 
-      if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
+      if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0 || !dist || !eta) {
         const solved = solveDijkstraLocal(
           m.origin_facility_id || 'FAC-RBTC',
           m.destination_facility_id || 'FAC-APOLLO'
         );
-        waypoints = solved.waypoints;
-        dist = solved.totalDistanceKm;
-        eta = solved.estimatedMinutes;
+        if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
+          waypoints = solved.waypoints;
+        }
+        if (!dist || dist <= 0) dist = solved.totalDistanceKm;
+        if (!eta || eta <= 0) eta = solved.estimatedMinutes;
       }
 
       if (waypoints && waypoints.length > 0) {
@@ -461,8 +477,8 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setDestinationCoords({ lat: last[0], lng: last[1] });
       }
 
-      if (dist) setDistanceKm(dist);
-      if (eta) setEtaSeconds(eta * 60);
+      setDistanceKm(dist || 3.56);
+      setEtaSeconds((eta || 12) * 60);
 
       if (triggerPopup) {
         setIsDispatchModalOpen(true);
@@ -796,19 +812,29 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setOrigin(origName);
     setDestination(destName);
     setCargo(cargoStr);
-    if (task.distance_km) setDistanceKm(task.distance_km);
-    if (task.estimated_minutes) setEtaSeconds(task.estimated_minutes * 60);
+
+    let waypoints = task.route_waypoints;
+    let dist = task.distance_km;
+    let eta = task.estimated_minutes;
+
+    if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0 || !dist || !eta) {
+      const oId = task.origin_facility_id || normalizeFacilityId(origName);
+      const dId = task.destination_facility_id || normalizeFacilityId(destName);
+      const solved = solveDijkstraLocal(oId, dId);
+      if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
+        waypoints = solved.waypoints;
+      }
+      if (!dist || dist <= 0) dist = solved.totalDistanceKm;
+      if (!eta || eta <= 0) eta = solved.estimatedMinutes;
+    }
+
+    setDistanceKm(dist || 3.56);
+    setEtaSeconds((eta || 12) * 60);
+
     if (task.assigned_driver_id) setAssignedDriverId(task.assigned_driver_id);
     if (task.assigned_driver_name) setAssignedDriverName(task.assigned_driver_name);
     if (task.courier_id) setCourierId(task.courier_id);
 
-    let waypoints = task.route_waypoints;
-    if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
-      if (task.origin_facility_id && task.destination_facility_id) {
-        const solved = solveDijkstraLocal(task.origin_facility_id, task.destination_facility_id);
-        waypoints = solved.waypoints;
-      }
-    }
     if (waypoints && waypoints.length > 0) {
       setRouteCoords(waypoints);
       setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });

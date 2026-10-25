@@ -2,8 +2,11 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-interface RealRoadmapViewProps {
+export type MapTileProvider = 'osm' | 'hot' | 'satellite';
+
+export interface RealRoadmapViewProps {
   isDark: boolean;
+  tileProvider?: MapTileProvider;
   vehicleLat: number;
   vehicleLng: number;
   routeCoords: [number, number][];
@@ -11,10 +14,12 @@ interface RealRoadmapViewProps {
   destCoord: [number, number];
   originName: string;
   destName: string;
+  webViewRef?: React.RefObject<WebView | null>;
 }
 
 export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
   isDark,
+  tileProvider = 'osm',
   vehicleLat,
   vehicleLng,
   routeCoords,
@@ -22,14 +27,22 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
   destCoord,
   originName,
   destName,
+  webViewRef,
 }) => {
-  // Google Maps / Apple Maps style vector raster tiles via CartoDB
-  const tileUrl = isDark
-    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+  // Tile Providers: 100% Free, Open, Zero API Key Required
+  let tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  let tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors';
+  let subdomains = 'abc';
 
-  const tileAttribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>';
+  if (tileProvider === 'hot') {
+    tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+    tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://www.hotosm.org/" target="_blank">HOT</a>';
+    subdomains = 'abc';
+  } else if (tileProvider === 'satellite') {
+    tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    tileAttribution = 'Tiles &copy; Esri &mdash; OpenStreetMap contributors';
+    subdomains = 'abc';
+  }
 
   const htmlContent = useMemo(() => {
     // If route has only 2 points or is empty, create realistic intermediate curve
@@ -68,9 +81,31 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
       height: 100%;
       margin: 0;
       padding: 0;
-      background-color: ${isDark ? '#121418' : '#F1F5F9'};
+      background-color: ${isDark ? '#18191E' : '#F8FAFC'};
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Web's exact clinical dark mode filter for OpenStreetMap & HOT tiles */
+    ${
+      isDark && tileProvider !== 'satellite'
+        ? `
+    .leaflet-tile-pane {
+      filter: invert(100%) hue-rotate(185deg) brightness(82%) contrast(120%) saturate(35%);
+      transition: filter 0.3s ease;
+    }
+    .leaflet-container {
+      background-color: #18191E !important;
+    }
+    `
+        : `
+    .leaflet-tile-pane {
+      filter: contrast(102%) brightness(101%);
+    }
+    .leaflet-container {
+      background-color: #F8FAFC !important;
+    }
+    `
     }
 
     /* Google Maps / Apple Maps flowing animated corridor */
@@ -84,63 +119,42 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
 
     /* Attribution Bar */
     .leaflet-control-attribution {
-      font-size: 8px !important;
-      background: ${isDark ? 'rgba(18, 20, 24, 0.75)' : 'rgba(255, 255, 255, 0.75)'} !important;
+      font-size: 7.5px !important;
+      background: ${isDark ? 'rgba(24, 25, 30, 0.70)' : 'rgba(255, 255, 255, 0.70)'} !important;
       color: ${isDark ? '#94A3B8' : '#64748B'} !important;
-      padding: 2px 6px !important;
+      padding: 1px 5px !important;
       border-radius: 4px !important;
-      backdrop-filter: blur(8px) !important;
-      -webkit-backdrop-filter: blur(8px) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      bottom: 2px !important;
+      right: 2px !important;
     }
 
-    /* Apple-Style Frosted Zoom Controls */
-    .leaflet-control-zoom {
-      border: 1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'} !important;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
-      border-radius: 12px !important;
-      overflow: hidden !important;
-      background: ${isDark ? 'rgba(28, 30, 36, 0.88)' : 'rgba(255, 255, 255, 0.90)'} !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-      margin-right: 14px !important;
-      margin-bottom: 24px !important;
+    /* Origin Medical Marker Pin */
+    .custom-origin-pin {
+      background: transparent;
+      border: none;
     }
-    .leaflet-control-zoom a {
-      background: transparent !important;
-      color: ${isDark ? '#F8FAFC' : '#0F172A'} !important;
-      border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'} !important;
-      width: 32px !important;
-      height: 32px !important;
-      line-height: 32px !important;
-      font-size: 16px !important;
-      font-weight: 700 !important;
-    }
-
-    /* --- GOOGLE MAPS STYLE PINS --- */
-
-    /* Origin Hospital Pin */
     .origin-pin-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       transform: translate(-50%, -100%);
-      pointer-events: auto;
-      cursor: pointer;
     }
     .origin-pin-label {
-      background: ${isDark ? 'rgba(24, 25, 30, 0.92)' : 'rgba(255, 255, 255, 0.95)'};
-      border: 1px solid ${isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.3)'};
-      border-radius: 8px;
-      padding: 3px 8px;
+      background: ${isDark ? 'rgba(18, 20, 24, 0.92)' : '#FFFFFF'};
+      color: ${isDark ? '#F3F4F6' : '#111827'};
       font-size: 10px;
       font-weight: 700;
-      color: ${isDark ? '#F1F5F9' : '#0F172A'};
-      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+      padding: 3px 8px;
+      border-radius: 999px;
       white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+      border: 1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'};
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
       gap: 4px;
-      margin-bottom: 3px;
     }
     .origin-pin-dot {
       width: 6px;
@@ -149,79 +163,85 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
       background: #10B981;
     }
     .origin-pin-circle {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background: #10B981;
       border: 2.5px solid #FFFFFF;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #FFFFFF;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 900;
     }
 
-    /* Destination Hospital Pin with Emergency Radar Beacon */
+    /* Destination Emergency Pin with Pulsing Beacon */
+    .custom-dest-pin {
+      background: transparent;
+      border: none;
+    }
     .dest-pin-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       transform: translate(-50%, -100%);
-      pointer-events: auto;
-      cursor: pointer;
+      position: relative;
     }
     .dest-pin-label {
-      background: ${isDark ? 'rgba(24, 25, 30, 0.94)' : 'rgba(255, 255, 255, 0.96)'};
-      border: 1px solid rgba(239, 68, 68, 0.45);
-      border-radius: 8px;
-      padding: 3px 8px;
+      background: #EF4444;
+      color: #FFFFFF;
       font-size: 10px;
       font-weight: 800;
-      color: #EF4444;
-      box-shadow: 0 2px 10px rgba(239, 68, 68, 0.25);
+      padding: 3px 8px;
+      border-radius: 999px;
       white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: 3px;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+      border: 1px solid rgba(255,255,255,0.3);
+      margin-bottom: 4px;
+      letter-spacing: 0.2px;
     }
     .dest-pin-circle {
-      position: relative;
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background: #EF4444;
+      background: #DC2626;
       border: 2.5px solid #FFFFFF;
-      box-shadow: 0 2px 10px rgba(239, 68, 68, 0.6);
+      box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #FFFFFF;
       font-size: 12px;
       font-weight: 900;
+      z-index: 2;
     }
     .dest-pulse-ring {
       position: absolute;
-      width: 44px;
-      height: 44px;
+      bottom: -3px;
+      left: calc(50% - 20px);
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      background: rgba(239, 68, 68, 0.25);
-      border: 1.5px solid #EF4444;
-      animation: destPulse 1.8s infinite ease-out;
-      pointer-events: none;
+      background: rgba(239, 68, 68, 0.35);
+      animation: radarPulse 1.8s ease-out infinite;
+      z-index: 1;
     }
-    @keyframes destPulse {
-      0% { transform: scale(0.5); opacity: 1; }
+    @keyframes radarPulse {
+      0% { transform: scale(0.4); opacity: 1; }
       100% { transform: scale(2.0); opacity: 0; }
     }
 
-    /* ALS Courier EV Van Vehicle Marker */
+    /* Vehicle Location Puck with Ambient Radar Ring */
+    .custom-vehicle-marker {
+      background: transparent;
+      border: none;
+    }
     .vehicle-marker-box {
-      position: relative;
       width: 38px;
       height: 38px;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -231,12 +251,11 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      background: rgba(10, 132, 255, 0.22);
-      border: 1.5px solid #0A84FF;
-      animation: vehicleRadar 2s infinite ease-out;
+      background: rgba(0, 122, 255, 0.28);
+      animation: vehicleRadar 1.5s ease-out infinite;
+      z-index: 1;
     }
     .vehicle-center-puck {
-      position: relative;
       width: 18px;
       height: 18px;
       border-radius: 50%;
@@ -260,10 +279,10 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
       attributionControl: true
     });
 
-    // Vector-style raster tiles (CartoDB Voyager in light, CartoDB Dark Matter in dark)
-    L.tileLayer('${tileUrl}', {
+    // Zero API Key tile layer (Standard OSM, Humanitarian HOT, or ESRI Satellite)
+    var currentTileLayer = L.tileLayer('${tileUrl}', {
       maxZoom: 19,
-      subdomains: 'abcd',
+      subdomains: '${subdomains}',
       attribution: '${tileAttribution}',
       crossOrigin: true
     }).addTo(map);
@@ -341,7 +360,24 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
     });
     L.marker(vehicle, { icon: vehicleIcon }).addTo(map);
 
-    // 7. Auto-fit bounds to show entire route with comfortable edge padding
+    // Expose helpers on window for React Native controls
+    window.map = map;
+    window.coreRoute = coreRoute;
+    window.recenterRoute = function() {
+      try {
+        if (window.coreRoute) {
+          map.fitBounds(window.coreRoute.getBounds(), {
+            padding: [50, 50],
+            maxZoom: 15,
+            animate: true
+          });
+        }
+      } catch(e) {}
+    };
+    window.zoomIn = function() { map.zoomIn(); };
+    window.zoomOut = function() { map.zoomOut(); };
+
+    // Auto-fit bounds to show entire route with comfortable edge padding
     try {
       var bounds = coreRoute.getBounds();
       map.fitBounds(bounds, {
@@ -352,14 +388,11 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
     } catch(e) {
       map.setView(origin, 13);
     }
-
-    // 8. Frosted Glass Zoom Controls at bottom-right
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
   </script>
 </body>
 </html>
     `;
-  }, [isDark, tileUrl, tileAttribution, routeCoords, originCoord, destCoord, vehicleLat, vehicleLng, originName, destName]);
+  }, [isDark, tileProvider, tileUrl, tileAttribution, subdomains, routeCoords, originCoord, destCoord, vehicleLat, vehicleLng, originName, destName]);
 
   if (Platform.OS === 'web') {
     return (
@@ -380,6 +413,7 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
   return (
     <View style={styles.container}>
       <WebView
+        ref={webViewRef}
         source={{ html: htmlContent }}
         style={styles.webview}
         scrollEnabled={false}
