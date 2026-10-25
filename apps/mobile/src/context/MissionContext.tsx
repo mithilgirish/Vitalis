@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { ThemeMode, ThemeColors, THEME_PALETTE } from '@/theme/vitalis-theme';
-import { solveDijkstraLocal, normalizeFacilityId, CHENNAI_GRAPH_NODES } from '../services/dijkstraRouting';
-import { calculateTomTomRoute } from '../services/tomtomRoutingService';
+import {
+  calculateTomTomRoute,
+  normalizeFacilityId,
+  CHENNAI_GRAPH_NODES,
+} from '../services/tomtomRoutingService';
+import { REAL_ROAD_CORRIDORS } from '../services/realRoadCorridors';
 import { getMobileBackendUrl, getMobileWsUrl } from '../services/apiConfig';
 
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';
@@ -224,7 +228,7 @@ export interface MissionState {
   acceptedAt: string | null;
   deliveredAt: string | null;
 
-  // Dijkstra Route & Assigned Driver
+  // TomTom Route & Assigned Driver
   routeCoords: [number, number][];
   assignedDriverId?: string;
   assignedDriverName?: string;
@@ -384,9 +388,9 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [destination, setDestination] = useState<string>('Apollo Greams Rd');
   const [destinationSub, setDestinationSub] = useState<string>('21 Greams Lane, Thousand Lights, Chennai');
   const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number }>({ lat: 13.0567, lng: 80.2505 });
-  const [distanceKm, setDistanceKm] = useState<number>(3.56);
+  const [distanceKm, setDistanceKm] = useState<number>(4.68);
   const [routeCoords, setRouteCoords] = useState<[number, number][]>(() => {
-    return solveDijkstraLocal('FAC-RBTC', 'FAC-APOLLO').waypoints;
+    return REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO']?.waypoints || [];
   });
   const [assignedDriverId, setAssignedDriverId] = useState<string>('VTL-DRV-784');
   const [assignedDriverName, setAssignedDriverName] = useState<string>('Vikramaditya Rao');
@@ -482,16 +486,21 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       let dist = m.distance_km;
       let eta = m.estimated_minutes;
 
-      if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0 || !dist || !eta) {
-        const solved = solveDijkstraLocal(
-          m.origin_facility_id || 'FAC-RBTC',
-          m.destination_facility_id || 'FAC-APOLLO'
-        );
-        if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
-          waypoints = solved.waypoints;
+      const oId = normalizeFacilityId(m.origin_facility_id || origName);
+      const dId = normalizeFacilityId(m.destination_facility_id || destName);
+      const origNode = CHENNAI_GRAPH_NODES[oId] || CHENNAI_GRAPH_NODES['FAC-RBTC'];
+      const destNode = CHENNAI_GRAPH_NODES[dId] || CHENNAI_GRAPH_NODES['FAC-APOLLO'];
+
+      // If waypoints are missing or if waypoints look like old synthetic lines (<= 5 points)
+      if (!waypoints || !Array.isArray(waypoints) || waypoints.length <= 5 || !dist || !eta) {
+        const corridor =
+          REAL_ROAD_CORRIDORS[`${oId}->${dId}`] ||
+          REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO'];
+        if (corridor) {
+          waypoints = corridor.waypoints;
+          dist = dist || corridor.distanceKm;
+          eta = eta || corridor.estimatedMinutes;
         }
-        if (!dist || dist <= 0) dist = solved.totalDistanceKm;
-        if (!eta || eta <= 0) eta = solved.estimatedMinutes;
       }
 
       if (waypoints && waypoints.length > 0) {
@@ -502,44 +511,38 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       // Dynamic asynchronous TomTom road navigation query
-      const oId = m.origin_facility_id || normalizeFacilityId(origName);
-      const dId = m.destination_facility_id || normalizeFacilityId(destName);
-      const origNode = CHENNAI_GRAPH_NODES[oId];
-      const destNode = CHENNAI_GRAPH_NODES[dId];
-      if (origNode && destNode) {
-        calculateTomTomRoute(
-          [origNode.lat, origNode.lng],
-          [destNode.lat, destNode.lng],
-          origName,
-          destName,
-          oId,
-          dId
-        )
-          .then((res) => {
-            if (res?.waypoints?.length > 1) {
-              setRouteCoords(res.waypoints);
-              setDistanceKm(res.totalDistanceKm);
-              setEtaSeconds(res.estimatedMinutes * 60);
-              setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
-              const lastPoint = res.waypoints[res.waypoints.length - 1];
-              setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
-            }
-          })
-          .catch(() => {});
-      }
+      calculateTomTomRoute(
+        [origNode.lat, origNode.lng],
+        [destNode.lat, destNode.lng],
+        origName,
+        destName,
+        oId,
+        dId
+      )
+        .then((res) => {
+          if (res?.waypoints?.length > 1) {
+            setRouteCoords(res.waypoints);
+            setDistanceKm(res.totalDistanceKm);
+            setEtaSeconds(res.estimatedMinutes * 60);
+            setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
+            const lastPoint = res.waypoints[res.waypoints.length - 1];
+            setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
+          }
+        })
+        .catch(() => {});
 
-      setDistanceKm(dist || 3.56);
-      setEtaSeconds((eta || 12) * 60);
+      setDistanceKm(dist || 4.68);
+      setEtaSeconds((eta || 11) * 60);
 
       if (triggerPopup) {
         setIsDispatchModalOpen(true);
         setIncomingAssignmentAlert({
           title: 'New Emergency Transfer Assigned',
-          message: `Assigned to ${m.assigned_driver_name || 'Vikramaditya Rao'} (${m.courier_id || 'COU-CH-104'}). Turn-by-turn route loaded.`,
+          message: `Assigned to ${m.assigned_driver_name || 'Vikramaditya Rao'} (${m.courier_id || 'COU-CH-104'}). TomTom live traffic route loaded.`,
           origin: origName,
           destination: destName,
-          distanceKm: dist || 3.56,
-          etaMinutes: eta || 6,
+          distanceKm: dist || 4.68,
+          etaMinutes: eta || 11,
           units: m.units_requested || m.units || 4,
           resource: `${m.blood_group || 'O-'} ${m.resource_type || m.resource || 'PRBC'}`,
         });
@@ -868,19 +871,44 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     let dist = task.distance_km;
     let eta = task.estimated_minutes;
 
-    if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0 || !dist || !eta) {
-      const oId = task.origin_facility_id || normalizeFacilityId(origName);
-      const dId = task.destination_facility_id || normalizeFacilityId(destName);
-      const solved = solveDijkstraLocal(oId, dId);
-      if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) {
-        waypoints = solved.waypoints;
+    const oId = normalizeFacilityId(task.origin_facility_id || origName);
+    const dId = normalizeFacilityId(task.destination_facility_id || destName);
+    const origNode = CHENNAI_GRAPH_NODES[oId] || CHENNAI_GRAPH_NODES['FAC-RBTC'];
+    const destNode = CHENNAI_GRAPH_NODES[dId] || CHENNAI_GRAPH_NODES['FAC-APOLLO'];
+
+    if (!waypoints || !Array.isArray(waypoints) || waypoints.length <= 5 || !dist || !eta) {
+      const corridor =
+        REAL_ROAD_CORRIDORS[`${oId}->${dId}`] ||
+        REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO'];
+      if (corridor) {
+        waypoints = corridor.waypoints;
+        dist = dist || corridor.distanceKm;
+        eta = eta || corridor.estimatedMinutes;
       }
-      if (!dist || dist <= 0) dist = solved.totalDistanceKm;
-      if (!eta || eta <= 0) eta = solved.estimatedMinutes;
     }
 
-    setDistanceKm(dist || 3.56);
-    setEtaSeconds((eta || 12) * 60);
+    calculateTomTomRoute(
+      [origNode.lat, origNode.lng],
+      [destNode.lat, destNode.lng],
+      origName,
+      destName,
+      oId,
+      dId
+    )
+      .then((res) => {
+        if (res?.waypoints?.length > 1) {
+          setRouteCoords(res.waypoints);
+          setDistanceKm(res.totalDistanceKm);
+          setEtaSeconds(res.estimatedMinutes * 60);
+          setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
+          const lastPoint = res.waypoints[res.waypoints.length - 1];
+          setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
+        }
+      })
+      .catch(() => {});
+
+    setDistanceKm(dist || 4.68);
+    setEtaSeconds((eta || 11) * 60);
 
     if (task.assigned_driver_id) setAssignedDriverId(task.assigned_driver_id);
     if (task.assigned_driver_name) setAssignedDriverName(task.assigned_driver_name);
@@ -891,33 +919,6 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setOriginCoords({ lat: waypoints[0][0], lng: waypoints[0][1] });
       const last = waypoints[waypoints.length - 1];
       setDestinationCoords({ lat: last[0], lng: last[1] });
-    }
-
-    // Dynamic asynchronous TomTom road navigation query
-    const oId = task.origin_facility_id || normalizeFacilityId(origName);
-    const dId = task.destination_facility_id || normalizeFacilityId(destName);
-    const origNode = CHENNAI_GRAPH_NODES[oId];
-    const destNode = CHENNAI_GRAPH_NODES[dId];
-    if (origNode && destNode) {
-      calculateTomTomRoute(
-        [origNode.lat, origNode.lng],
-        [destNode.lat, destNode.lng],
-        origName,
-        destName,
-        oId,
-        dId
-      )
-        .then((res) => {
-          if (res?.waypoints?.length > 1) {
-            setRouteCoords(res.waypoints);
-            setDistanceKm(res.totalDistanceKm);
-            setEtaSeconds(res.estimatedMinutes * 60);
-            setOriginCoords({ lat: res.waypoints[0][0], lng: res.waypoints[0][1] });
-            const lastPoint = res.waypoints[res.waypoints.length - 1];
-            setDestinationCoords({ lat: lastPoint[0], lng: lastPoint[1] });
-          }
-        })
-        .catch(() => {});
     }
   };
 

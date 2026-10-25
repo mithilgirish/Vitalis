@@ -57,12 +57,12 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
         Animated.timing(chevronPulse, {
           toValue: 5,
           duration: 900,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(chevronPulse, {
           toValue: 0,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ])
     );
@@ -88,7 +88,7 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
             toValue: 1.08,
             friction: 5,
             tension: 80,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }).start();
         },
         onPanResponderMove: (_, gestureState) => {
@@ -102,7 +102,7 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
             toValue: 1,
             friction: 6,
             tension: 50,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }).start();
 
           const max = maxDragRef.current;
@@ -139,7 +139,7 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
         onPanResponderTerminate: () => {
           Animated.spring(thumbScale, {
             toValue: 1,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }).start();
           Animated.spring(pan, {
             toValue: 0,

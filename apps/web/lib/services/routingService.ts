@@ -1,5 +1,6 @@
 import { PRECOMPUTED_ROAD_ROUTES } from '../data/precomputedRoadRoutes';
-import { solveDijkstraLocal } from './dijkstraRouting';
+import { REAL_ROAD_CORRIDORS } from './realRoadCorridors';
+import { normalizeFacilityId } from './tomtomRoutingService';
 
 // In-memory runtime cache for dynamically resolved OSRM road routes
 const routeCache: Map<string, [number, number][]> = new Map();
@@ -40,12 +41,22 @@ export function getRoadSnappedRouteSync(
     return [...routeCache.get(reverseKey)!].reverse();
   }
 
-  // 3. Fallback to client-side Dijkstra algorithm over Chennai road graph
+  // 3. Fallback to real road corridor
   try {
-    const dijkstra = solveDijkstraLocal(originId, destId);
-    if (dijkstra?.waypoints?.length > 0) {
-      routeCache.set(forwardKey, dijkstra.waypoints);
-      return dijkstra.waypoints;
+    const oId = normalizeFacilityId(originId);
+    const dId = normalizeFacilityId(destId);
+    const forwardCorridorKey = `${oId}->${dId}`;
+    const reverseCorridorKey = `${dId}->${oId}`;
+    let corridorPts: [number, number][] | undefined = REAL_ROAD_CORRIDORS[forwardCorridorKey]?.waypoints;
+    if (!corridorPts && REAL_ROAD_CORRIDORS[reverseCorridorKey]) {
+      corridorPts = [...REAL_ROAD_CORRIDORS[reverseCorridorKey].waypoints].reverse();
+    }
+    if (!corridorPts) {
+      corridorPts = REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO']?.waypoints;
+    }
+    if (corridorPts && corridorPts.length > 0) {
+      routeCache.set(forwardKey, corridorPts);
+      return corridorPts;
     }
   } catch {
     // Ignore and proceed

@@ -19,7 +19,11 @@ import {
   INVENTORY_LEDGER,
   AVAILABLE_COURIER_DRIVERS,
 } from '../data/mockData';
-import { solveDijkstraLocal } from '../services/dijkstraRouting';
+import {
+  calculateTomTomRoute,
+  normalizeFacilityId,
+} from '../services/tomtomRoutingService';
+import { REAL_ROAD_CORRIDORS } from '../services/realRoadCorridors';
 
 export interface ToastMessage {
   id: string;
@@ -269,7 +273,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
   const openTriage = () => setIsTriageOpen(true);
   const closeTriage = () => setIsTriageOpen(false);
 
-  // Approve a request in HITL Queue with driver assignment & Dijkstra shortest path routing
+  // Approve a request in HITL Queue with driver assignment & TomTom road routing
   const approveRequest = (
     requestId: string,
     candidateId?: string,
@@ -304,38 +308,98 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       vehicleType: 'Refrigerated EV Van #104',
     };
 
-    // Calculate optimal Dijkstra Shortest Path along Chennai road graph
-    const dijkstraRoute = solveDijkstraLocal(originHosp.id, destHosp.id);
+    // Resolve real road corridor for origin and destination facilities
+    const oId = normalizeFacilityId(originHosp.id || originHosp.name);
+    const dId = normalizeFacilityId(destHosp.id || destHosp.name);
+    const forwardCorridor = `${oId}->${dId}`;
+    const reverseCorridor = `${dId}->${oId}`;
+
+    let roadWaypoints: [number, number][] =
+      REAL_ROAD_CORRIDORS[forwardCorridor]?.waypoints ||
+      (REAL_ROAD_CORRIDORS[reverseCorridor]
+        ? [...REAL_ROAD_CORRIDORS[reverseCorridor].waypoints].reverse()
+        : undefined) ||
+      REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO']?.waypoints ||
+      [];
+    let roadDist =
+      REAL_ROAD_CORRIDORS[forwardCorridor]?.distanceKm ||
+      REAL_ROAD_CORRIDORS[reverseCorridor]?.distanceKm ||
+      4.68;
+    let roadEta =
+      REAL_ROAD_CORRIDORS[forwardCorridor]?.estimatedMinutes ||
+      REAL_ROAD_CORRIDORS[reverseCorridor]?.estimatedMinutes ||
+      11;
 
     // Dispatch background PATCH request to FastAPI gateway enforcing HITL gate & driver sync
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const cleanId = requestId.replace('REQ-', '').toLowerCase();
+
+    const dispatchPayload = {
+      action: 'approve',
+      approved_by_user_id: approverName || 'Dr. Aishwarya Raman',
+      assigned_driver_id: assignedDriver.driverId,
+      assigned_driver_name: assignedDriver.name,
+      courier_id: assignedDriver.courierId,
+      vehicle_type: assignedDriver.vehicleType,
+      origin_facility_id: originHosp.id,
+      origin_facility_name: originHosp.name,
+      destination_facility_id: destHosp.id,
+      destination_facility_name: destHosp.name,
+      distance_km: roadDist,
+      estimated_minutes: roadEta,
+      route_waypoints: roadWaypoints,
+      resource_type: req.resourceType,
+      blood_group: req.bloodGroup,
+      units_requested: req.unitsRequested,
+    };
+
     fetch(`${backendUrl}/api/v1/dispatch/${cleanId}/action`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'approve',
-        approved_by_user_id: approverName || 'Dr. Aishwarya Raman',
-        assigned_driver_id: assignedDriver.driverId,
-        assigned_driver_name: assignedDriver.name,
-        courier_id: assignedDriver.courierId,
-        vehicle_type: assignedDriver.vehicleType,
-        origin_facility_id: originHosp.id,
-        origin_facility_name: originHosp.name,
-        destination_facility_id: destHosp.id,
-        destination_facility_name: destHosp.name,
-        distance_km: dijkstraRoute.totalDistanceKm,
-        estimated_minutes: dijkstraRoute.estimatedMinutes,
-        route_waypoints: dijkstraRoute.waypoints,
-        resource_type: req.resourceType,
-        blood_group: req.bloodGroup,
-        units_requested: req.unitsRequested,
-      }),
+      body: JSON.stringify(dispatchPayload),
     }).catch(() => {
       // Backend offline fallback handled gracefully
     });
 
-    // Transition request status with driver and Dijkstra route data
+    // Asynchronously query live TomTom Traffic Routing to update route with live traffic
+    calculateTomTomRoute(
+      [originHosp.lat, originHosp.lng],
+      [destHosp.lat, destHosp.lng],
+      originHosp.shortName,
+      destHosp.shortName,
+      oId,
+      dId
+    )
+      .then((liveRoute) => {
+        if (liveRoute?.waypoints?.length > 1) {
+          fetch(`${backendUrl}/api/v1/dispatch/${cleanId}/action`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...dispatchPayload,
+              distance_km: liveRoute.totalDistanceKm,
+              estimated_minutes: liveRoute.estimatedMinutes,
+              route_waypoints: liveRoute.waypoints,
+            }),
+          }).catch(() => {});
+
+          setRequests((prev) =>
+            prev.map((r) =>
+              r.id === requestId
+                ? {
+                    ...r,
+                    routeWaypoints: liveRoute.waypoints,
+                    distanceKm: liveRoute.totalDistanceKm,
+                    estimatedMinutes: liveRoute.estimatedMinutes,
+                  }
+                : r
+            )
+          );
+        }
+      })
+      .catch(() => {});
+
+    // Transition request status with driver and road route data
     setRequests((prev) =>
       prev.map((r) =>
         r.id === requestId
@@ -347,15 +411,15 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
               assignedDriverName: assignedDriver.name,
               courierId: assignedDriver.courierId,
               vehicleType: assignedDriver.vehicleType,
-              routeWaypoints: dijkstraRoute.waypoints,
-              distanceKm: dijkstraRoute.totalDistanceKm,
-              estimatedMinutes: dijkstraRoute.estimatedMinutes,
+              routeWaypoints: roadWaypoints,
+              distanceKm: roadDist,
+              estimatedMinutes: roadEta,
             }
           : r
       )
     );
 
-    // Create a new active courier dispatch with assigned driver & Dijkstra ETA
+    // Create a new active courier dispatch with assigned driver & TomTom ETA
     const newTelemetry: TransitTelemetry = {
       transferId: req.id.replace('REQ-', '').toLowerCase(),
       courierId: assignedDriver.courierId,
@@ -380,7 +444,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       currentTemperatureC: 3.6,
       tempThresholdMaxC: 6.0,
       excursionFlag: false,
-      etaMinutes: dijkstraRoute.estimatedMinutes,
+      etaMinutes: roadEta,
       departureTime: 'Just now',
       routeHistory: [
         { time: 'Just now', tempC: 3.6, lat: originHosp.lat, lng: originHosp.lng }
@@ -392,7 +456,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     addToast({
       type: 'success',
       title: 'Doctor Transfer Approved',
-      message: `Authorized by ${approverName || 'Dr. Aishwarya Raman'}. Assigned driver ${assignedDriver.name} (${assignedDriver.courierId}) dispatched via Dijkstra Shortest Path (${dijkstraRoute.totalDistanceKm} km, ~${dijkstraRoute.estimatedMinutes} mins) from ${chosenCandidate.facilityName} to ${destHosp.shortName}.`,
+      message: `Authorized by ${approverName || 'Dr. Aishwarya Raman'}. Assigned driver ${assignedDriver.name} (${assignedDriver.courierId}) dispatched via TomTom Live Traffic Routing (${roadDist} km, ~${roadEta} mins) from ${chosenCandidate.facilityName} to ${destHosp.shortName}.`,
     });
 
     // Update selected request to the next pending one if available

@@ -70,7 +70,7 @@ export function HospitalSearchRoutePlanner({
   // Route Planning State
   const [originHospitalId, setOriginHospitalId] = useState<string>('FAC-RBTC');
   const [selectedDestId, setSelectedDestId] = useState<string>('FAC-APOLLO');
-  const [routingEngine, setRoutingEngine] = useState<'tomtom' | 'dijkstra' | 'osrm'>('tomtom');
+  const [routingEngine, setRoutingEngine] = useState<'tomtom' | 'osrm'>('tomtom');
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [activeRouteResult, setActiveRouteResult] = useState<TomTomRouteResult | null>(null);
   const [showTurnByTurn, setShowTurnByTurn] = useState(false);
@@ -100,7 +100,7 @@ export function HospitalSearchRoutePlanner({
   const handleCalculateRoute = async (
     customOriginId?: string,
     customDestId?: string,
-    engineOverride?: 'tomtom' | 'dijkstra' | 'osrm'
+    engineOverride?: 'tomtom' | 'osrm'
   ) => {
     const origId = customOriginId || originHospitalId;
     const dstId = customDestId || destHospitalId;
@@ -337,40 +337,19 @@ export function HospitalSearchRoutePlanner({
                   Hospital-to-Hospital Road Routing
                 </h4>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                  TomTom Real-Time Traffic &bull; Dijkstra Shortest Path &bull; Turn-by-Turn Waypoints
+                  TomTom Real-Time Traffic &bull; Road-Snapped Corridor &bull; Turn-by-Turn Waypoints
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* Engine Selector Pills */}
+              {/* Engine Indicator */}
               <div className="p-0.5 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] flex items-center gap-1 text-[10px]">
-                <button
-                  onClick={() => {
-                    setRoutingEngine('tomtom');
-                    handleCalculateRoute(undefined, undefined, 'tomtom');
-                  }}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
-                    routingEngine === 'tomtom'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                <div
+                  className="px-2 py-0.5 rounded-md font-semibold bg-blue-600 text-white shadow-xs"
                 >
-                  TomTom
-                </button>
-                <button
-                  onClick={() => {
-                    setRoutingEngine('dijkstra');
-                    handleCalculateRoute(undefined, undefined, 'dijkstra');
-                  }}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer ${
-                    routingEngine === 'dijkstra'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Dijkstra
-                </button>
+                  TomTom Traffic
+                </div>
               </div>
 
               <button

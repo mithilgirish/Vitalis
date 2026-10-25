@@ -66,7 +66,7 @@ export default function MissionScreen() {
                 {incomingAssignmentAlert.origin} ➔ {incomingAssignmentAlert.destination}
               </Text>
               <Text style={[styles.bannerSub, { color: colors.textMuted }]}>
-                Payload: {incomingAssignmentAlert.units} Units {incomingAssignmentAlert.resource} &bull; Dijkstra:{' '}
+                Payload: {incomingAssignmentAlert.units} Units {incomingAssignmentAlert.resource} &bull; TomTom:{' '}
                 {incomingAssignmentAlert.distanceKm} km (~{incomingAssignmentAlert.etaMinutes} mins)
               </Text>
             </Pressable>

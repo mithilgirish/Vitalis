@@ -47,7 +47,6 @@ export const HospitalSearchModal: React.FC<HospitalSearchModalProps> = ({
   } = useMission();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedEngine, setSelectedEngine] = useState<'tomtom' | 'dijkstra'>('tomtom');
   const [isRouting, setIsRouting] = useState(false);
 
   // Filter hospitals
@@ -115,7 +114,7 @@ export const HospitalSearchModal: React.FC<HospitalSearchModalProps> = ({
                   Search Destination Hospital
                 </Text>
                 <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-                  TomTom Real-Time Traffic &bull; Dijkstra Engine
+                  TomTom Real-Time Traffic Routing
                 </Text>
               </View>
             </View>
@@ -159,7 +158,7 @@ export const HospitalSearchModal: React.FC<HospitalSearchModalProps> = ({
             )}
           </View>
 
-          {/* Engine Selector Pill Row */}
+          {/* Active Routing Engine Indicator */}
           <View style={styles.engineRow}>
             <Text style={[styles.engineLabel, { color: colors.textMuted }]}>Routing Engine:</Text>
             <View
@@ -171,11 +170,10 @@ export const HospitalSearchModal: React.FC<HospitalSearchModalProps> = ({
                 },
               ]}
             >
-              <Pressable
-                onPress={() => setSelectedEngine('tomtom')}
+              <View
                 style={[
                   styles.enginePill,
-                  selectedEngine === 'tomtom' && {
+                  {
                     backgroundColor: colors.cobaltBlue,
                   },
                 ]}
@@ -184,36 +182,14 @@ export const HospitalSearchModal: React.FC<HospitalSearchModalProps> = ({
                   style={[
                     styles.engineText,
                     {
-                      color: selectedEngine === 'tomtom' ? '#FFFFFF' : colors.textMuted,
-                      fontWeight: selectedEngine === 'tomtom' ? '700' : '500',
+                      color: '#FFFFFF',
+                      fontWeight: '700',
                     },
                   ]}
                 >
-                  TomTom Traffic
+                  TomTom Real-Time Traffic
                 </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setSelectedEngine('dijkstra')}
-                style={[
-                  styles.enginePill,
-                  selectedEngine === 'dijkstra' && {
-                    backgroundColor: colors.cobaltBlue,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.engineText,
-                    {
-                      color: selectedEngine === 'dijkstra' ? '#FFFFFF' : colors.textMuted,
-                      fontWeight: selectedEngine === 'dijkstra' ? '700' : '500',
-                    },
-                  ]}
-                >
-                  Dijkstra Shortest Path
-                </Text>
-              </Pressable>
+              </View>
             </View>
           </View>
 

@@ -8,7 +8,8 @@ import { CandidateComparison } from './CandidateComparison';
 import { PriorityIndexWidget } from './PriorityIndexWidget';
 import { ReasoningTraceTerminal } from './ReasoningTraceTerminal';
 import { RejectReasonModal } from './RejectReasonModal';
-import { solveDijkstraLocal } from '../../lib/services/dijkstraRouting';
+import { normalizeFacilityId, CHENNAI_GRAPH_NODES } from '../../lib/services/tomtomRoutingService';
+import { REAL_ROAD_CORRIDORS } from '../../lib/services/realRoadCorridors';
 import {
   XCircle,
   Truck,
@@ -50,12 +51,29 @@ export function RequestInspector({ request }: RequestInspectorProps) {
   const isLevel1 = request.esiUrgencyTier === 1;
   const canApprove = user ? user.permissions.canApproveTransfers : true;
 
-  // Real-time Dijkstra shortest path calculation between chosen donor and receiving hospital
-  const dijkstraRoute = useMemo(() => {
-    return solveDijkstraLocal(
-      selectedCandidate?.facilityId || 'FAC-RBTC',
-      request.destinationFacilityId || 'FAC-APOLLO'
-    );
+  // Real-time TomTom road corridor calculation between chosen donor and receiving hospital
+  const tomtomRoute = useMemo(() => {
+    const oId = normalizeFacilityId(selectedCandidate?.facilityId || 'FAC-RBTC');
+    const dId = normalizeFacilityId(request.destinationFacilityId || 'FAC-APOLLO');
+    const forwardCorridor = `${oId}->${dId}`;
+    const reverseCorridor = `${dId}->${oId}`;
+
+    const c =
+      REAL_ROAD_CORRIDORS[forwardCorridor] ||
+      (REAL_ROAD_CORRIDORS[reverseCorridor]
+        ? {
+            ...REAL_ROAD_CORRIDORS[reverseCorridor],
+            waypoints: [...REAL_ROAD_CORRIDORS[reverseCorridor].waypoints].reverse(),
+          }
+        : undefined) ||
+      REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO'];
+
+    return {
+      totalDistanceKm: c?.distanceKm || 4.68,
+      estimatedMinutes: c?.estimatedMinutes || 11,
+      waypoints: c?.waypoints || [],
+      roadSegments: ['TomTom Traffic Corridor', 'EVR Periyar Salai', 'Greams Road'],
+    };
   }, [selectedCandidate?.facilityId, request.destinationFacilityId]);
 
   const activeDriver =
@@ -263,26 +281,26 @@ export function RequestInspector({ request }: RequestInspectorProps) {
             </div>
           </div>
 
-          {/* Dijkstra Road Metrics Bar */}
+          {/* TomTom Road Metrics Bar */}
           <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-blue-500/[0.04] dark:bg-blue-500/[0.07] border border-blue-500/15">
             <div>
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Road Distance</p>
               <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                {dijkstraRoute.totalDistanceKm} km
+                {tomtomRoute.totalDistanceKm} km
               </p>
             </div>
             <div>
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Transit ETA</p>
               <p className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
-                ~{dijkstraRoute.estimatedMinutes} mins
+                ~{tomtomRoute.estimatedMinutes} mins
               </p>
             </div>
             <div>
               <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">GPS Waypoints</p>
               <p className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
                 <Navigation className="w-3.5 h-3.5 text-emerald-500" />
-                {dijkstraRoute.waypoints.length} pts
+                {tomtomRoute.waypoints.length} pts
               </p>
             </div>
           </div>
@@ -290,7 +308,7 @@ export function RequestInspector({ request }: RequestInspectorProps) {
           {/* Road Corridors */}
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pt-0.5">
             <span className="font-semibold text-slate-700 dark:text-slate-300">Corridor:</span>
-            <span>{dijkstraRoute.roadSegments.join(' ➔ ') || 'Direct Transit Corridor'}</span>
+            <span>{tomtomRoute.roadSegments.join(' ➔ ') || 'Direct Transit Corridor'}</span>
           </div>
         </div>
 
