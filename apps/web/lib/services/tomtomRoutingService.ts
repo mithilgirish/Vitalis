@@ -202,8 +202,7 @@ export function setTomTomApiKey(key: string): void {
  */
 export function searchHospitals(
   query: string,
-  allHospitals: Hospital[],
-  centerCoords?: { lat: number; lng: number }
+  allHospitals: Hospital[]
 ): HospitalSearchResult[] {
   const cleanQ = query.trim().toLowerCase();
   if (!cleanQ) {
@@ -326,14 +325,14 @@ export async function calculateTomTomRoute(
   destName = 'Destination Hospital',
   originId?: string,
   destId?: string,
-  preferredEngine: 'tomtom' | 'osrm' = 'tomtom'
+  preferredEngine?: 'tomtom' | 'osrm'
 ): Promise<TomTomRouteResult> {
   const apiKey = getTomTomApiKey();
   const oId = normalizeFacilityId(originId || originName);
   const dId = normalizeFacilityId(destId || destName);
 
-  // 1. Attempt Live TomTom Routing API
-  if (apiKey) {
+  // 1. Attempt Live TomTom Routing API (unless preferredEngine is explicitly 'osrm')
+  if (apiKey && preferredEngine !== 'osrm') {
     try {
       const url = `https://api.tomtom.com/routing/1/calculateRoute/${originCoords[0]},${originCoords[1]}:${destCoords[0]},${destCoords[1]}/json?key=${apiKey}&traffic=true&travelMode=car&routeType=fastest&instructionsType=text`;
 

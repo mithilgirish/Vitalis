@@ -94,8 +94,8 @@ export interface TransferRequest {
   distanceKm?: number;
   estimatedMinutes?: number;
   candidates: DonorCandidate[];
-  selectedCandidateId: string;
-  reactTrace: ReActTrace;
+  selectedCandidateId?: string;
+  reactTrace?: ReActTrace;
 }
 
 export interface CourierDriver {

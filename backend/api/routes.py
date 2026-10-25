@@ -30,7 +30,12 @@ from backend.routing_engine import dijkstra_router, HOSPITAL_NODES
 from backend.local_db import (
     get_system_sync_metadata,
     upsert_transfer,
-    log_telemetry_reading
+    log_telemetry_reading,
+    list_all_transfers,
+    get_transfer_by_id,
+    list_all_inventory_batches,
+    upsert_inventory_batch,
+    calibrate_batch_temp
 )
 
 router = APIRouter(prefix="/api/v1", tags=["Vitalis Logistics"])
@@ -261,10 +266,35 @@ async def dispatch_action(
             courier_dispatch_broadcast=False,
             updated_at=datetime.utcnow()
         )
+    elif body.action in ("deliver", "complete"):
+        transfer["status"] = "delivered"
+        transfer["updated_at"] = datetime.utcnow().isoformat()
+
+        # Persist to local SQLite database
+        upsert_transfer(transfer)
+
+        await ws_manager.broadcast_event("DISPATCH_DELIVERED", {
+            "transfer_id": transfer_id,
+            "status": "delivered",
+            "destination": transfer.get("destination_facility_name"),
+            "delivered_at": transfer["updated_at"]
+        })
+
+        return DispatchActionResponse(
+            transfer_id=transfer_id,
+            status="delivered",
+            courier_dispatch_broadcast=False,
+            assigned_driver_id=transfer.get("assigned_driver_id"),
+            assigned_driver_name=transfer.get("assigned_driver_name"),
+            courier_id=transfer.get("courier_id"),
+            distance_km=transfer.get("distance_km"),
+            estimated_minutes=transfer.get("estimated_minutes"),
+            updated_at=datetime.utcnow()
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid action: '{body.action}'. Must be 'approve' or 'reject'."
+            detail=f"Invalid action: '{body.action}'. Must be 'approve', 'reject', or 'deliver'."
         )
 
 # ------------------------------------------------------------------------------
@@ -383,14 +413,77 @@ async def get_system_sync():
 
 @router.get("/transfers", summary="List all active and historical transfer orders")
 async def list_transfers():
-    return {"transfers": list(STATE_TRANSFERS.values())}
+    return {"transfers": list_all_transfers()}
 
 @router.get("/transfers/{transfer_id}", summary="Get transfer order by ID")
 async def get_transfer(transfer_id: str):
-    transfer = STATE_TRANSFERS.get(transfer_id)
+    transfer = get_transfer_by_id(transfer_id)
+    if not transfer:
+        transfer = STATE_TRANSFERS.get(transfer_id)
     if not transfer:
         raise HTTPException(status_code=404, detail="Transfer order not found")
     return transfer
+
+@router.post("/transfers", summary="Create a new emergency transfer request")
+async def create_transfer(payload: Dict[str, Any]):
+    """Creates a new emergency transfer request in SQLite and broadcasts to all clients."""
+    req_id = payload.get("id") or f"REQ-{uuid.uuid4().hex[:8].upper()}"
+    transfer_record = {
+        "id": req_id,
+        "origin_facility_id": payload.get("origin_facility_id", "FAC-RBTC"),
+        "origin_facility_name": payload.get("origin_facility_name", "Regional Blood Transfusion Center"),
+        "destination_facility_id": payload.get("destination_facility_id", "FAC-APOLLO"),
+        "destination_facility_name": payload.get("destination_facility_name", "Apollo Hospitals, Greams Road"),
+        "resource_type": payload.get("resource_type", "PRBC"),
+        "blood_group": payload.get("blood_group", "O-"),
+        "units_requested": payload.get("units_requested", 4),
+        "urgency_tier": payload.get("urgency_tier", 1),
+        "priority_score": payload.get("priority_score", 4.8),
+        "status": payload.get("status", "pending_approval"),
+        "approved_by": payload.get("approved_by"),
+        "created_at": payload.get("created_at") or datetime.now().isoformat(),
+        "reasoning_trace": payload.get("reasoning_trace", "Autonomous triage intake confirmed."),
+        "distance_km": payload.get("distance_km", 4.68),
+        "estimated_minutes": payload.get("estimated_minutes", 11)
+    }
+    upsert_transfer(transfer_record)
+    STATE_TRANSFERS[req_id] = transfer_record
+
+    await ws_manager.broadcast_event("TRANSFER_CREATED", {
+        "transfer": transfer_record
+    })
+
+    return {"status": "created", "transfer": transfer_record}
+
+# ------------------------------------------------------------------------------
+# 6b. Biological Inventory Endpoints (SQLite-backed)
+# ------------------------------------------------------------------------------
+@router.get("/inventory", summary="List all biological inventory batches")
+async def get_inventory():
+    """Returns biological inventory batches directly from SQLite database."""
+    return {"batches": list_all_inventory_batches()}
+
+@router.post("/inventory/batch", summary="Intake a new biological blood batch")
+async def create_inventory_batch(payload: Dict[str, Any]):
+    """Persists a newly collected blood batch into SQLite and broadcasts update."""
+    upsert_inventory_batch(payload)
+    await ws_manager.broadcast_event("INVENTORY_BATCH_ADDED", {
+        "batch": payload
+    })
+    return {"status": "saved", "batch": payload}
+
+@router.patch("/inventory/batch/{batch_uuid}/temp", summary="Calibrate batch temperature")
+async def update_inventory_temp(batch_uuid: str, payload: Dict[str, Any]):
+    """Updates batch storage temperature in SQLite and notifies clients."""
+    new_temp = float(payload.get("temperature", 3.8))
+    status_label = payload.get("status", "safe")
+    calibrate_batch_temp(batch_uuid, new_temp, status_label)
+    await ws_manager.broadcast_event("INVENTORY_TEMP_CALIBRATED", {
+        "batch_uuid": batch_uuid,
+        "temperature": new_temp,
+        "status": status_label
+    })
+    return {"status": "calibrated", "batch_uuid": batch_uuid, "temperature": new_temp}
 
 # ------------------------------------------------------------------------------
 # 7. Dijkstra Routing & Courier Fleet Assignment Endpoints

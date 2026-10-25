@@ -8,7 +8,7 @@ import { CandidateComparison } from './CandidateComparison';
 import { PriorityIndexWidget } from './PriorityIndexWidget';
 import { ReasoningTraceTerminal } from './ReasoningTraceTerminal';
 import { RejectReasonModal } from './RejectReasonModal';
-import { normalizeFacilityId, CHENNAI_GRAPH_NODES } from '../../lib/services/tomtomRoutingService';
+import { normalizeFacilityId } from '../../lib/services/tomtomRoutingService';
 import { REAL_ROAD_CORRIDORS } from '../../lib/services/realRoadCorridors';
 import {
   XCircle,

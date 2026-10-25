@@ -173,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const saved = localStorage.getItem('vitalis-auth-role') as UserRole | null;
       if (saved && DEMO_USERS[saved]) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(DEMO_USERS[saved]);
       }
     } catch {

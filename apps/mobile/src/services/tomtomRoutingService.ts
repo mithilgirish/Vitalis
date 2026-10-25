@@ -4,6 +4,7 @@
  * Works seamlessly 100% offline or online in React Native / Expo.
  */
 
+import Constants from 'expo-constants';
 import { REAL_ROAD_CORRIDORS } from './realRoadCorridors';
 
 export interface RouteStepInstruction {
@@ -265,7 +266,6 @@ export function getTomTomApiKey(): string {
 
   // 2. Check Expo Constants extra if configured in app.json / app.config.js
   try {
-    const Constants = require('expo-constants').default;
     const extraKey =
       Constants?.expoConfig?.extra?.tomtomApiKey ||
       Constants?.manifest?.extra?.tomtomApiKey;

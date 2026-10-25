@@ -62,6 +62,7 @@ export function HospitalSearchRoutePlanner({
   useEffect(() => {
     const key = getTomTomApiKey();
     if (key) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTomTomKeyInput(key);
       setKeyStatus('valid');
     }
@@ -70,7 +71,7 @@ export function HospitalSearchRoutePlanner({
   // Route Planning State
   const [originHospitalId, setOriginHospitalId] = useState<string>('FAC-RBTC');
   const [selectedDestId, setSelectedDestId] = useState<string>('FAC-APOLLO');
-  const [routingEngine, setRoutingEngine] = useState<'tomtom' | 'osrm'>('tomtom');
+  const [routingEngine] = useState<'tomtom' | 'osrm'>('tomtom');
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [activeRouteResult, setActiveRouteResult] = useState<TomTomRouteResult | null>(null);
   const [showTurnByTurn, setShowTurnByTurn] = useState(false);

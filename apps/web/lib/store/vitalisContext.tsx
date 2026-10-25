@@ -137,6 +137,9 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (data.server_date) setSyncedDate(data.server_date);
         if (data.server_time_ist) setSyncedTime(data.server_time_ist);
+        if (data.inventory && Array.isArray(data.inventory) && data.inventory.length > 0) {
+          setInventory(data.inventory);
+        }
         if (data.transfers && Array.isArray(data.transfers) && data.transfers.length > 0) {
           setRequests((prev) =>
             prev.map((r) => {
@@ -188,6 +191,64 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
                   : r
               )
             );
+          } else if (payload.event === 'DISPATCH_DELIVERED') {
+            const data = payload.payload;
+            const transferId = data?.transfer_id;
+            setRequests((prev) =>
+              prev.map((r) =>
+                r.id === transferId || r.id.toLowerCase().includes(transferId.toLowerCase())
+                  ? { ...r, status: 'delivered' }
+                  : r
+              )
+            );
+            setTelemetry((prev) =>
+              prev.map((t) =>
+                t.transferId === transferId || t.transferId.toLowerCase().includes(transferId.toLowerCase())
+                  ? { ...t, progressPercent: 100, etaMinutes: 0 }
+                  : t
+              )
+            );
+          } else if (payload.event === 'TRANSFER_CREATED') {
+            const newT = payload.payload?.transfer;
+            if (newT && newT.id) {
+              setRequests((prev) => {
+                if (prev.some((r) => r.id === newT.id)) return prev;
+                return [{
+                  id: newT.id,
+                  esiUrgencyTier: (newT.urgency_tier || 1) as 1 | 2 | 3 | 4 | 5,
+                  urgencyLabel: `ESI Tier ${newT.urgency_tier || 1}: Immediate`,
+                  priorityScore: newT.priority_score || 4.8,
+                  destinationFacilityId: newT.destination_facility_id || 'FAC-APOLLO',
+                  destinationFacilityName: newT.destination_facility_name || 'Apollo Hospitals',
+                  clinicalIndication: newT.reasoning_trace || 'Emergency Order',
+                  resourceType: (newT.resource_type || 'PRBC') as BiologicalResourceType,
+                  bloodGroup: (newT.blood_group || 'O-') as BloodGroup,
+                  unitsRequested: newT.units_requested || 4,
+                  requestingPhysician: 'Paramedic Field Dispatch',
+                  timestamp: 'Just now',
+                  viabilityWindowMinutes: 30,
+                  status: (newT.status || 'pending_approval') as 'pending_approval' | 'in_transit' | 'delivered' | 'rejected',
+                  candidates: [],
+                }, ...prev];
+              });
+            }
+          } else if (payload.event === 'INVENTORY_BATCH_ADDED') {
+            const b = payload.payload?.batch;
+            if (b && b.batchUuid) {
+              setInventory((prev) => {
+                if (prev.some((x) => x.batchUuid === b.batchUuid)) return prev;
+                return [b, ...prev];
+              });
+            }
+          } else if (payload.event === 'INVENTORY_TEMP_CALIBRATED') {
+            const { batch_uuid, temperature, status } = payload.payload;
+            setInventory((prev) =>
+              prev.map((b) =>
+                b.batchUuid === batch_uuid
+                  ? { ...b, liveStorageTempC: temperature, tempStatus: status }
+                  : b
+              )
+            );
           } else if (payload.event === 'TELEMETRY_LOG') {
             const reading = payload.payload;
             if (reading && reading.temperature_celsius !== undefined) {
@@ -225,6 +286,7 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     try {
       const saved = localStorage.getItem('vitalis-theme') as 'dark' | 'light' | null;
       if (saved === 'dark' || saved === 'light') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTheme(saved);
       }
     } catch {
@@ -314,18 +376,18 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     const forwardCorridor = `${oId}->${dId}`;
     const reverseCorridor = `${dId}->${oId}`;
 
-    let roadWaypoints: [number, number][] =
+    const roadWaypoints: [number, number][] =
       REAL_ROAD_CORRIDORS[forwardCorridor]?.waypoints ||
       (REAL_ROAD_CORRIDORS[reverseCorridor]
         ? [...REAL_ROAD_CORRIDORS[reverseCorridor].waypoints].reverse()
         : undefined) ||
       REAL_ROAD_CORRIDORS['FAC-RBTC->FAC-APOLLO']?.waypoints ||
       [];
-    let roadDist =
+    const roadDist =
       REAL_ROAD_CORRIDORS[forwardCorridor]?.distanceKm ||
       REAL_ROAD_CORRIDORS[reverseCorridor]?.distanceKm ||
       4.68;
-    let roadEta =
+    const roadEta =
       REAL_ROAD_CORRIDORS[forwardCorridor]?.estimatedMinutes ||
       REAL_ROAD_CORRIDORS[reverseCorridor]?.estimatedMinutes ||
       11;
@@ -562,6 +624,17 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
       )
     );
 
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const cleanId = requestId.replace('REQ-', '').toLowerCase();
+    fetch(`${backendUrl}/api/v1/dispatch/${cleanId}/action`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'reject',
+        rejection_reason: reason,
+      }),
+    }).catch(() => {});
+
     addToast({
       type: 'warning',
       title: 'Transfer Request Rejected',
@@ -675,6 +748,28 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
 
     setRequests((prev) => [newReq, ...prev]);
     setSelectedRequest(newReq);
+
+    // Persist new transfer to backend SQLite database & broadcast to mobile
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${backendUrl}/api/v1/transfers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: newId,
+        origin_facility_id: 'FAC-RBTC',
+        origin_facility_name: 'Regional Blood Transfusion Center',
+        destination_facility_id: destHosp.id,
+        destination_facility_name: destHosp.name,
+        resource_type: res.extracted.resource_type,
+        blood_group: res.extracted.blood_group,
+        units_requested: res.extracted.units_requested,
+        urgency_tier: res.extracted.urgency_tier,
+        status: 'pending_approval',
+        priority_score: 4.82,
+        reasoning_trace: res.rawInput,
+      }),
+    }).catch(() => {});
+
     addToast({
       type: 'info',
       title: 'Triage Ingestion Complete',
@@ -707,6 +802,21 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
           : b
       )
     );
+
+    // Stream telemetry resolution to backend
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const cleanId = transferId.replace('REQ-', '').toLowerCase();
+    fetch(`${backendUrl}/api/v1/telemetry/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transfer_id: cleanId,
+        courier_id: 'COU-CH-104',
+        temperature_celsius: 4.2,
+        resource_type: 'PRBC',
+      }),
+    }).catch(() => {});
+
     addToast({
       type: 'success',
       title: 'Cold-Chain Excursion Resolved',
@@ -773,6 +883,14 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
 
     setInventory((prev) => [newBatch, ...prev]);
 
+    // Persist new inventory batch to SQLite and broadcast via WebSocket
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${backendUrl}/api/v1/inventory/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newBatch),
+    }).catch(() => {});
+
     // Update hospital stock units
     setHospitals((prev) =>
       prev.map((h) =>
@@ -791,17 +909,30 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
 
   // Calibrate storage chamber temperature
   const calibrateBatchTemp = (batchUuid: string, newTemp = 3.6) => {
+    const statusLabel = newTemp > 6.0 ? 'critical' : newTemp > 5.0 ? 'warning' : 'safe';
     setInventory((prev) =>
       prev.map((b) =>
         b.batchUuid === batchUuid
           ? {
               ...b,
               liveStorageTempC: newTemp,
-              tempStatus: newTemp > 6.0 ? 'critical' : newTemp > 5.0 ? 'warning' : 'safe',
+              tempStatus: statusLabel,
             }
           : b
       )
     );
+
+    // Persist calibrated temperature to SQLite backend and broadcast
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${backendUrl}/api/v1/inventory/batch/${batchUuid}/temp`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        temperature: newTemp,
+        status: statusLabel,
+      }),
+    }).catch(() => {});
+
     addToast({
       type: 'success',
       title: 'Chamber Recalibrated',

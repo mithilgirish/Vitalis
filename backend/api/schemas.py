@@ -97,7 +97,7 @@ class DispatchActionRequest(BaseModel):
 
 class DispatchActionResponse(BaseModel):
     transfer_id: str
-    status: Literal['in_transit', 'rejected']
+    status: Literal['in_transit', 'rejected', 'delivered']
     courier_dispatch_broadcast: bool = Field(..., description="True if dispatched to courier fleet")
     assigned_driver_id: Optional[str] = None
     assigned_driver_name: Optional[str] = None

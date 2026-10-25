@@ -606,6 +606,48 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
           } else if (payload.event === 'DISPATCH_REJECTED') {
             setStatus('pending_dispatch');
+          } else if (payload.event === 'DISPATCH_DELIVERED') {
+            const data = payload.payload;
+            const transferId = data?.transfer_id;
+            if (transferId) {
+              setAllTasks((prev) =>
+                prev.map((t) =>
+                  t.id === transferId || t.id.toLowerCase().includes(transferId.toLowerCase())
+                    ? { ...t, status: 'delivered' }
+                    : t
+                )
+              );
+            }
+            setStatus('delivered');
+          } else if (payload.event === 'TRANSFER_CREATED') {
+            const newT = payload.payload?.transfer;
+            if (newT && newT.id) {
+              setAllTasks((prev) => {
+                if (prev.some((t) => t.id === newT.id)) return prev;
+                return [
+                  {
+                    id: newT.id,
+                    origin_facility_name: newT.origin_facility_name || 'Regional Blood Transfusion Center',
+                    origin_facility_id: newT.origin_facility_id || 'FAC-RBTC',
+                    destination_facility_name: newT.destination_facility_name || 'Apollo Hospitals',
+                    destination_facility_id: newT.destination_facility_id,
+                    resource_type: newT.resource_type || 'PRBC',
+                    blood_group: newT.blood_group || 'O-',
+                    units_requested: newT.units_requested || 4,
+                    urgency_tier: newT.urgency_tier || 1,
+                    status: (newT.status as any) || 'pending_approval',
+                    assigned_driver_id: newT.assigned_driver_id,
+                    assigned_driver_name: newT.assigned_driver_name,
+                    courier_id: newT.courier_id,
+                    distance_km: newT.distance_km || 4.68,
+                    estimated_minutes: newT.estimated_minutes || 11,
+                    route_waypoints: newT.route_waypoints,
+                    created_at: 'Just now',
+                  },
+                  ...prev,
+                ];
+              });
+            }
           }
         } catch {
           // Ignore parse errors
@@ -748,6 +790,29 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const acceptMission = () => {
     setStatus('in_transit');
     setAcceptedAt(getRealTimeIST(0));
+
+    // Send dispatch approval update to backend
+    const backendUrl = getMobileBackendUrl();
+    const activeTask = allTasks.find(
+      (t) =>
+        t.assigned_driver_id === currentUser.driverId ||
+        t.status === 'pending_approval' ||
+        t.status === 'pending_dispatch' ||
+        t.status === 'in_transit'
+    ) || allTasks[0];
+    const targetId = activeTask ? activeTask.id.replace('REQ-', '').toLowerCase() : '84d59a58';
+
+    fetch(`${backendUrl}/api/v1/dispatch/${targetId}/action`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'approve',
+        approved_by_user_id: currentUser.name,
+        assigned_driver_id: currentUser.driverId,
+        assigned_driver_name: currentUser.name,
+        courier_id: courierId || 'COU-CH-104',
+      }),
+    }).catch(() => {});
   };
 
   const logManualTemperature = (temp: number, checkpoint: string): boolean => {
@@ -760,6 +825,26 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       driverId: currentUser.driverId || 'VTL-DRV-784',
     };
     setManualLogs((prev) => [newLog, ...prev]);
+
+    // Stream manual temperature checkpoint log to backend
+    const backendUrl = getMobileBackendUrl();
+    const activeTask = allTasks.find(
+      (t) => t.assigned_driver_id === currentUser.driverId || t.status === 'in_transit'
+    ) || allTasks[0];
+    const targetId = activeTask ? activeTask.id.replace('REQ-', '').toLowerCase() : '84d59a58';
+
+    fetch(`${backendUrl}/api/v1/telemetry/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transfer_id: targetId,
+        courier_id: courierId || 'COU-CH-104',
+        temperature_celsius: temp,
+        resource_type: cargoType,
+        current_location: { lat: 13.065, lng: 80.255 },
+      }),
+    }).catch(() => {});
+
     return true;
   };
 
@@ -773,7 +858,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         metadata: {
           cargo: cargoType === 'PRBC' ? '4 Units O- PRBC' : '2 Platelet Apheresis Units',
           bloodGroup: cargoType === 'PRBC' ? 'O Negative' : 'AB Positive',
-          donorCode: `TX-${Math.floor(1000 + Math.random() * 9000)}-TN`,
+          donorCode: 'TX-9022-TN',
         },
       });
     } else if (stepNumber === 2) {
@@ -799,6 +884,8 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
           license: 'TMC-88419-MED',
         },
       });
+      // Synchronously seal delivery status in local and remote database
+      completeHandoff();
     }
   };
 
@@ -811,6 +898,22 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const completeHandoff = () => {
     setStatus('delivered');
     setDeliveredAt(getRealTimeIST(0));
+
+    // Update backend and SQLite database to delivered & broadcast to Web Command Center
+    const backendUrl = getMobileBackendUrl();
+    const activeTask = allTasks.find(
+      (t) => t.assigned_driver_id === currentUser.driverId || t.status === 'in_transit'
+    ) || allTasks[0];
+    const targetId = activeTask ? activeTask.id.replace('REQ-', '').toLowerCase() : '84d59a58';
+
+    fetch(`${backendUrl}/api/v1/dispatch/${targetId}/action`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'deliver',
+        notes: `Delivered by ${currentUser.name} (${currentUser.driverId}). Verified by receiving physician.`,
+      }),
+    }).catch(() => {});
   };
 
   const resetToDispatchModal = () => {

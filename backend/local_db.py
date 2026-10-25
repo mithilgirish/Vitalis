@@ -182,6 +182,28 @@ def get_system_sync_metadata() -> Dict[str, Any]:
                     d["location"] = d["location_json"]
             telemetry.append(d)
 
+        cursor.execute("SELECT * FROM inventory_batches ORDER BY updated_at DESC")
+        inventory = []
+        for r in cursor.fetchall():
+            d = dict(r)
+            # Map snake_case SQLite columns to camelCase for Next.js web client
+            inventory.append({
+                "batchUuid": d["batch_uuid"],
+                "facilityId": d["facility_id"],
+                "facilityName": d["facility_name"],
+                "traumaLevel": d["trauma_level"],
+                "resourceType": d["resource_type"],
+                "bloodGroup": d["blood_group"],
+                "unitsAvailable": d["units_available"],
+                "liveStorageTempC": d["live_temp_c"],
+                "tempStatus": d["temp_status"],
+                "expiryDate": d["expiry_date"],
+                "hoursUntilExpiry": d["hours_until_expiry"],
+                "donorHash": d.get("donor_hash"),
+                "storageChamberId": d.get("storage_chamber_id"),
+                "updatedAt": d["updated_at"]
+            })
+
     # Prioritize active in-transit missions, then pending approval
     active = next((t for t in transfers if t.get("status") == "in_transit"), None)
     if not active:
@@ -194,6 +216,7 @@ def get_system_sync_metadata() -> Dict[str, Any]:
         "server_timestamp": now.isoformat(),
         "transfers": transfers,
         "telemetry": telemetry,
+        "inventory": inventory,
         "active_mission": active,
         "database_engine": "SQLite 3 (Local-First Synchronized)"
     }
@@ -278,6 +301,111 @@ def log_telemetry_reading(reading: Dict[str, Any]):
             reading.get("alert"),
             reading.get("recorded_at", datetime.now().isoformat())
         ))
+        conn.commit()
+
+def list_all_transfers() -> List[Dict[str, Any]]:
+    """Retrieves all transfer requests from SQLite."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM transfer_requests ORDER BY updated_at DESC, created_at DESC")
+        transfers = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            if d.get("route_waypoints_json"):
+                try:
+                    d["route_waypoints"] = json.loads(d["route_waypoints_json"])
+                except Exception:
+                    d["route_waypoints"] = None
+            transfers.append(d)
+        return transfers
+
+def get_transfer_by_id(transfer_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a specific transfer request from SQLite."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM transfer_requests WHERE id = ?", (transfer_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        if d.get("route_waypoints_json"):
+            try:
+                d["route_waypoints"] = json.loads(d["route_waypoints_json"])
+            except Exception:
+                d["route_waypoints"] = None
+        return d
+
+def list_all_inventory_batches() -> List[Dict[str, Any]]:
+    """Retrieves all biological inventory batches from SQLite."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM inventory_batches ORDER BY updated_at DESC")
+        batches = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            batches.append({
+                "batchUuid": d["batch_uuid"],
+                "facilityId": d["facility_id"],
+                "facilityName": d["facility_name"],
+                "traumaLevel": d["trauma_level"],
+                "resourceType": d["resource_type"],
+                "bloodGroup": d["blood_group"],
+                "unitsAvailable": d["units_available"],
+                "liveStorageTempC": d["live_temp_c"],
+                "tempStatus": d["temp_status"],
+                "expiryDate": d["expiry_date"],
+                "hoursUntilExpiry": d["hours_until_expiry"],
+                "donorHash": d.get("donor_hash"),
+                "storageChamberId": d.get("storage_chamber_id"),
+                "updatedAt": d["updated_at"]
+            })
+        return batches
+
+def upsert_inventory_batch(batch: Dict[str, Any]):
+    """Inserts or updates a biological inventory batch in SQLite."""
+    init_db()
+    now_iso = datetime.now().isoformat()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO inventory_batches (
+                batch_uuid, facility_id, facility_name, trauma_level,
+                resource_type, blood_group, units_available, live_temp_c,
+                temp_status, expiry_date, hours_until_expiry, donor_hash,
+                storage_chamber_id, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            batch.get("batchUuid") or batch.get("batch_uuid"),
+            batch.get("facilityId") or batch.get("facility_id", "FAC-RBTC"),
+            batch.get("facilityName") or batch.get("facility_name", "Regional Blood Transfusion Center"),
+            batch.get("traumaLevel") or batch.get("trauma_level", 1),
+            batch.get("resourceType") or batch.get("resource_type", "PRBC"),
+            batch.get("bloodGroup") or batch.get("blood_group", "O-"),
+            batch.get("unitsAvailable") or batch.get("units_available", 4),
+            batch.get("liveStorageTempC") or batch.get("live_temp_c", 3.8),
+            batch.get("tempStatus") or batch.get("temp_status", "safe"),
+            batch.get("expiryDate") or batch.get("expiry_date", "2026-11-20"),
+            batch.get("hoursUntilExpiry") or batch.get("hours_until_expiry", 720.0),
+            batch.get("donorHash") or batch.get("donor_hash", "SHA256:verified"),
+            batch.get("storageChamberId") or batch.get("storage_chamber_id", "CENTRAL-VAULT-01"),
+            now_iso
+        ))
+        conn.commit()
+
+def calibrate_batch_temp(batch_uuid: str, new_temp: float, status_label: str):
+    """Updates the live calibrated temperature of an inventory batch in SQLite."""
+    init_db()
+    now_iso = datetime.now().isoformat()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE inventory_batches
+            SET live_temp_c = ?, temp_status = ?, updated_at = ?
+            WHERE batch_uuid = ?
+        """, (new_temp, status_label, now_iso, batch_uuid))
         conn.commit()
 
 # Self-initialize on load
