@@ -67,10 +67,14 @@ const STORAGE_KEY_TOMTOM_KEY = 'vitalis_tomtom_api_key';
  */
 export function getTomTomApiKey(): string {
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem(STORAGE_KEY_TOMTOM_KEY);
-    if (saved && saved.trim().length > 0) return saved.trim();
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_TOMTOM_KEY);
+      if (saved && saved.trim().length > 0) return saved.trim();
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
   }
-  return process.env.NEXT_PUBLIC_TOMTOM_API_KEY || '';
+  return process.env.NEXT_PUBLIC_TOMTOM_API_KEY || process.env.TOMTOM_API_KEY || '';
 }
 
 /**
@@ -78,10 +82,14 @@ export function getTomTomApiKey(): string {
  */
 export function setTomTomApiKey(key: string): void {
   if (typeof window !== 'undefined') {
-    if (key && key.trim().length > 0) {
-      localStorage.setItem(STORAGE_KEY_TOMTOM_KEY, key.trim());
-    } else {
-      localStorage.removeItem(STORAGE_KEY_TOMTOM_KEY);
+    try {
+      if (key && key.trim().length > 0) {
+        localStorage.setItem(STORAGE_KEY_TOMTOM_KEY, key.trim());
+      } else {
+        localStorage.removeItem(STORAGE_KEY_TOMTOM_KEY);
+      }
+    } catch {
+      // Ignore storage errors
     }
   }
 }

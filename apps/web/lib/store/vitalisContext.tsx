@@ -109,13 +109,7 @@ function getNextToastId(): string {
 const VitalisContext = createContext<VitalisContextType | undefined>(undefined);
 
 export function VitalisProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('vitalis-theme') as 'dark' | 'light' | null;
-      if (saved) return saved;
-    }
-    return 'dark';
-  });
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [hospitals, setHospitals] = useState<Hospital[]>(CHENNAI_HOSPITALS);
   const [requests, setRequests] = useState<TransferRequest[]>(INITIAL_REQUESTS);
   const [telemetry, setTelemetry] = useState<TransitTelemetry[]>(INITIAL_TRANSIT_TELEMETRY);
@@ -222,6 +216,18 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Hydrate theme preference from client localStorage after initial SSR mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('vitalis-theme') as 'dark' | 'light' | null;
+      if (saved === 'dark' || saved === 'light') {
+        setTheme(saved);
+      }
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }, []);
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -235,7 +241,11 @@ export function VitalisProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
-    localStorage.setItem('vitalis-theme', nextTheme);
+    try {
+      localStorage.setItem('vitalis-theme', nextTheme);
+    } catch {
+      // Ignore storage errors
+    }
   };
 
   const addToast = (toast: Omit<ToastMessage, 'id' | 'timestamp'>) => {

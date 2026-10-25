@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { ThemeMode, ThemeColors, THEME_PALETTE } from '@/theme/vitalis-theme';
-import { solveDijkstraLocal } from '../services/dijkstraRouting';
+import { solveDijkstraLocal, normalizeFacilityId } from '../services/dijkstraRouting';
 import { getMobileBackendUrl, getMobileWsUrl } from '../services/apiConfig';
 
 export type MissionStatus = 'pending_dispatch' | 'in_transit' | 'delivered';

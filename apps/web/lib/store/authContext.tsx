@@ -165,23 +165,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('vitalis-auth-role') as UserRole | null;
-      if (saved && DEMO_USERS[saved]) {
-        return DEMO_USERS[saved];
-      }
-    }
-    return DEMO_USERS.coordinator;
-  });
-
+  const [user, setUser] = useState<AuthUser | null>(DEMO_USERS.coordinator);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // Hydrate persisted user role from client localStorage after initial SSR mount
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('vitalis-auth-role', user.role);
-    } else {
-      localStorage.removeItem('vitalis-auth-role');
+    try {
+      const saved = localStorage.getItem('vitalis-auth-role') as UserRole | null;
+      if (saved && DEMO_USERS[saved]) {
+        setUser(DEMO_USERS[saved]);
+      }
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (user) {
+        localStorage.setItem('vitalis-auth-role', user.role);
+      } else {
+        localStorage.removeItem('vitalis-auth-role');
+      }
+    } catch {
+      // Ignore storage errors
     }
   }, [user]);
 

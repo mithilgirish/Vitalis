@@ -132,7 +132,11 @@ export const REGISTERED_CHENNAI_HOSPITALS: MobileHospitalSearchItem[] = [
 ];
 
 export function getTomTomApiKey(): string {
-  return process.env.EXPO_PUBLIC_TOMTOM_API_KEY || '';
+  return (
+    process.env.EXPO_PUBLIC_TOMTOM_API_KEY ||
+    process.env.TOMTOM_API_KEY ||
+    ''
+  );
 }
 
 /**
@@ -194,8 +198,8 @@ export async function calculateTomTomRoute(
             engineLabel: 'TomTom Live Traffic Routing',
             originId,
             originName,
-            destinationId,
-            destinationName,
+            destinationId: destId,
+            destinationName: destName,
             totalDistanceKm: distanceKm,
             estimatedMinutes: travelMinutes,
             trafficDelayMinutes: delayMinutes,
@@ -234,8 +238,8 @@ export async function calculateTomTomRoute(
           engineLabel: 'OSRM Turn-by-Turn Road Navigation',
           originId,
           originName,
-          destinationId,
-          destinationName,
+          destinationId: destId,
+          destinationName: destName,
           totalDistanceKm: distanceKm,
           estimatedMinutes: travelMinutes,
           trafficDelayMinutes: 0,
@@ -266,6 +270,6 @@ export async function calculateTomTomRoute(
     trafficDelayMinutes: 0,
     waypoints: dijkstra.waypoints,
     instructions: [],
-    congestionLevel: dijkstra.congestionLevel,
+    congestionLevel: dijkstra.congestionLevel === 'high' ? 'heavy' : dijkstra.congestionLevel,
   };
 }

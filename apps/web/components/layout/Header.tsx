@@ -18,8 +18,10 @@ export function Header() {
   const { openTriage, telemetry, theme, toggleTheme } = useVitalis();
   const { user, setIsAuthModalOpen } = useAuth();
   const [timeStr, setTimeStr] = useState<string>('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const updateTime = () => {
       const now = new Date();
       setTimeStr(
@@ -96,7 +98,7 @@ export function Header() {
         <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] font-mono text-xs text-slate-700 dark:text-slate-300">
           <Clock className="w-3.5 h-3.5 text-blue-500" />
           <span className="text-slate-400">IST</span>
-          <span className="font-semibold text-slate-900 dark:text-white">{timeStr || '14:48:35'}</span>
+          <span className="font-semibold text-slate-900 dark:text-white" suppressHydrationWarning>{timeStr || '14:48:35'}</span>
         </div>
 
         {/* Network Status Badge */}
@@ -113,11 +115,12 @@ export function Header() {
         {/* Apple Segmented Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={!mounted || theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-all cursor-pointer"
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          title={!mounted || theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          suppressHydrationWarning
         >
-          {theme === 'dark' ? (
+          {!mounted || theme === 'dark' ? (
             <Sun className="h-4 w-4 text-amber-400 transition-transform duration-300 hover:rotate-45" />
           ) : (
             <Moon className="h-4 w-4 text-slate-700 transition-transform duration-300 hover:-rotate-12" />

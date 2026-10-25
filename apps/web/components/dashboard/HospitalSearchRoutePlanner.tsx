@@ -47,10 +47,25 @@ export function HospitalSearchRoutePlanner({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isPlannerOpen, setIsPlannerOpen] = useState(false);
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
-  const [tomTomKeyInput, setTomTomKeyInput] = useState(() => getTomTomApiKey());
-  const [keyStatus, setKeyStatus] = useState<'idle' | 'valid' | 'testing' | 'invalid'>(() =>
-    getTomTomApiKey() ? 'valid' : 'idle'
+  const [tomTomKeyInput, setTomTomKeyInput] = useState(() =>
+    typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_TOMTOM_API_KEY || process.env.TOMTOM_API_KEY)
+      ? (process.env.NEXT_PUBLIC_TOMTOM_API_KEY || process.env.TOMTOM_API_KEY || '')
+      : ''
   );
+  const [keyStatus, setKeyStatus] = useState<'idle' | 'valid' | 'testing' | 'invalid'>(() =>
+    typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_TOMTOM_API_KEY || process.env.TOMTOM_API_KEY)
+      ? 'valid'
+      : 'idle'
+  );
+
+  // Sync client-side saved TomTom API key from localStorage after hydration
+  useEffect(() => {
+    const key = getTomTomApiKey();
+    if (key) {
+      setTomTomKeyInput(key);
+      setKeyStatus('valid');
+    }
+  }, []);
 
   // Route Planning State
   const [originHospitalId, setOriginHospitalId] = useState<string>('FAC-RBTC');
