@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useVitalis } from '../../lib/store/vitalisContext';
 import { VitalisLogo } from '../common/VitalisLogo';
+import { HospitalSearchRoutePlanner } from './HospitalSearchRoutePlanner';
+import { TomTomRouteResult } from '../../lib/services/tomtomRoutingService';
 import {
   Layers,
   ZoomIn,
@@ -47,6 +49,7 @@ export function ChennaiCommandMap() {
   const [tileProvider, setTileProvider] = useState<'osm' | 'hot' | 'satellite'>('osm');
   const [showCorridors, setShowCorridors] = useState<boolean>(true);
   const [mapZoom, setMapZoom] = useState<number>(12);
+  const [plannedRoute, setPlannedRoute] = useState<TomTomRouteResult | null>(null);
 
   const isDark = theme === 'dark';
 
@@ -70,13 +73,24 @@ export function ChennaiCommandMap() {
           tileProvider={tileProvider}
           showCorridors={showCorridors}
           mapZoom={mapZoom}
+          plannedRoute={plannedRoute}
         />
       </div>
 
-      {/* Top Map Controls & Layer Filters - Apple Floating Pill Bar */}
-      <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2 pointer-events-auto">
-        {/* Node Filters Pill Group */}
-        <div className="p-1 rounded-full flex items-center gap-1 border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl shadow-sm">
+      {/* Top Map Controls, Hospital Search, Route Planner & Layer Filters */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-auto max-w-[calc(100%-80px)]">
+        {/* Hospital Search & TomTom Route Planner */}
+        <HospitalSearchRoutePlanner
+          hospitals={hospitals}
+          selectedHospital={selectedHospital}
+          onSelectHospital={setSelectedHospital}
+          onRouteCalculated={(route) => setPlannedRoute(route)}
+        />
+
+        {/* Node Filters & Layer Pill Bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Node Filters Pill Group */}
+          <div className="p-1 rounded-full flex items-center gap-1 border border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#24262E]/85 backdrop-blur-xl shadow-sm">
           <button
             onClick={() => setActiveFilter('all')}
             className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer ${
@@ -174,6 +188,7 @@ export function ChennaiCommandMap() {
           </button>
         </div>
       </div>
+    </div>
 
       {/* Map Zoom & Compass Controls (Top Right) - Floating Dock */}
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 pointer-events-auto">

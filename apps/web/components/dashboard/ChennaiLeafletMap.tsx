@@ -21,6 +21,13 @@ interface ChennaiLeafletMapProps {
   tileProvider: 'osm' | 'hot' | 'satellite';
   showCorridors: boolean;
   mapZoom: number;
+  plannedRoute?: {
+    waypoints: [number, number][];
+    originName: string;
+    destinationName?: string;
+    destName?: string;
+    engine?: string;
+  } | null;
 }
 
 // Major Chennai Emergency Green Corridors (Waypoints along Anna Salai, Poonamallee Rd, OMR)
@@ -63,6 +70,7 @@ export default function ChennaiLeafletMap({
   tileProvider,
   showCorridors,
   mapZoom,
+  plannedRoute,
 }: ChennaiLeafletMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -550,6 +558,49 @@ export default function ChennaiLeafletMap({
       map.setZoom(mapZoom);
     }
   }, [mapZoom]);
+
+  // 9. Render TomTom / Dijkstra Planned Route Preview
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const routesLayer = routesLayerGroupRef.current;
+    if (!map || !routesLayer) return;
+
+    if (!plannedRoute || !plannedRoute.waypoints || plannedRoute.waypoints.length < 2) {
+      return;
+    }
+
+    // High-visibility glowing cyan/purple halo for custom route
+    const halo = L.polyline(plannedRoute.waypoints, {
+      color: '#06B6D4',
+      weight: 10,
+      opacity: isDark ? 0.45 : 0.3,
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(routesLayer);
+
+    // Dynamic dashed corridor line
+    const core = L.polyline(plannedRoute.waypoints, {
+      color: '#0284C7',
+      weight: 4,
+      dashArray: '10, 8',
+      className: 'leaflet-route-dash',
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(routesLayer);
+
+    // Auto-fit bounds to the calculated route
+    try {
+      const bounds = L.latLngBounds(plannedRoute.waypoints);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+    } catch {
+      // Ignore bounds error
+    }
+
+    return () => {
+      routesLayer.removeLayer(halo);
+      routesLayer.removeLayer(core);
+    };
+  }, [plannedRoute, isDark]);
 
   const isDarkOsm = isDark && tileProvider !== 'satellite';
 

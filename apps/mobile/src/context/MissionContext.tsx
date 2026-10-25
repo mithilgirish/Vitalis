@@ -177,6 +177,13 @@ export interface MissionState {
   resetCustodySteps: () => void;
   completeHandoff: () => void;
   resetToDispatchModal: () => void;
+  updateMissionDestination: (
+    destinationName: string,
+    destCoords: { lat: number; lng: number },
+    routePoints?: [number, number][],
+    distance?: number,
+    etaSecs?: number
+  ) => void;
 }
 
 /**
@@ -621,6 +628,26 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setAcceptedAt(null);
   };
 
+  const updateMissionDestination = (
+    destinationName: string,
+    destCoords: { lat: number; lng: number },
+    routePoints?: [number, number][],
+    distance?: number,
+    etaSecs?: number
+  ) => {
+    setDestination(destinationName);
+    setDestinationCoords(destCoords);
+    if (routePoints && routePoints.length > 0) {
+      setRouteCoords(routePoints);
+    }
+    if (distance !== undefined) {
+      setDistanceKm(distance);
+    }
+    if (etaSecs !== undefined) {
+      setEtaSeconds(etaSecs);
+    }
+  };
+
   const value: MissionState = {
     themeMode,
     isDark,
@@ -686,6 +713,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     resetCustodySteps,
     completeHandoff,
     resetToDispatchModal,
+    updateMissionDestination,
     currentUser,
     switchUserRole,
     isAuthModalVisible,

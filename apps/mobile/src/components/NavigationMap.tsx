@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { CornerUpRight, Navigation, Gauge } from 'lucide-react-native';
+import { CornerUpRight, Navigation, Gauge, Search } from 'lucide-react-native';
 import { useMission } from '@/context/MissionContext';
 import { RealRoadmapView } from './RealRoadmapView';
+import { HospitalSearchModal } from './HospitalSearchModal';
 
 // Real emergency transit route coordinates (Regional Blood Transfusion Center -> Apollo Greams Rd)
 const CHENNAI_ROUTE_COORDS: [number, number][] = [
@@ -31,6 +32,7 @@ export const NavigationMap: React.FC = () => {
     distanceKm,
   } = useMission();
   const [mapKey, setMapKey] = useState(0);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const activeWaypoints = routeCoords && routeCoords.length > 0 ? routeCoords : CHENNAI_ROUTE_COORDS;
 
@@ -67,7 +69,7 @@ export const NavigationMap: React.FC = () => {
         </View>
         <View style={styles.turnDetails}>
           <Text style={[styles.turnDistance, { color: colors.cobaltBlue }]}>
-            DIJKSTRA ROUTE &bull; {distanceKm} KM
+            DIJKSTRA / TOMTOM &bull; {distanceKm} KM
           </Text>
           <Text style={[styles.turnStreet, { color: colors.textPrimary }]} numberOfLines={1}>
             Corridor to {destination}
@@ -76,6 +78,20 @@ export const NavigationMap: React.FC = () => {
             From {origin} &bull; Emergency Transit Priority
           </Text>
         </View>
+
+        {/* Quick Hospital Search Button */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Search Destination Hospital"
+          onPress={() => setIsSearchModalOpen(true)}
+          style={({ pressed }) => [
+            styles.searchHospBtn,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 122, 255, 0.08)' },
+            pressed && { opacity: 0.7 },
+          ]}>
+          <Search size={15} color={colors.cobaltBlue} strokeWidth={2.4} />
+          <Text style={[styles.searchHospText, { color: colors.cobaltBlue }]}>Change</Text>
+        </Pressable>
       </View>
 
       {/* BOTTOM-LEFT: Subtle Live Vehicle Speed Pill */}
@@ -109,6 +125,12 @@ export const NavigationMap: React.FC = () => {
         ]}>
         <Navigation size={18} color={colors.cobaltBlue} strokeWidth={2.4} />
       </Pressable>
+
+      {/* Hospital Search & Destination Picker Modal */}
+      <HospitalSearchModal
+        visible={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
     </View>
   );
 };
@@ -168,6 +190,19 @@ const styles = StyleSheet.create({
   turnTarget: {
     fontSize: 10.5,
     marginTop: 1,
+  },
+  searchHospBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: 6,
+  },
+  searchHospText: {
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   speedPill: {
     position: 'absolute',
