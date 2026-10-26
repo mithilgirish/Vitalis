@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewProps } from 'react-native-webview';
+
+const NativeWebView = WebView as unknown as React.ComponentClass<WebViewProps>;
 
 export type MapTileProvider = 'osm' | 'hot' | 'satellite';
 
@@ -14,7 +16,7 @@ export interface RealRoadmapViewProps {
   destCoord: [number, number];
   originName: string;
   destName: string;
-  webViewRef?: React.RefObject<WebView | null>;
+  webViewRef?: React.RefObject<any>;
 }
 
 export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
@@ -408,7 +410,7 @@ export const RealRoadmapView: React.FC<RealRoadmapViewProps> = ({
 
   return (
     <View style={styles.container}>
-      <WebView
+      <NativeWebView
         ref={webViewRef}
         source={{ html: htmlContent }}
         style={styles.webview}
