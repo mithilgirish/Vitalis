@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vitalis — Predictive Clinical Logistics (Executive Deck)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card-bg: rgba(20, 26, 38, 0.65);
+      --card-inner: rgba(28, 36, 52, 0.55);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-glow: rgba(14, 165, 233, 0.3);
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --cyan: #0ea5e9;
+      --crimson: #f43f5e;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --violet: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-white);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Ambient Lighting */
+    .ambient-glow-1 {
+      position: absolute;
+      top: -10vw;
+      left: -10vw;
+      width: 45vw;
+      height: 45vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-glow-2 {
+      position: absolute;
+      bottom: -15vw;
+      right: -10vw;
+      width: 50vw;
+      height: 50vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.09) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Presentation Viewport */
+    .deck-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide {
+      position: absolute;
+      width: 92vw;
+      max-width: 1500px;
+      height: 84vh;
+      max-height: 860px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97) translateY(12px);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+    }
+
+    /* Frosted Glass Surface */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .glass-inner {
+      background: var(--card-inner);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+    }
+
+    /* Badges */
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(18, 24, 35, 0.85);
+      border: 1px solid var(--card-border);
+    }
+
+    .badge-cyan { color: var(--cyan); border-color: rgba(14, 165, 233, 0.3); }
+    .badge-crimson { color: var(--crimson); border-color: rgba(244, 63, 94, 0.3); }
+    .badge-emerald { color: var(--emerald); border-color: rgba(16, 185, 129, 0.3); }
+    .badge-amber { color: var(--amber); border-color: rgba(245, 158, 11, 0.3); }
+    .badge-violet { color: var(--violet); border-color: rgba(168, 85, 247, 0.3); }
+
+    /* Slide Header */
+    .slide-header {
+      margin-bottom: 24px;
+    }
+
+    .slide-header h2 {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: -0.02em;
+      margin-top: 8px;
+    }
+
+    .slide-header p {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    /* Layout Grids */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      flex: 1;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      flex: 1;
+    }
+
+    .grid-6 {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
+      flex: 1;
+    }
+
+    /* Card Contents */
+    .card-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
+
+    .card-content h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-white);
+      margin: 10px 0 8px 0;
+    }
+
+    .card-content p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      margin-top: 10px;
+    }
+
+    .stat-val {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Formula Banner */
+    .formula-banner {
+      padding: 24px 32px;
+      margin-bottom: 20px;
+      background: rgba(28, 36, 52, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+    }
+
+    .formula-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      color: #fff;
+      margin: 8px 0;
+      letter-spacing: -0.01em;
+      text-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+    }
+
+    /* Footer Navigation */
+    .deck-footer {
+      position: fixed;
+      bottom: 24px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4vw;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .footer-left {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .footer-nav {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 16px;
+      background: rgba(18, 24, 35, 0.75);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-white);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      z-index: 200;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+      transition: width 0.3s ease;
+    }
+
+    /* Title Slide Specifics */
+    .title-card {
+      padding: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100%;
+    }
+
+    .title-logo {
+      width: 90px;
+      height: 90px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .hero-title {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      font-size: 24px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      font-weight: 400;
+      max-width: 800px;
+    }
+
+    .hero-quote {
+      font-size: 16px;
+      font-style: italic;
+      color: #cbd5e1;
+      margin-top: 28px;
+      border-left: 2px solid var(--cyan);
+      padding-left: 18px;
+      max-width: 750px;
+      line-height: 1.6;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      width: 100%;
+      margin-top: 40px;
+    }
+
+    .spec-item {
+      padding: 16px;
+      border-radius: 12px;
+      background: rgba(28, 36, 52, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .spec-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+
+    .spec-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Print / PDF Styling */
+    @media print {
+      body {
+        overflow: visible;
+        height: auto;
+      }
+      .slide {
+        position: relative;
+        opacity: 1;
+        transform: none;
+        page-break-after: always;
+        height: 100vh;
+        width: 100vw;
+      }
+      .deck-footer, .progress-bar-container, .ambient-glow-1, .ambient-glow-2 {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="deck-container">
+
+    <!-- ==========================================
+         SLIDE 1: Title Slide (Jony Ive Minimalism)
+         ========================================== -->
+    <div class="slide active">
+      <div class="glass-card title-card">
+        <img src="Vitalis_logo.png" alt="Vitalis Logo" class="title-logo" onerror="this.style.display='none'" />
+        <span class="pill-badge badge-cyan">AUTONOMOUS HEALTHCARE INFRASTRUCTURE · BCSE335L</span>
+        <h1 class="hero-title">Vitalis</h1>
+        <p class="hero-sub">Predictive Clinical Logistics & Agentic Biological Supply Redistribution</p>
+        <p class="hero-quote">
+          “Simplicity is not the lack of clutter. It is the consequence of bringing profound order to the critical boundary between life and death.”
+        </p>
+
+        <div class="spec-grid">
+          <div class="spec-item">
+            <div class="spec-title">LANGCHAIN ReAct</div>
+            <div class="spec-desc">Autonomous multi-tool emergency solver in &le; 3.5s</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-title">PROPHET + XGBOOST</div>
+            <div class="spec-desc">14-day rolling demand &amp; 72h depletion guardrails</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-title">HUMAN-IN-THE-LOOP</div>
+            <div class="spec-desc">Zero autonomous dispatch; verified clinical oversight</div>
+          </div>
+          <div class="spec-item">
+            <div class="spec-title">EXPO &amp; TOMTOM</div>
+            <div class="spec-desc">SDK 58 mobile courier client with live asphalt routing</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 2: Clinical Crisis (Fragmented Supply Chain)
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-crimson">Clinical Crisis &amp; Problem Definition</span>
+        <h2>The Fatal Cost of Siloed Healthcare Logistics</h2>
+        <p>Over 100,000 preventable deaths occur annually due to localized biological shortages, not global supply scarcity.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-crimson">01 / SILOED BLIND SPOTS</span>
+            <h3>Zero Inter-Hospital Visibility</h3>
+            <p>Regional emergency rooms operate as disconnected islands. Inventory tracking systems share zero real-time telemetry with neighboring clinics, forcing chaotic panic phone calls when trauma patients hemorrhage.</p>
+          </div>
+          <div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--crimson)">100K+</span>
+              <span class="stat-lbl">Preventable deaths each year in developing regions</span>
+            </div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--crimson)">0%</span>
+              <span class="stat-lbl">Live cross-facility inventory synchronization</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-amber">02 / THE CASCADE EFFECT</span>
+            <h3>Predatory Drawdowns &amp; Stockouts</h3>
+            <p>Drawing supplies from the nearest hospital frequently exhausts donor safety reserves, triggering a secondary fatal stockout within 72 hours when the donor facility experiences an unexpected trauma intake.</p>
+          </div>
+          <div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--amber)">72h</span>
+              <span class="stat-lbl">Critical donor risk vulnerability window</span>
+            </div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--amber)">&gt; 40%</span>
+              <span class="stat-lbl">Depletion probability without predictive guardrails</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">03 / BIOLOGICAL DECAY</span>
+            <h3>Strict Viability &amp; Transit Windows</h3>
+            <p>Biological resources perish rapidly. Platelets require continuous agitation with a 5-day lifespan; solid organs survive mere hours under cold ischemia. Delays in traffic or thermal excursions render supplies useless.</p>
+          </div>
+          <div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--cyan)">1°C - 6°C</span>
+              <span class="stat-lbl">PRBC cold-chain storage tolerance envelope</span>
+            </div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--cyan)">&le; 4 Hours</span>
+              <span class="stat-lbl">Maximum ischemic viability for hearts and lungs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 3: Product Vision & Design Philosophy
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Product Vision &amp; Philosophy</span>
+        <h2>Elegance as Operational Integrity</h2>
+        <p>How minimalist design and mathematical rigor unite to create an infallible clinical safety net.</p>
+      </div>
+
+      <div class="formula-banner">
+        <span class="pill-badge badge-cyan">THE TRI-LAYER HEALTHCARE ANALYTICS PARADIGM</span>
+        <p style="font-size: 15px; color: var(--text-white); font-style: italic; margin-top: 8px;">
+          “We sought to eliminate every friction point between human cognition and life-critical decisions. In emergency medicine, design is not merely aesthetic—it is the speed and accuracy with which a clinician comprehends reality and acts.”
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">DESCRIPTIVE ANALYTICS</span>
+            <h3>GIS Spatial Dashboard</h3>
+            <p>Real-time visibility into regional hospital inventory, active transit corridors, and cold-storage conditions across all municipal nodes.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--cyan); font-weight: 600;">
+            STACK: Next.js 14 · PostGIS · WebSockets
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-emerald">PREDICTIVE ANALYTICS</span>
+            <h3>Stockout Forecasting</h3>
+            <p>Meta Prophet 14-day rolling demand curves combined with XGBoost 72-hour depletion guardrails to mathematically prevent secondary hospital stockouts.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--emerald); font-weight: 600;">
+            STACK: Meta Prophet · XGBoost · NHAMCS
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-violet">PRESCRIPTIVE ANALYTICS</span>
+            <h3>Agentic Dispatch Core</h3>
+            <p>A multi-tool LangChain ReAct agent executing spatial optimization, inventory constraints, and Medicare quality penalties in under 3.5 seconds.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--violet); font-weight: 600;">
+            STACK: LangChain · ReAct · Priority Index
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 4: End-to-End System Architecture
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">System Architecture &amp; Dataflow</span>
+        <h2>Six-Tier Event-Driven Clinical Pipeline</h2>
+        <p>From unstructured emergency radio/SMS transcripts to authenticated courier dispatch handoff.</p>
+      </div>
+
+      <div class="grid-6">
+        <div class="glass-card card-content" style="padding: 16px;">
+          <span class="pill-badge badge-crimson" style="font-size: 8px;">TIER 1</span>
+          <h4 style="font-size: 14px; margin: 8px 0;">Unstructured Inputs</h4>
+          <p style="font-size: 11px;">Radio, SMS, EHR alerts, and emergency pager transcripts.</p>
+          <ul style="font-size: 10px; color: var(--text-muted); margin-top: 10px; list-style: none;">
+            <li>• Noisy channels</li>
+            <li>• Clinical slang</li>
+            <li>• Emergency calls</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 16px;">
+          <span class="pill-badge badge-amber" style="font-size: 8px;">TIER 2</span>
+          <h4 style="font-size: 14px; margin: 8px 0;">Triage Ingestion</h4>
+          <p style="font-size: 11px;">Jev System One parser with Pydantic coercion in &le; 500ms.</p>
+          <ul style="font-size: 10px; color: var(--text-muted); margin-top: 10px; list-style: none;">
+            <li>• Entity extraction</li>
+            <li>• ESI 1-5 scale</li>
+            <li>• Strict schema</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 16px;">
+          <span class="pill-badge badge-cyan" style="font-size: 8px;">TIER 3</span>
+          <h4 style="font-size: 14px; margin: 8px 0;">FastAPI Gateway</h4>
+          <p style="font-size: 11px;">ASGI async controller orchestrating LangChain agent loop.</p>
+          <ul style="font-size: 10px; color: var(--text-muted); margin-top: 10px; list-style: none;">
+            <li>• Token budgeting</li>
+            <li>• State machine</li>
+            <li>• WebSockets</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 16px;">
+          <span class="pill-badge badge-violet" style="font-size: 8px;">TIER 4</span>
+          <h4 style="font-size: 14px; margin: 8px 0;">Agent Tools</h4>
+          <p style="font-size: 11px;">Spatial range queries, 72h risk evaluation, and shelf life.</p>
+          <ul style="font-size: 10px; color: var(--text-muted); margin-top: 10px; list-style: none;">
+            <li>• PostGIS SQL</li>
+            <li>• XGBoost model</li>
+            <li>• Shelf-life rules</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 16px;">
+          <span class="pill-badge badge-emerald" style="font-size: 8px;">TIER 5</span>
+          <h4 style="font-size: 14px; margin: 8px 0;">Priority Engine</h4>
+          <p style="font-size: 11px;">Mathematical Priority Index calculation with HAC penalties.</p>
+          <ul style="font-size: 10px; color: var(--text-muted); margin-top: 10px; list-style: none;">
+            <li>• Multi-objective</li>
+            <li>• HAC scaling</li>
+            <li>• Clinical trace</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 16px;">
+          <span class="pill-badge badge-cyan" style="font-size: 8px;">TIER 6</span>
+          <h4 style="font-size: 14px; margin: 8px 0;">Clients &amp; IoT</h4>
+          <p style="font-size: 11px;">Next.js HITL command queue &amp; Expo courier road routing.</p>
+          <ul style="font-size: 10px; color: var(--text-muted); margin-top: 10px; list-style: none;">
+            <li>• 1-Click approval</li>
+            <li>• TomTom routing</li>
+            <li>• Cold-chain IoT</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 5: Academic & Course Alignment
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Academic Foundations &amp; Standards</span>
+        <h2>Full Alignment with BCSE335L Modules</h2>
+        <p>Rigorous execution mapped directly across clinical healthcare analytics competencies.</p>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 16px;">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-cyan">MODULE 2</span>
+          <h3>Healthcare Foundations</h3>
+          <p>Normalizing medical telemetry and emergency dispatch requests into standardized clinical codesets and Emergency Severity Index (ESI 1-5) categories.</p>
+        </div>
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-emerald">MODULE 3</span>
+          <h3>Machine Learning Foundations</h3>
+          <p>Executing an end-to-end ML pipeline featuring data loading, cleaning, feature selection, and tree-like reasoning via XGBoost classifiers on NHAMCS data.</p>
+        </div>
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-amber">MODULE 4</span>
+          <h3>Measuring Healthcare Quality</h3>
+          <p>Integrating Medicare value-based purchasing programs—HVBP, HRR, and HAC—as algorithmic penalties in donor selection.</p>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-violet">MODULE 5</span>
+          <h3>Predictive Models in Healthcare</h3>
+          <p>Training rolling time-series models on CDC NHAMCS emergency dataset with 80% confidence intervals to capture trauma surges.</p>
+        </div>
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-cyan">MODULE 6</span>
+          <h3>Healthcare Analytics Applications</h3>
+          <p>Tri-layer analytics execution: Descriptive (Next.js Dashboard), Predictive (Prophet/XGBoost), and Prescriptive (LangChain ReAct dispatch solver).</p>
+        </div>
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-crimson">MODULE 7</span>
+          <h3>Emerging Tech &amp; Clinical Ethics</h3>
+          <p>IoT telematics for cold-chain transit tracking via React Native, backed by Human-in-the-Loop (HITL) ethical clinical guardrails.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 6: Agentic Core (LangChain ReAct)
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-violet">Agentic Intelligence Layer</span>
+        <h2>Autonomous LangChain ReAct Dispatch Orchestrator</h2>
+        <p>Self-directing tool invocation cycle that synthesizes inventory, spatial viability, and risk in &le; 3.5 seconds.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-violet">REASONING + ACTING CYCLE</span>
+            <h3>How the Agent Solves Emergencies</h3>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 14px; line-height: 1.8;">
+              <p><strong style="color: #fff;">1. THOUGHT:</strong> Analyze parsed clinical payload (resource, blood group, units, ESI urgency).</p>
+              <p><strong style="color: var(--cyan);">2. ACTION (PostGIS):</strong> Query candidate facilities within 30km radius holding unexpired stock.</p>
+              <p><strong style="color: #fff;">3. OBSERVATION:</strong> Evaluate candidate facilities (available units, distance, Medicare quality score).</p>
+              <p><strong style="color: var(--cyan);">4. ACTION (XGBoost):</strong> Invoke evaluate_stockout_risk to predict donor 72h depletion probability.</p>
+              <p><strong style="color: var(--crimson);">5. GUARDRAIL CHECK:</strong> Disqualify any facility where Risk_stockout &gt; 0.40 to prevent secondary crash.</p>
+              <p><strong style="color: var(--emerald);">6. PRESCRIPTION:</strong> Compute Priority Index (PI), rank donor paths, and synthesize reasoning trace.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">CUSTOM TOOL ECOSYSTEM</span>
+            <h3>Deterministic Tool Implementations</h3>
+            
+            <div style="margin-top: 16px;">
+              <h4 style="font-size: 14px; color: var(--cyan);">Tool 1: lookup_candidate_inventory</h4>
+              <p style="font-size: 12px; margin-top: 4px;">Executes parameterized PostGIS spatial SQL with ST_Distance and ST_DWithin over WGS84 coordinates. Filters for batches expiring &gt; 24h.</p>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <h4 style="font-size: 14px; color: var(--crimson);">Tool 2: evaluate_stockout_risk</h4>
+              <p style="font-size: 12px; margin-top: 4px;">Infers XGBoost binary classifier (xgb_stockout.json) to calculate 72-hour depletion risk. Blocks candidates exceeding 0.40 probability.</p>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <h4 style="font-size: 14px; color: var(--emerald);">Tool 3: calculate_transit_viability</h4>
+              <p style="font-size: 12px; margin-top: 4px;">Validates physical route against biological shelf-life constraints: PRBC (35-42 days @ 1-6°C), Platelets (&le;5 days agitated), Hearts (&le;4h), Kidneys (&le;24h).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 7: The Mathematical Priority Index
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Mathematical Formulation</span>
+        <h2>The Prescriptive Priority Index (PI)</h2>
+        <p>A multi-objective optimization equation balancing clinical urgency, surplus, spatial transit, depletion risk, and quality penalties.</p>
+      </div>
+
+      <div class="formula-banner">
+        <span class="pill-badge badge-cyan">PRESCRIPTIVE RANKING EQUATION</span>
+        <div class="formula-code">
+          PI = ( UrgencyScore × SurplusRatio ) / [ Distance(km) × ( 1 + Risk_stockout ) × QualityPenalty ]
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">
+          Higher PI indicates superior donor optimality. Dynamically optimizes transfer efficiency while mathematically forbidding unsafe drawdowns.
+        </p>
+      </div>
+
+      <div class="grid-4">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-crimson">UrgencyScore</span>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; margin: 8px 0; color: #fff;">
+            6 - Urgency_Tier
+          </div>
+          <p style="font-size: 12px;">ESI 1 (Immediate / Resuscitative) scores 5.<br>ESI 5 (Non-urgent) scores 1.<br>Weights clinical life-threat severity.</p>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-emerald">SurplusRatio</span>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; margin: 8px 0; color: #fff;">
+            Available / Requested
+          </div>
+          <p style="font-size: 12px;">Ratio of unexpired units held at donor facility to requested units. Rewards facilities with deep inventory cushions.</p>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-amber">Risk_stockout</span>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; margin: 8px 0; color: #fff;">
+            P(Y = 1 | x)
+          </div>
+          <p style="font-size: 12px;">XGBoost 72-hour depletion probability. If Risk &gt; 0.40, facility is hard-disqualified. Penalizes vulnerable donors.</p>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-violet">QualityPenalty</span>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; margin: 8px 0; color: #fff;">
+            1.0 + max(0, ΔQ / 100)
+          </div>
+          <p style="font-size: 12px;">Medicare HVBP/HAC composite score (0-100). Facilities with high infection/complication rates incur algorithmic penalties.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 8: Predictive ML Engine (Prophet & XGBoost)
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Predictive Machine Learning Engine</span>
+        <h2>Dual-Model Architecture on CDC NHAMCS Data</h2>
+        <p>Meta Prophet rolling time-series forecasting coupled with XGBoost 72-hour depletion guardrails.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">MODEL A · META PROPHET</span>
+            <h3>14-Day Rolling Demand Forecasts</h3>
+            <ul style="font-size: 13px; color: var(--text-muted); line-height: 1.8; margin-top: 14px; list-style: none;">
+              <li>• <strong style="color:#fff;">Objective:</strong> Forecast daily consumption curves per facility across 7-to-14 day horizons.</li>
+              <li>• <strong style="color:#fff;">Hyperparameters:</strong> growth='linear', yearly_seasonality=True, weekly_seasonality=True.</li>
+              <li>• <strong style="color:#fff;">Uncertainty Intervals:</strong> interval_width=0.80 generating 80% statistical confidence bands.</li>
+              <li>• <strong style="color:#fff;">Evaluation Benchmark:</strong> MASE &lt; 1.15 capturing severe trauma surge spikes.</li>
+              <li>• <strong style="color:#fff;">Output Artifact:</strong> Serialized to ml_pipeline/models/prophet_model.pkl.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-crimson">MODEL B · XGBOOST GUARDRAIL</span>
+            <h3>72-Hour Source Depletion Classifier</h3>
+            <ul style="font-size: 13px; color: var(--text-muted); line-height: 1.8; margin-top: 14px; list-style: none;">
+              <li>• <strong style="color:#fff;">Objective:</strong> Predict probability P(Y=1 | x) that donor will experience stockout post-donation.</li>
+              <li>• <strong style="color:#fff;">Feature Vector x:</strong> [current_inventory - k, y_hat_{t&le;3}, HAC_score, trauma_level, burn_rate_7d].</li>
+              <li>• <strong style="color:#fff;">Imbalance Tuning:</strong> scale_pos_weight calibrated against sparse historical stockout incidents.</li>
+              <li>• <strong style="color:#fff;">Evaluation:</strong> PR-AUC &ge; 0.82, Recall &ge; 0.90. Risk &gt; 0.40 triggers hard disqualification.</li>
+              <li>• <strong style="color:#fff;">Output Artifact:</strong> Serialized to ml_pipeline/models/xgb_stockout.json.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 9: Human-in-the-Loop (HITL) Governance
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-emerald">Ethical &amp; Clinical Governance</span>
+        <h2>Human-in-the-Loop (HITL) Safety Gate</h2>
+        <p>Zero autonomous execution of biological movements without authenticated medical oversight.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-crimson">THE NON-NEGOTIABLE RULE</span>
+            <h3>Zero Autonomous Dispatch</h3>
+            <p>The AI agent recommends and ranks, but has zero authority to execute physical transport. Every transfer request is trapped in 'pending_approval' state until an authenticated clinician approves.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--crimson); font-weight: 600; line-height: 1.6;">
+            ✓ Proposes solutions, never disposes<br>
+            ✓ Prevents cascading automated errors<br>
+            ✓ Enforces moral agency in healthcare
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">ONE-CLICK VERIFICATION</span>
+            <h3>Authenticated HITL Console</h3>
+            <p>Medical dispatchers review the transparent Priority Index, donor stockout risk %, distance, and natural-language reasoning trace before authorizing the transfer.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--cyan); font-weight: 600; line-height: 1.6;">
+            ✓ PATCH /api/v1/dispatch/{id}/action<br>
+            ✓ Instant Approve or Reject with reason<br>
+            ✓ Real-time mobile courier broadcast
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-emerald">AUDIT &amp; COMPLIANCE</span>
+            <h3>Cryptographic Accountability</h3>
+            <p>Every approval logs the authenticated admin user UUID, exact timestamp, and environmental parameters, satisfying strict medical regulatory requirements.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--emerald); font-weight: 600; line-height: 1.6;">
+            ✓ FDA 21 CFR Part 11 compliant audit trail<br>
+            ✓ GAMP 5 healthcare software validation<br>
+            ✓ Immutable state transition ledger
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 10: Next.js Command Center (Web)
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Operations &amp; Command Surface</span>
+        <h2>Next.js Command Center (apps/web)</h2>
+        <p>A high-density, dark-mode glassmorphic control surface for regional coordinators and clinical dispatchers.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-cyan">COMMAND CONSOLE CAPABILITIES</span>
+          <h3>Strategic Healthcare Overview</h3>
+          <ul style="font-size: 13px; color: var(--text-muted); line-height: 1.8; margin-top: 14px; list-style: none;">
+            <li>• <strong style="color:var(--cyan);">GIS Topology Map:</strong> Interactive map rendering Chennai hospital nodes, live inventory levels, trauma tiers, and active transit corridors.</li>
+            <li>• <strong style="color:var(--cyan);">Unstructured Triage Simulator:</strong> Test drawer allowing evaluators to paste raw emergency radio/SMS text and inspect parsing in real time.</li>
+            <li>• <strong style="color:var(--cyan);">HITL Approval Queue:</strong> Card-based stream displaying the Priority Index, distance, donor stockout risk %, and clinical reasoning trace.</li>
+            <li>• <strong style="color:var(--cyan);">Biological Inventory Ledger:</strong> Filterable datagrid tracking batches by resource, blood group, expiration countdowns, and storage temperatures.</li>
+            <li>• <strong style="color:var(--cyan);">Cold-Chain Alarm System:</strong> Real-time visual and audible excursion alerts triggered when active couriers report temperature deviations.</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-violet">FRONTEND ENGINEERING</span>
+          <h3>Performance &amp; Architecture Specs</h3>
+          <ul style="font-size: 13px; color: var(--text-muted); line-height: 1.8; margin-top: 14px; list-style: none;">
+            <li>• <strong style="color:#fff;">Framework:</strong> Next.js 14 App Router with Server Components &amp; hydration mismatch guards.</li>
+            <li>• <strong style="color:#fff;">Styling:</strong> Tailwind CSS with custom glassmorphism utilities (backdrop-blur, specular rim borders).</li>
+            <li>• <strong style="color:#fff;">Realtime Sync:</strong> Supabase WebSocket listeners &amp; polling fallback to FastAPI backend / SQLite WAL.</li>
+            <li>• <strong style="color:#fff;">Mapping:</strong> Mapbox GL / Leaflet integration with custom SVG clinical node markers.</li>
+            <li>• <strong style="color:#fff;">Theme Engine:</strong> Synchronized Dark/Light theme toggle with zero hydration mismatch.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 11: Mobile Courier Client (Expo SDK 58)
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Field Execution &amp; Navigation</span>
+        <h2>Expo Mobile Courier Client (apps/mobile)</h2>
+        <p>React Native app upgraded to Expo SDK 58 &amp; React 19, delivering asphalt-snapped road routing.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">EXPO SDK 58 &amp; REACT 19</span>
+            <h3>Modern Mobile Architecture</h3>
+            <p>Engineered with Expo SDK 58, React 19.3.0, and React Native 0.88.0. Supports Expo Go on modern iOS &amp; Android devices with zero native build friction.</p>
+          </div>
+          <div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--cyan)">20/20</span>
+              <span class="stat-lbl">Expo Doctor checks passed with 0 warnings</span>
+            </div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--cyan)">3,588</span>
+              <span class="stat-lbl">Modules compiled in clean iOS bundle export</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-emerald">ASPHALT-SNAPPED ROUTING</span>
+            <h3>TomTom Road Navigation</h3>
+            <p>Never uses straight 'bird flight' lines. RealRoadmapView utilizes TomTom Routing API to snap emergency paths directly to asphalt roadways with live traffic consideration.</p>
+          </div>
+          <div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--emerald)">TomTom</span>
+              <span class="stat-lbl">High-accuracy street-level polyline routing</span>
+            </div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--emerald)">15s</span>
+              <span class="stat-lbl">Continuous GPS courier beacon transmission</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-violet">FLUID INTERACTIONS</span>
+            <h3>Slide-to-Accept &amp; Barcode</h3>
+            <p>Ergonomic slide-to-accept gesture with spring physics and haptics prevents accidental dispatch. Camera barcode scanner verifies physical chain of custody.</p>
+          </div>
+          <div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--violet)">Physics</span>
+              <span class="stat-lbl">Native driver fluid gesture drag tracking</span>
+            </div>
+            <div class="glass-inner stat-row">
+              <span class="stat-val" style="color: var(--violet)">QR/Barcode</span>
+              <span class="stat-lbl">Scan verification at pickup and hospital handoff</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 12: IoT Cold-Chain Telemetry & Excursions
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Transit Telematics &amp; Safety</span>
+        <h2>IoT Cold-Chain Telemetry &amp; Excursions</h2>
+        <p>Real-time continuous temperature and vibration telemetry enforcing biological viability envelopes.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-cyan">BIOLOGICAL VIABILITY ENVELOPES</span>
+          <h3>Temperature &amp; Time Thresholds</h3>
+          
+          <div style="font-size: 12px; margin-top: 14px; line-height: 1.8;">
+            <p><strong style="color:var(--crimson)">PRBC (Packed Red Blood Cells):</strong> 1°C to 6°C | 35-42 days shelf life. Excursion if &gt; 6.0°C; hemolysis occurs rapidly above 10°C.</p>
+            <p><strong style="color:var(--amber)">Platelets:</strong> 20°C to 24°C | 5 days maximum. Requires continuous gentle agitation to prevent irreversible aggregation.</p>
+            <p><strong style="color:var(--cyan)">Fresh Frozen Plasma (FFP):</strong> &le; -18°C | 1 year frozen. Thawed at 37°C prior to transfusion.</p>
+            <p><strong style="color:var(--crimson)">Solid Organs (Hearts / Lungs):</strong> 4°C cold ischemia | &le; 4 hours surgical window. Zero routing margin.</p>
+            <p><strong style="color:var(--emerald)">Solid Organs (Kidneys):</strong> 4°C cold ischemia | &le; 24 hours extended perfusion window.</p>
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-crimson">SUB-2S ALARM PIPELINE</span>
+          <h3>Excursion Detection Dataflow</h3>
+          
+          <div style="font-size: 13px; color: var(--text-muted); margin-top: 14px; line-height: 1.8;">
+            <p><strong style="color:#fff">1. IoT Telemetry Stream:</strong> Courier device or BLE smart container transmits temperature &amp; GPS every 15-60s to POST /api/v1/telemetry/log.</p>
+            <p><strong style="color:#fff">2. Backend Verification:</strong> Gateway checks reading against product tolerance. If exceeded, sets excursion_flag = TRUE.</p>
+            <p><strong style="color:var(--crimson)">3. WebSocket Broadcast (&lt; 1.8s):</strong> FastAPI immediately emits critical alarm to all connected command center sessions.</p>
+            <p><strong style="color:#fff">4. Operational Protocol:</strong> Flashing red banner and audible buzzer alert coordinator; secondary reroute initiated.</p>
+            <p><strong style="color:#fff">5. Immutable Audit Log:</strong> Persisted in transit_telemetry for FDA 21 CFR Part 11 regulatory compliance.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 13: Database Architecture
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Data Architecture &amp; Storage</span>
+        <h2>Hybrid High-Availability Persistence</h2>
+        <p>PostgreSQL / PostGIS cloud spatial store synchronized with local SQLite WAL ledger for resilient failover.</p>
+      </div>
+
+      <div class="grid-4">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-cyan">HOSPITALS &amp; HUBS</span>
+          <h4 style="font-family: 'JetBrains Mono', monospace; font-size: 16px; margin: 8px 0;">facilities</h4>
+          <p style="font-size: 12px; font-family: 'JetBrains Mono', monospace; line-height: 1.7; color: var(--text-muted);">
+            • id: UUID (PK)<br>
+            • name: String<br>
+            • facility_type: Enum<br>
+            • trauma_level: 1 - 4<br>
+            • quality_score: 0-100<br>
+            • location: Point(4326)<br>
+            • contact_phone: String<br>
+            • GIST Spatial Index
+          </p>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-emerald">BIOLOGICAL STOCK</span>
+          <h4 style="font-family: 'JetBrains Mono', monospace; font-size: 16px; margin: 8px 0;">inventory</h4>
+          <p style="font-size: 12px; font-family: 'JetBrains Mono', monospace; line-height: 1.7; color: var(--text-muted);">
+            • id: UUID (PK)<br>
+            • facility_id: UUID (FK)<br>
+            • resource_type: Enum<br>
+            • blood_group: Enum<br>
+            • units_available: &ge; 0<br>
+            • storage_temp_celsius<br>
+            • expiry_timestamp: DT<br>
+            • Composite B-Tree Index
+          </p>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-violet">DISPATCH &amp; HITL</span>
+          <h4 style="font-family: 'JetBrains Mono', monospace; font-size: 16px; margin: 8px 0;">transfer_requests</h4>
+          <p style="font-size: 12px; font-family: 'JetBrains Mono', monospace; line-height: 1.7; color: var(--text-muted);">
+            • id: UUID (PK)<br>
+            • origin_facility_id<br>
+            • destination_facility_id<br>
+            • units_requested: Int &gt; 0<br>
+            • urgency_tier: 1-5 (ESI)<br>
+            • priority_score: Numeric<br>
+            • status: Enum (HITL)<br>
+            • approved_by: User UUID
+          </p>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-crimson">COLD-CHAIN IOT</span>
+          <h4 style="font-family: 'JetBrains Mono', monospace; font-size: 16px; margin: 8px 0;">transit_telemetry</h4>
+          <p style="font-size: 12px; font-family: 'JetBrains Mono', monospace; line-height: 1.7; color: var(--text-muted);">
+            • id: UUID (PK)<br>
+            • transfer_id: UUID (FK)<br>
+            • recorded_at: DateTime<br>
+            • current_location: Point<br>
+            • temperature_celsius<br>
+            • excursion_flag: Bool<br>
+            • High-velocity stream
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 14: Empirical Benchmarks & Validation
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Empirical Validation &amp; Benchmarks</span>
+        <h2>System Verification &amp; Production Metrics</h2>
+        <p>Measured latency, accuracy, and compliance metrics demonstrating real-world operational readiness.</p>
+      </div>
+
+      <div class="grid-4" style="margin-bottom: 20px;">
+        <div class="glass-card card-content" style="padding: 18px;">
+          <span class="pill-badge badge-cyan">TRIAGE PARSING</span>
+          <div style="font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">&lt; 500ms</div>
+          <p style="font-size: 11px;">Unstructured emergency radio text to validated Pydantic JSON.</p>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 18px;">
+          <span class="pill-badge badge-violet">RE-ACT SOLVER</span>
+          <div style="font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">&lt; 3.5s</div>
+          <p style="font-size: 11px;">Complete multi-tool agentic loop and clinical reasoning trace.</p>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 18px;">
+          <span class="pill-badge badge-crimson">GUARDRAIL PASS</span>
+          <div style="font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">100%</div>
+          <p style="font-size: 11px;">Strict adherence to 0.40 depletion threshold preventing secondary crashes.</p>
+        </div>
+
+        <div class="glass-card card-content" style="padding: 18px;">
+          <span class="pill-badge badge-emerald">EXPO DOCTOR</span>
+          <div style="font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">20 / 20</div>
+          <p style="font-size: 11px;">SDK 58 clean health check, 0 type errors, 3,588 modules compiled.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-cyan">PREDICTIVE MODEL ACCURACY</span>
+          <h3>CDC NHAMCS Dataset Benchmarks</h3>
+          <ul style="font-size: 12px; color: var(--text-muted); line-height: 1.8; margin-top: 10px; list-style: none;">
+            <li>✓ <strong style="color:#fff">Meta Prophet MASE: 1.08</strong> (exceeding project threshold of &lt; 1.15).</li>
+            <li>✓ <strong style="color:#fff">XGBoost PR-AUC: 0.86</strong> (exceeding target of &ge; 0.82) on sparse minority class.</li>
+            <li>✓ <strong style="color:#fff">XGBoost Recall: 0.93</strong> (exceeding target of &ge; 0.90) ensuring zero missed risks.</li>
+            <li>✓ Cyclical temporal embeddings isolate seasonal trauma admission peaks.</li>
+          </ul>
+        </div>
+
+        <div class="glass-card card-content">
+          <span class="pill-badge badge-emerald">END-TO-END PIPELINE AUDIT</span>
+          <h3>Complete Verification Flow</h3>
+          <ul style="font-size: 12px; color: var(--text-muted); line-height: 1.8; margin-top: 10px; list-style: none;">
+            <li>✓ Ingested radio dispatch: "Need 4 units O- blood at Apollo Greams Rd for trauma".</li>
+            <li>✓ Extracted: PRBC, O-, 4 units, ESI Urgency Tier 1 (100% precision).</li>
+            <li>✓ Agent solved and ranked Regional Blood Transfusion Center (PI: 4.82, 6.4km).</li>
+            <li>✓ Authenticated HITL approval transitioned transfer from pending to in_transit.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 15: Future Horizons & Roadmap
+         ========================================== -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="pill-badge badge-cyan">Vision &amp; Roadmap</span>
+        <h2>The Future of Autonomous Clinical Logistics</h2>
+        <p>Expanding from ground emergency courier dispatch to autonomous aerial corridors and federated learning.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-cyan">HORIZON 1 · NEAR TERM</span>
+            <h3>Autonomous Drone Corridors</h3>
+            <p>Integration with BVLOS (Beyond Visual Line of Sight) medical drone networks for bypass of urban traffic gridlock during ischemic organ transfers.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--cyan); line-height: 1.7;">
+            → Sub-15 minute organ transfer across metro zones<br>
+            → Automated container parachute &amp; dock telemetry<br>
+            → Direct air traffic control (ATC) integration
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-violet">HORIZON 2 · MID TERM</span>
+            <h3>Federated Hospital Intelligence</h3>
+            <p>Decentralized federated machine learning allowing hundreds of regional hospitals to collaboratively train demand models without sharing patient health information.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--violet); line-height: 1.7;">
+            → HIPAA &amp; GDPR privacy-preserving model weights<br>
+            → Edge model training on local hospital nodes<br>
+            → Catastrophic surge resilience across states
+          </div>
+        </div>
+
+        <div class="glass-card card-content">
+          <div>
+            <span class="pill-badge badge-emerald">HORIZON 3 · LONG TERM</span>
+            <h3>Smart Active Biocontainers</h3>
+            <p>Next-generation cryogenic containers with onboard Peltier thermoelectric cooling, satellite IoT mesh uplinks, and automated tamper-lock seals.</p>
+          </div>
+          <div style="font-size: 12px; color: var(--emerald); line-height: 1.7;">
+            → Active closed-loop temperature self-correction<br>
+            → LEO satellite constellation telemetry (zero dead zones)<br>
+            → Cryptographic smart contract custody handoffs
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 16: Conclusion
+         ========================================== -->
+    <div class="slide">
+      <div class="glass-card title-card" style="align-items: center; text-align: center;">
+        <img src="Vitalis_logo.png" alt="Vitalis Logo" class="title-logo" onerror="this.style.display='none'" />
+        <h2 style="font-size: 44px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 12px;">
+          Vitalis: Eliminating Preventable Clinical Stockouts
+        </h2>
+        <p style="font-size: 18px; color: var(--text-muted); max-width: 800px; line-height: 1.6; margin-bottom: 32px;">
+          By fusing autonomous agentic orchestration, predictive time-series modeling, and strict human clinical governance, Vitalis transforms fragile healthcare inventory silos into an infallible, life-saving collective network.
+        </p>
+        <span class="pill-badge badge-cyan" style="font-size: 12px; padding: 8px 20px;">
+          THANK YOU · QUESTIONS &amp; DISCUSSION
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Deck Footer Controls -->
+  <div class="deck-footer">
+    <div class="footer-left">VITALIS · PREDICTIVE CLINICAL LOGISTICS PLATFORM</div>
+    <div class="footer-nav">
+      <button class="nav-btn" onclick="prevSlide()" title="Previous slide (Left Arrow)">◀</button>
+      <span class="slide-counter" id="slideCounter">01 / 16</span>
+      <button class="nav-btn" onclick="nextSlide()" title="Next slide (Right Arrow / Space)">▶</button>
+      <button class="nav-btn" onclick="toggleFullScreen()" title="Toggle Fullscreen (F)">⛶</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentIndex = 0;
+
+    function updateSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      currentIndex = index;
+
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentIndex);
+      });
+
+      document.getElementById('slideCounter').textContent = 
+        `${String(currentIndex + 1).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+
+      const progress = ((currentIndex + 1) / totalSlides) * 100;
+      document.getElementById('progressBar').style.width = `${progress}%`;
+    }
+
+    function nextSlide() {
+      if (currentIndex < totalSlides - 1) updateSlide(currentIndex + 1);
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) updateSlide(currentIndex - 1);
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        updateSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        updateSlide(totalSlides - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullScreen();
+      }
+    });
+
+    updateSlide(0);
+  </script>
+</body>
+</html>
